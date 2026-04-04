@@ -483,11 +483,11 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 overflow-x-auto pb-8">
                 {['Men', 'Women', 'Sarees', 'Jewellery', 'Others'].map((cat) => (
                   <div key={cat} className="flex flex-col gap-6 min-w-[300px]">
-                    <div className="flex justify-between items-center border-b-2 border-[#1c1c18] pb-4 mb-2">
-                       <h2 className="font-headline text-3xl">{cat}</h2>
+                    <div className="flex justify-between items-center border-b-2 border-[#1c1c18] pb-4 mb-2 min-h-[60px]">
+                       <h2 className="font-headline text-3xl truncate pr-4">{cat}</h2>
                        <button 
                         onClick={() => handleOpenAdd(cat === 'Others' ? 'Sarees' : cat)}
-                        className="w-8 h-8 rounded-full border border-[#1c1c18] flex items-center justify-center hover:bg-[#1c1c18] hover:text-white transition-all"
+                        className="w-8 h-8 rounded-full border border-[#1c1c18] flex items-center justify-center hover:bg-[#1c1c18] hover:text-white transition-all shrink-0"
                        >
                         <span className="material-symbols-outlined text-sm">add</span>
                        </button>
@@ -802,15 +802,25 @@ export default function AdminPage() {
                                className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
                             />
                          </div>
-                         <div>
-                            <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Image URL</label>
-                            <input 
-                               type="text" required value={formData.image}
-                               onChange={e => setFormData({ ...formData, image: e.target.value })}
-                               className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
-                               placeholder="/saree_1.png"
-                            />
-                         </div>
+                         <div className="flex flex-col gap-4">
+                             <div>
+                                <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Image URL</label>
+                                <input 
+                                   type="text" required value={formData.image}
+                                   onChange={e => setFormData({ ...formData, image: e.target.value })}
+                                   className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
+                                   placeholder="/saree_1.png"
+                                />
+                             </div>
+                             {formData.image && (
+                                <div className="relative w-full aspect-[3/2] bg-white border border-[#1c1c18]/5 overflow-hidden">
+                                   <Image src={formData.image} alt="Preview" fill className="object-cover" />
+                                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
+                                      <p className="text-white text-[10px] uppercase tracking-widest font-bold">Image Preview</p>
+                                   </div>
+                                </div>
+                             )}
+                          </div>
                          <div>
                             <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Cinematic Reel (MP4 URL)</label>
                             <input 

@@ -132,8 +132,8 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                onClick={() => setZoomedImage(product.image)}
             >
               <Image
-                src={product.image}
-                alt={product.title}
+                src={product.image || '/placeholder.jpg'}
+                alt={product.title || 'Product Image'}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
                 priority

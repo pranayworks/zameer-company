@@ -154,7 +154,7 @@ export default function CheckoutPage() {
             
             // 5. Send confirmation email
             try {
-              await fetch('/api/send-invoice', {
+              const emailResp = await fetch('/api/send-invoice', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -165,8 +165,14 @@ export default function CheckoutPage() {
                   total: subtotal
                 })
               })
+              const emailData = await emailResp.json()
+              if (!emailResp.ok || !emailData.success) {
+                console.error('Email API returned error:', emailData.error)
+              } else {
+                console.log('Confirmation email successfully queued')
+              }
             } catch (emailError) {
-              console.error('Failed to trigger confirmation email:', emailError)
+              console.error('Failed to connect to email API:', emailError)
             }
 
             setStep('success')

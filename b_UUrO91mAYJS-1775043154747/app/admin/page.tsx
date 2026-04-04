@@ -377,6 +377,33 @@ export default function AdminPage() {
     }
   }
 
+  const handleTestEmail = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return alert("Session expired")
+    
+    try {
+      const resp = await fetch('/api/send-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          name: user.user_metadata?.full_name || 'Admin',
+          orderId: 'TEST-123',
+          items: [{ name: 'Test Masterpiece', quantity: 1, price: 1000 }],
+          total: 1000
+        })
+      })
+      const data = await resp.json()
+      if (resp.ok && data.success) {
+        alert("Success! Check your mail inbox (and spam folder) for the test confirmation.")
+      } else {
+        alert(`Failed: ${data.error || 'Server error'}. Please ensure GMAIL_APP_PASSWORD is set in your Vercel settings.`)
+      }
+    } catch (err) {
+      alert("Error: Could not reach the email API.")
+    }
+  }
+
   // Helpers for array inputs
   const addToArray = (field: 'fabric' | 'care' | 'fit', val: string) => {
     if (!val) return
@@ -439,6 +466,13 @@ export default function AdminPage() {
               >
                 <span className="material-symbols-outlined text-sm">notifications_active</span>
                 Test Admin Herald
+              </button>
+              <button 
+                onClick={handleTestEmail}
+                className="border border-[#a3851a] text-[#a3851a] px-8 py-4 font-body text-[10px] uppercase tracking-widest font-bold shadow-sm hover:bg-[#a3851a] hover:text-white transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">mail</span>
+                Test Email Signalling
               </button>
               <button 
                 onClick={() => handleOpenAdd()}

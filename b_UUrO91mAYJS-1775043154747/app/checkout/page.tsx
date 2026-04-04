@@ -587,8 +587,13 @@ export default function CheckoutPage() {
               >
                 <button
                   onClick={async () => {
-                    const jsPDF = (await import('jspdf')).default
-                    const html2canvas = (await import('html2canvas')).default
+                    if (typeof window === 'undefined') return;
+                    // Dynamically import jspdf UMD version to prevent SSR issues
+                    // @ts-ignore
+                    const { default: jsPDF } = await import('jspdf/dist/jspdf.umd.min.js')
+                    // @ts-ignore
+                    const { default: html2canvas } = await import('html2canvas')
+                    
                     const doc = new jsPDF()
                     
                     doc.setFont("times", "normal")

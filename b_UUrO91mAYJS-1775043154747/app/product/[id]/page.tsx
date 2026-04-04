@@ -18,6 +18,8 @@ interface Product {
   title: string
   price: number | string
   image: string
+  image2?: string
+  image3?: string
   description: string
   category: string
   rating: number
@@ -41,47 +43,87 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<string | null>('fabric')
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [communityReviews, setCommunityReviews] = useState<any[]>([])
   const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState('')
   const [isSubmittingNotify, setIsSubmittingNotify] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProductAndRelated()
   }, [id])
 
   async function fetchProductAndRelated() {
-    // 1. Fetch current product
-    const { data: p } = await supabase.from('products').select('*').eq('id', id).single()
-    if (p) setProduct(p)
+    setError(null)
+    const trimmedId = id.trim()
+    console.log(`Boutique: Retrieving archive for piece [${trimmedId}]...`)
 
-    // 2. Fetch community stories
-    const { data: revs } = await supabase.from('reviews').select('*').eq('product_id', id).order('created_at', { ascending: false }).limit(4)
-    if (revs) setCommunityReviews(revs)
+    try {
+      // 1. Fetch current product - SUPER-FINDER SEARCH
+      // We try exact matches, slugified variations, and title keywords
+      const slugId = trimmedId.toLowerCase().replace(/ /g, '-')
+      const cleanId = trimmedId.replace(/%20/g, ' ')
 
-    // 3. Fetch related (simple logic: same category)
-    if (p) {
-      if (p.category === 'Sarees') {
-        const { data: relatedSaree } = await supabase.from('products').select('*').eq('category', 'Sarees').neq('id', id).limit(1)
-        const { data: relatedJewellery } = await supabase.from('products').select('*').eq('category', 'Jewellery').limit(1)
-        const { data: relatedWomen } = await supabase.from('products').select('*').eq('category', 'Women').limit(1)
-        
-        const mix = [...(relatedSaree || []), ...(relatedJewellery || []), ...(relatedWomen || [])]
-        setRelatedProducts(mix)
-      } else {
-        const { data: related } = await supabase
-          .from('products')
-          .select('*')
-          .eq('category', p.category)
-          .neq('id', id)
-          .limit(3)
-        if (related) setRelatedProducts(related)
+      const { data, error: pError } = await supabase
+        .from('products')
+        .select('*')
+        .or(`id.eq."${trimmedId}",id.eq."${slugId}",id.eq."${cleanId}",title.ilike."%${trimmedId}%"`)
+        .limit(1)
+
+      const p = data && data.length > 0 ? data[0] : null
+
+      if (pError || !p) {
+        console.error(`Boutique Archive: Retrieval failed for Piece [${trimmedId}]. Tried ID variants and Titles.`)
+        setError(`Masterpiece [${id}] not found in our current archives. Please verify the ID or title in your Admin Panel.`)
+        return
       }
+
+      if (p) {
+        setProduct(p)
+        
+        // 2. Fetch community stories
+        const { data: revs } = await supabase.from('reviews').select('*').eq('product_id', trimmedId).order('created_at', { ascending: false }).limit(4)
+        if (revs) setCommunityReviews(revs)
+
+        // 3. Fetch related (same category)
+        if (p.category === 'Sarees') {
+          const { data: relatedSaree } = await supabase.from('products').select('*').eq('category', 'Sarees').neq('id', trimmedId).limit(1)
+          const { data: relatedJewellery } = await supabase.from('products').select('*').eq('category', 'Jewellery').limit(1)
+          const { data: relatedWomen } = await supabase.from('products').select('*').eq('category', 'Women').limit(1)
+          
+          const mix = [...(relatedSaree || []), ...(relatedJewellery || []), ...(relatedWomen || [])]
+          setRelatedProducts(mix)
+        } else {
+          const { data: related } = await supabase
+            .from('products')
+            .select('*')
+            .eq('category', p.category)
+            .neq('id', trimmedId)
+            .limit(3)
+          if (related) setRelatedProducts(related)
+        }
+      }
+    } catch (err: any) {
+      setError("Atelier connection timed out. Reconnecting...")
     }
   }
 
-  if (!product) return <div className="min-h-screen bg-[#fdf9f2] pt-32 text-center font-headline text-2xl">Searching the Archives...</div>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#fdf9f2] flex flex-col items-center justify-center p-8 text-center font-body">
+        <h2 className="font-headline text-4xl mb-6">{error}</h2>
+        <Link href="/" className="bg-[#1c1c18] text-white px-8 py-4 text-[10px] uppercase tracking-widest font-bold">Return to Main Gallery</Link>
+      </div>
+    )
+  }
+
+  if (!product) return (
+    <div className="min-h-screen bg-[#fdf9f2] flex flex-col items-center justify-center font-headline text-2xl tracking-widest opacity-40 animate-pulse">
+      Searching the Archives...
+    </div>
+  )
 
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : (product.category === 'Jewellery' ? ['One Size'] : ['XS', 'S', 'M', 'L', 'XL'])
 
@@ -128,23 +170,71 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24">
           {/* Left Column: Images */}
           <div className="space-y-8">
-            <motion.div 
-               className="relative aspect-[3/4] bg-white overflow-hidden shadow-2xl cursor-zoom-in group"
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               onClick={() => setZoomedImage(product.image)}
-            >
-              <Image
-                src={product.image || '/placeholder.jpg'}
-                alt={product.title || 'Product Image'}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-                priority
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                 <span className="material-symbols-outlined text-white text-4xl drop-shadow-lg">zoom_in</span>
-              </div>
-            </motion.div>
+            {/* Main Product Image Carousel */}
+            <div className="relative aspect-[3/4] bg-white overflow-hidden shadow-2xl group">
+               <AnimatePresence mode='wait'>
+                 <motion.div 
+                   key={currentImageIndex}
+                   initial={{ opacity: 0, x: 100 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: -100 }}
+                   transition={{ duration: 0.5, ease: "easeInOut" }}
+                   className="absolute inset-0 cursor-zoom-in"
+                   onClick={() => setZoomedImage([product.image, product.image2, product.image3].filter(Boolean)[currentImageIndex] as string)}
+                 >
+                   <Image
+                     src={[product.image, product.image2, product.image3].filter(Boolean)[currentImageIndex] || '/placeholder.jpg'}
+                     alt={`${product.title} - View ${currentImageIndex + 1}`}
+                     fill
+                     className="object-cover group-hover:scale-105 transition-transform duration-1000"
+                     priority
+                   />
+                 </motion.div>
+               </AnimatePresence>
+
+               {/* Carousel Controls */}
+               {[product.image, product.image2, product.image3].filter(Boolean).length > 1 && (
+                 <>
+                   <div className="absolute inset-y-0 left-4 flex items-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <button 
+                       onClick={() => {
+                         const images = [product.image, product.image2, product.image3].filter(Boolean);
+                         setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+                       }}
+                       className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg"
+                     >
+                       <span className="material-symbols-outlined">chevron_left</span>
+                     </button>
+                   </div>
+                   <div className="absolute inset-y-0 right-4 flex items-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <button 
+                       onClick={() => {
+                         const images = [product.image, product.image2, product.image3].filter(Boolean);
+                         setCurrentImageIndex((prev) => (prev + 1) % images.length)
+                       }}
+                       className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg"
+                     >
+                       <span className="material-symbols-outlined">chevron_right</span>
+                     </button>
+                   </div>
+                   
+                   {/* Indicators */}
+                   <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+                     {[product.image, product.image2, product.image3].filter(Boolean).map((_, idx) => (
+                       <button 
+                         key={idx}
+                         onClick={() => setCurrentImageIndex(idx)}
+                         className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-[#a3851a] w-6' : 'bg-[#1c1c18]/20'}`}
+                       />
+                     ))}
+                   </div>
+                 </>
+               )}
+
+               <div className="absolute top-6 right-6 z-10">
+                  <span className="bg-[#1c1c18] text-white text-[8px] uppercase tracking-[0.3em] px-3 py-1 font-bold">New Perspective</span>
+               </div>
+            </div>
             
             {/* Grid for secondary images (thumbnails/details) */}
             <div className="grid grid-cols-2 gap-8">

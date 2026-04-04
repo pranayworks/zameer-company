@@ -287,21 +287,39 @@ function AccountContent() {
       .eq('id', orderId);
 
     if (!error) {
-      // Notify Admin via Telegram
+      // 1. Double-Guard Notifications: Admin Telegram + Customer Email
+      const order = dbOrders.find(o => o.id === orderId)
+      
       try {
+        // A. Notify Admin via Telegram (High Priority)
         await fetch('/api/notify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             message: `<b>🚨 ORDER CANCELLATION 🚨</b>\n\n` +
                      `Customer: ${userProfile.fullName}\n` +
-                     `Order ID: ORD-${orderNumber}\n\n` +
+                     `Order ID: ORD-${orderNumber}\n` +
+                     `Value: ₹${(order?.price || 0).toLocaleString()}\n\n` +
                      `<b>REFUND REQUIRED</b>\n` +
-                     `Please process the refund on the Razorpay dashboard.`
+                     `Please process the refund on the Razorpay dashboard for ORD-${orderNumber}.`
           })
         });
+
+        // B. Notify Customer via Branded Email (Professionalism)
+        if (order) {
+          await fetch('/api/notify-cancel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: userProfile.email,
+              name: userProfile.fullName,
+              orderId: `ORD-${orderNumber}`,
+              total: order.price
+            })
+          });
+        }
       } catch (e) {
-        console.error("Failed to notify admin about cancellation");
+        console.error("Atelier Alert Error: Double-notification pipeline encounterd a delay.");
       }
 
       // Refresh list
@@ -391,11 +409,11 @@ function AccountContent() {
                   <div className="flex justify-between items-end mb-8 border-b border-[#1c1c18]/10 pb-4">
                     <h3 className="font-headline text-2xl tracking-widest uppercase">Live Tracking</h3>
                   </div>
-                  {dbOrders.filter(o => o.order_status !== 'Delivered').length === 0 ? (
-                    <div className="py-20 text-center bg-white border border-[#1c1c18]/5 border-dashed"><h4 className="font-headline text-2xl mb-2 text-[#1c1c18]/40">No Shipments in Transit</h4></div>
+                  {dbOrders.length === 0 ? (
+                    <div className="py-20 text-center bg-white border border-[#1c1c18]/5 border-dashed"><h4 className="font-headline text-2xl mb-2 text-[#1c1c18]/40">No Acquisitions in Archive</h4></div>
                   ) : (
                     <div className="space-y-8">
-                       {dbOrders.filter(o => o.order_status !== 'Delivered').map((order) => (
+                       {dbOrders.map((order) => (
                          <div key={order.id} className="bg-white p-8 lg:p-12 border border-[#1c1c18]/5 flex flex-col md:flex-row gap-12 group">
                             <div className="flex-1">
                                <span className="text-[9px] uppercase tracking-widest text-[#a3851a] font-bold">Order #{order.order_id}</span>
@@ -446,15 +464,13 @@ function AccountContent() {
                                   </div>
                                </div>
                                <div className="flex flex-wrap gap-4">
-                                  <button onClick={() => setSelectedInvoiceOrder(order)} className="bg-[#1c1c18] text-white px-6 py-3 text-[9px] uppercase tracking-widest font-bold">View Invoice</button>
-                                  {(order.order_status === 'Preparing' || order.order_status === 'Dispatched') && (
-                                     <button 
-                                       onClick={() => handleCancelOrder(order.id, order.order_id)} 
-                                       className="border border-red-500/20 text-red-500 px-6 py-3 text-[9px] uppercase tracking-widest font-bold hover:bg-red-500 hover:text-white transition-all"
-                                     >
-                                       Cancel Order
-                                     </button>
-                                  )}
+                                  <button onClick={() => downloadInvoicePDF(order)} className="bg-[#1c1c18] text-white px-6 py-3 text-[9px] uppercase tracking-widest font-bold">Download Invoice</button>
+                                  <button 
+                                    onClick={() => handleCancelOrder(order.id, order.order_id)} 
+                                    className="border border-red-500/20 text-red-500 px-6 py-3 text-[9px] uppercase tracking-widest font-bold hover:bg-red-500 hover:text-white transition-all"
+                                  >
+                                    Cancel Order
+                                  </button>
                                   <button onClick={() => setIsReviewModalOpen(true)} className="border border-[#1c1c18]/20 px-6 py-3 text-[9px] uppercase tracking-widest font-bold hover:bg-[#1c1c18] hover:text-white transition-all">Submit Editorial</button>
                                </div>
                             </div>

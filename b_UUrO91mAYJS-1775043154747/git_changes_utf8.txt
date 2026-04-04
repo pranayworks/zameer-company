@@ -1,0 +1,97 @@
+﻿commit d509d3abd2ef4d5d11ed905d00131f055d9da52e
+Author: Pranayworks <mamidipranay07@gmail.com>
+Date:   Thu Apr 2 18:51:45 2026 +0530
+
+    Refactor hamburger menu to a 40% white side drawer with dark backdrop
+
+diff --git a/b_UUrO91mAYJS-1775043154747/components/header.tsx b/b_UUrO91mAYJS-1775043154747/components/header.tsx
+index c4ed753..ffa0117 100644
+--- a/b_UUrO91mAYJS-1775043154747/components/header.tsx
++++ b/b_UUrO91mAYJS-1775043154747/components/header.tsx
+@@ -140,42 +140,53 @@ export function Header() oka{
+       {/* Mobile Menu Overlay */}
+       <AnimatePresence>
+         {isMobileMenuOpen && (
+-          <motion.div 
+-            className="fixed inset-0 z-[100] bg-[#fdf9f2] flex flex-col pt-24 px-8"
+-            initial={{ opacity: 0, x: '-100%' }}
+-            animate={{ opacity: 1, x: 0 }}
+-            exit={{ opacity: 0, x: '-100%' }}
+-            transition={{ duration: 0.4, ease: "easeInOut" }}
+-          >
+-            <button 
++          <>
++            {/* Dark Backdrop */}
++            <motion.div 
++              className="fixed inset-0 z-[90] bg-black/50"
++              initial={{ opacity: 0 }}
++              animate={{ opacity: 1 }}
++              exit={{ opacity: 0 }}
+               onClick={() => setIsMobileMenuOpen(false)}
+-              className="absolute top-6 right-6 text-[#1c1b1b]"
+-            >
+-              <span className="material-symbols-outlined text-3xl">close</span>
+-            </button>
++            />
+             
+-            <div className="flex flex-col gap-8">
+-              {navItems.map((item) => (
+-                <Link 
+-                  key={item.label} 
+-                  href={item.href}
+-                  className="font-headline text-2xl text-[#1c1b1b] border-b border-[#1c1b1b]/10 pb-4"
+-                  onClick={() => {
+-                    setActiveNav(item.label)
+-                    setIsMobileMenuOpen(false)
+-                  }}
+-                >
+-                  {item.label}
+-                </Link>
+-              ))}
+-            </div>
++            {/* 40% Width Side Drawer */}
++            <motion.div 
++              className="fixed top-0 left-0 bottom-0 w-[40%] min-w-[200px] z-[100] bg-white flex flex-col pt-20 px-6 shadow-2xl overflow-y-auto overflow-x-hidden"
++              initial={{ x: '-100%' }}
++              animate={{ x: 0 }}
++              exit={{ x: '-100%' }}
++              transition={{ duration: 0.4, ease: "easeInOut" }}
++            >
++              <button 
++                onClick={() => setIsMobileMenuOpen(false)}
++                className="absolute top-6 right-4 text-[#1c1b1b]"
++              >
++                <span className="material-symbols-outlined text-2xl">close</span>
++              </button>
++              
++              <div className="flex flex-col gap-6 mt-8">
++                {navItems.map((item) => (
++                  <Link 
++                    key={item.label} 
++                    href={item.href}
++                    className="font-headline text-xl text-[#1c1b1b] border-b border-[#1c1b1b]/10 pb-3"
++                    onClick={() => {
++                      setActiveNav(item.label)
++                      setIsMobileMenuOpen(false)
++                    }}
++                  >
++                    {item.label}
++                  </Link>
++                ))}
++              </div>
+ 
+-            <div className="mt-auto mb-12 flex gap-6 text-[#747878] font-body uppercase tracking-widest text-[10px]">
+-              <Link href="/account">Account</Link>
+-              <span>|</span>
+-              <Link href="/account">Track Order</Link>
+-            </div>
+-          </motion.div>
++              <div className="mt-auto pt-12 pb-8 flex flex-col gap-4 text-[#747878] font-body uppercase tracking-widest text-[9px]">
++                <Link href="/account" onClick={() => setIsMobileMenuOpen(false)}>Account</Link>
++                <Link href="/account" onClick={() => setIsMobileMenuOpen(false)}>Track Order</Link>
++              </div>
++            </motion.div>
++          </>
+         )}
+       </AnimatePresence>
+     </header>

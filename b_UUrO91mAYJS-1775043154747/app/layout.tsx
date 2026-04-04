@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   description: 'Premium traditional and contemporary fashion for every generation',
   generator: 'v0.app',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/images/logo.png',
+    apple: '/images/logo.png',
   },
 }
 

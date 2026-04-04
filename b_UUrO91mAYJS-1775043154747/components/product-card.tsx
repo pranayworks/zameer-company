@@ -17,17 +17,17 @@ interface ProductCardProps {
 }
 
 export function ProductCard({
-  id,
-  title,
+  id = '',
+  title = 'Product Name',
   price,
   image,
-  rating,
-  reviews,
+  rating = 5,
+  reviews = 0,
   index,
   stock,
 }: ProductCardProps) {
   const { addToCart } = useCart()
-  const productPath = `/product/${id || title.toLowerCase().replace(/ /g, '-')}`
+  const productPath = `/product/${id || (title || '').toLowerCase().replace(/ /g, '-')}`
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()

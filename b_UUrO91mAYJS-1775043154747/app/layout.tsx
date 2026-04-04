@@ -15,9 +15,52 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: 'Friends of 4 | Style of Traditional',
-  description: 'Premium traditional and contemporary fashion for every generation',
-  generator: 'v0.app',
+  metadataBase: new URL('https://friendsof4.in'),
+  title: {
+    default: 'Friends of 4 | Style of Traditional',
+    template: '%s | Friends of 4',
+  },
+  description: 'Premium traditional and contemporary fashion for every generation. Shop our exclusive collection of sarees, menswear, womenswear and jewellery.',
+  keywords: ['traditional fashion', 'contemporary fashion', 'sarees', 'kurtas', 'jewellery', 'ethnic wear', 'indian fashion', 'premium clothing'],
+  authors: [{ name: 'Friends of 4' }],
+  creator: 'Friends of 4',
+  publisher: 'Friends of 4',
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    title: 'Friends of 4 | Style of Traditional',
+    description: 'Premium traditional and contemporary fashion for every generation. Discover exquisite collections today.',
+    url: 'https://friendsof4.in',
+    siteName: 'Friends of 4',
+    images: [
+      {
+        url: '/images/logo.png',
+        width: 800,
+        height: 600,
+        alt: 'Friends of 4 Logo',
+      },
+    ],
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Friends of 4 | Style of Traditional',
+    description: 'Premium traditional and contemporary fashion for every generation.',
+    images: ['/images/logo.png'],
+  },
   icons: {
     icon: '/images/logo.png',
     apple: '/images/logo.png',

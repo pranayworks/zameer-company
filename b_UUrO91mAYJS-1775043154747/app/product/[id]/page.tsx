@@ -299,13 +299,29 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
 
+              {/* Stock Status Indicator */}
+              {product.stock !== undefined && (
+                <div className="mb-8">
+                  {product.stock > 0 ? (
+                    <p className={`font-body text-[10px] uppercase tracking-widest ${product.stock < 5 ? 'text-amber-500 animate-pulse' : 'text-green-600'}`}>
+                      {product.stock < 5 ? `⚠️ Only ${product.stock} Pieces Left in Archive` : '✓ Piece Available in Atelier'}
+                    </p>
+                  ) : (
+                    <p className="font-body text-[10px] uppercase tracking-widest text-red-500 font-bold">
+                      ❌ Atelier Vault Empty (Restocking in Progress)
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex gap-4 mb-12">
                 <button 
-                  onClick={handleAddToCart}
-                  className="flex-1 gold-satin text-white py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                   onClick={handleAddToCart}
+                   disabled={product.stock === 0}
+                   className={`flex-1 ${product.stock === 0 ? 'bg-[#1c1c18]/20 cursor-not-allowed text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold transition-all`}
                 >
-                  Add To Bag
+                  {product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}
                 </button>
                 <button 
                   onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))}
@@ -452,6 +468,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                   image={item.image}
                   rating={item.rating || 5}
                   reviews={item.reviews || 0}
+                  stock={item.stock}
                   index={i} 
                 />
              ))}

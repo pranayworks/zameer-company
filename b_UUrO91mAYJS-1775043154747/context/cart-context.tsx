@@ -186,6 +186,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const { error } = await supabase.from('orders').insert(orderEntry);
         
         if (!error) {
+           // 🚨 CRITICAL: Decrement Stock in the Atelier Vault
+           // We use an RPC call or a simple update for now, but update is faster for this implementation
+           const { data: pData } = await supabase.from('products').select('stock').eq('id', item.id).single();
+           if (pData) {
+             const newStock = Math.max(0, (pData.stock || 0) - item.quantity);
+             await supabase.from('products').update({ stock: newStock }).eq('id', item.id);
+           }
+
            // Send Instant Mobile Alert to Admin
            await sendAdminNotification(orderEntry);
         }

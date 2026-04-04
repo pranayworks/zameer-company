@@ -104,6 +104,7 @@ export default function MenPage() {
               image={product.image}
               rating={product.rating}
               reviews={product.reviews}
+              stock={product.stock}
               index={index} 
             />
           ))}

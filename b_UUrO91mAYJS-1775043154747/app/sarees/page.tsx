@@ -103,6 +103,7 @@ export default function SareesPage() {
                   image={product.image}
                   rating={product.rating}
                   reviews={product.reviews}
+                  stock={product.stock}
                   index={index} 
                 />
             ))}

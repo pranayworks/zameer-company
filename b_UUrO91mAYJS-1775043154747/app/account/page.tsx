@@ -11,6 +11,164 @@ import { useCart } from '@/context/cart-context'
 import { useWishlist } from '@/context/wishlist-context'
 import { supabase } from '@/lib/supabase'
 
+const downloadInvoicePDF = async (order: any) => {
+  if (typeof window === 'undefined') return;
+  // @ts-ignore
+  const { default: jsPDF } = await import('jspdf/dist/jspdf.umd.min.js')
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+
+  const W = 210
+  const gold = [163, 133, 26] as [number, number, number]
+  const dark = [28, 28, 24] as [number, number, number]
+  const grey = [116, 120, 120] as [number, number, number]
+  const light = [253, 249, 242] as [number, number, number]
+
+  // Background
+  doc.setFillColor(...light)
+  doc.rect(0, 0, W, 297, 'F')
+
+  // Gold header bar
+  doc.setFillColor(...gold)
+  doc.rect(0, 0, W, 24, 'F')
+
+  // Brand name
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(255, 255, 255)
+  doc.text('FRIENDS OF 4', 20, 15)
+
+  // INVOICE label top right
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.text('HERITAGE INVOICE', W - 20, 15, { align: 'right' })
+
+  // Order ID
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(22)
+  doc.setTextColor(...dark)
+  doc.text(`ORD-${order.order_id || order.id}`, 20, 42)
+
+  // Date
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...grey)
+  const date = order.created_at ? new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString('en-IN')
+  doc.text(`PLACED ON ${date}`, 20, 50)
+
+  // Divider
+  doc.setDrawColor(...gold)
+  doc.setLineWidth(0.6)
+  doc.line(20, 56, W - 20, 56)
+
+  // Customer & Address section
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.setTextColor(...grey)
+  doc.text('CUSTOMER PROFILE', 20, 67)
+  doc.text('SHIPPING ADDRESS', 90, 67)
+  doc.text('FULFILLMENT STATUS', W - 20, 67, { align: 'right' })
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(...dark)
+  doc.text(order.customer_name || 'Customer', 20, 75)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...grey)
+  if (order.email) doc.text(order.email, 20, 81)
+  if (order.phone) doc.text(order.phone, 20, 86)
+
+  // Address (wrap long text)
+  const address = order.address || 'Address not provided'
+  const addressLines = doc.splitTextToSize(address, 60)
+  doc.setTextColor(...grey)
+  doc.text(addressLines, 90, 75)
+
+  // Status badge area
+  doc.setFillColor(...gold)
+  doc.roundedRect(W - 55, 69, 35, 8, 2, 2, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.setTextColor(255, 255, 255)
+  doc.text(order.order_status || 'Preparing', W - 37.5, 74.2, { align: 'center' })
+
+  // Product section divider
+  doc.setDrawColor(220, 220, 215)
+  doc.setLineWidth(0.3)
+  doc.line(20, 100, W - 20, 100)
+
+  // Product section header
+  doc.setTextColor(...grey)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.text('ACQUIRED MASTERPIECE', 20, 110)
+  doc.text('VALUATION', W - 20, 110, { align: 'right' })
+
+  // Product details box
+  doc.setFillColor(255, 255, 255)
+  doc.roundedRect(18, 114, W - 36, 42, 3, 3, 'F')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(...dark)
+  doc.text(order.product_name || 'Product', 28, 128)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(...grey)
+  const details = [order.size && `Size: ${order.size}`, order.color && `Color: ${order.color}`].filter(Boolean).join('   •   ')
+  if (details) doc.text(details, 28, 136)
+
+  // Price
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.setTextColor(...gold)
+  doc.text(`Rs. ${(order.price || 0).toLocaleString('en-IN')}`, W - 28, 130, { align: 'right' })
+
+  // Payment status badge
+  doc.setFillColor(34, 197, 94)
+  doc.roundedRect(28, 140, 28, 7, 2, 2, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(6)
+  doc.setTextColor(255, 255, 255)
+  doc.text('PAYMENT VERIFIED', 28 + 14, 144.5, { align: 'center' })
+
+  // Total summary box
+  doc.setFillColor(...dark)
+  doc.roundedRect(18, 168, W - 36, 24, 3, 3, 'F')
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(255, 255, 255)
+  doc.text('TOTAL AMOUNT PAID', 28, 178)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(...gold)
+  doc.text(`Rs. ${(order.price || 0).toLocaleString('en-IN')}`, W - 28, 181, { align: 'right' })
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(180, 180, 180)
+  doc.text('Free Express Delivery Included', 28, 186)
+
+  // Footer quote
+  doc.setFont('helvetica', 'italic')
+  doc.setFontSize(9)
+  doc.setTextColor(...grey)
+  doc.text('"May this tradition walk with you."', W / 2, 240, { align: 'center' })
+
+  // Footer bar
+  doc.setFillColor(...dark)
+  doc.rect(0, 273, W, 24, 'F')
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(150, 150, 150)
+  doc.text('friends-of-4.com', 20, 283)
+  doc.text('This is a computer-generated invoice and does not require a signature.', W / 2, 283, { align: 'center' })
+  doc.text(`INV-${order.order_id || order.id}`, W - 20, 283, { align: 'right' })
+
+  doc.save(`FriendsOf4_Invoice_${order.order_id || order.id}.pdf`)
+}
+
 const tabs = [
   { id: 'profile', label: 'Profile Details', icon: 'person' },
   { id: 'orders', label: 'Order History', icon: 'history' },
@@ -120,6 +278,38 @@ function AccountContent() {
     }
   }
 
+  const handleCancelOrder = async (orderId: string, orderNumber: string) => {
+    if (!confirm('Are you sure you want to cancel this order? This action will notify the boutique to process your refund.')) return;
+    
+    const { error } = await supabase
+      .from('orders')
+      .update({ order_status: 'Cancelled' })
+      .eq('id', orderId);
+
+    if (!error) {
+      // Notify Admin via Telegram
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            message: `<b>🚨 ORDER CANCELLATION 🚨</b>\n\n` +
+                     `Customer: ${userProfile.fullName}\n` +
+                     `Order ID: ORD-${orderNumber}\n\n` +
+                     `<b>REFUND REQUIRED</b>\n` +
+                     `Please process the refund on the Razorpay dashboard.`
+          })
+        });
+      } catch (e) {
+        console.error("Failed to notify admin about cancellation");
+      }
+
+      // Refresh list
+      setDbOrders(prev => prev.map(o => o.id === orderId ? { ...o, order_status: 'Cancelled' } : o));
+      alert("Order cancelled successfully. Our team has been notified for your refund.");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#fdf9f2] flex flex-col font-body">
       <Header />
@@ -216,8 +406,16 @@ function AccountContent() {
                                   </div>
                                   <div className="w-full h-[2px] bg-[#1c1c18]/10 relative"><motion.div animate={{ width: order.order_status === 'Preparing' ? '30%' : order.order_status === 'Dispatched' ? '65%' : '90%' }} className="absolute inset-0 bg-[#a3851a]" /></div>
                                </div>
-                               <div className="flex gap-4">
+                               <div className="flex flex-wrap gap-4">
                                   <button onClick={() => setSelectedInvoiceOrder(order)} className="bg-[#1c1c18] text-white px-6 py-3 text-[9px] uppercase tracking-widest font-bold">View Invoice</button>
+                                  {(order.order_status === 'Preparing' || order.order_status === 'Dispatched') && (
+                                     <button 
+                                       onClick={() => handleCancelOrder(order.id, order.order_id)} 
+                                       className="border border-red-500/20 text-red-500 px-6 py-3 text-[9px] uppercase tracking-widest font-bold hover:bg-red-500 hover:text-white transition-all"
+                                     >
+                                       Cancel Order
+                                     </button>
+                                  )}
                                   <button onClick={() => setIsReviewModalOpen(true)} className="border border-[#1c1c18]/20 px-6 py-3 text-[9px] uppercase tracking-widest font-bold hover:bg-[#1c1c18] hover:text-white transition-all">Submit Editorial</button>
                                </div>
                             </div>
@@ -302,7 +500,7 @@ function AccountContent() {
                    </table>
                    <div className="flex justify-end pt-24 font-headline text-center italic opacity-60">"May this tradition walk with you."</div>
                 </div>
-                <div className="mt-16 flex justify-center no-print"><button onClick={() => window.print()} className="bg-[#1c1c18] text-white py-6 px-12 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#a3851a] flex items-center gap-4"><span className="material-symbols-outlined text-lg">print</span> Print Dossier</button></div>
+                <div className="mt-16 flex justify-center no-print"><button onClick={() => downloadInvoicePDF(selectedInvoiceOrder)} className="bg-[#1c1c18] text-white py-6 px-12 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#a3851a] flex items-center gap-4"><span className="material-symbols-outlined text-lg">download</span> Download Invoice PDF</button></div>
               </motion.div>
            </>
          )}

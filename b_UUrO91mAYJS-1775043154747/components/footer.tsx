@@ -90,7 +90,12 @@ export function Footer() {
                       'Men': '/men',
                       'Women': '/women',
                       'Sarees': '/sarees',
-                      'Jewellery': '/jewellery'
+                      'Jewellery': '/jewellery',
+                      'Contact': '/contact',
+                      'Returns': '/legal/refund-policy',
+                      'Shipping': '/legal/shipping-policy',
+                      'Privacy Policy': '/legal/privacy-policy',
+                      'Terms of Service': '/legal/terms-of-service',
                     }
                   const href = hrefMap[link] || '#'
                   
@@ -113,6 +118,20 @@ export function Footer() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Payment Trust Partners */}
+        <div className="flex flex-wrap items-center gap-10 opacity-30 grayscale hover:grayscale-0 transition-all duration-700 pb-12 border-b border-white/5 mb-12">
+           <span className="text-[10px] uppercase tracking-[0.4em] text-white/60 mb-2 md:mb-0">Atelier Trust</span>
+           <div className="flex gap-8 items-center">
+              <span className="font-headline text-2xl text-white tracking-widest italic select-none">RAZORPAY</span>
+              <div className="h-4 w-px bg-white/20" />
+              <div className="flex gap-4">
+                 <span className="material-symbols-outlined text-3xl">credit_card</span>
+                 <span className="material-symbols-outlined text-3xl">account_balance</span>
+                 <span className="material-symbols-outlined text-3xl">wallet</span>
+              </div>
+           </div>
+        </div>
 
         {/* Bottom Section */}
         <motion.div

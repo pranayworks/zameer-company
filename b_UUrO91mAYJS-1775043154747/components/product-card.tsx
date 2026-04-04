@@ -13,6 +13,7 @@ interface ProductCardProps {
   rating: number
   reviews: number
   index: number
+  stock?: number
 }
 
 export function ProductCard({
@@ -23,6 +24,7 @@ export function ProductCard({
   rating,
   reviews,
   index,
+  stock,
 }: ProductCardProps) {
   const { addToCart } = useCart()
   const productPath = `/product/${id || title.toLowerCase().replace(/ /g, '-')}`
@@ -30,6 +32,7 @@ export function ProductCard({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (stock === 0) return // Prevent adding if out of stock
     addToCart({
       id: id || title,
       name: title,
@@ -56,18 +59,25 @@ export function ProductCard({
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <motion.div
-            onClick={handleAddToCart}
-            className="absolute bottom-4 left-4 right-4 gold-satin text-white py-4 font-body uppercase tracking-widest text-[10px] font-semibold opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl text-center z-10 cursor-pointer"
+            onClick={stock === 0 ? (e) => e.preventDefault() : handleAddToCart}
+            className={`absolute bottom-4 left-4 right-4 py-4 font-body uppercase tracking-widest text-[10px] font-semibold opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl text-center z-10 ${stock === 0 ? 'bg-[#1c1c18]/40 text-white cursor-not-allowed hidden md:block' : 'gold-satin text-white cursor-pointer'}`}
           >
-            Add to Bag
+            {stock === 0 ? 'Depleted' : 'Add to Bag'}
           </motion.div>
         </div>
 
-        <div className="flex justify-between items-start mb-1">
+        <div className="flex justify-between items-start mb-1 gap-4">
           <h4 className="font-headline text-lg text-[#1c1b1b] hover:text-[#a3851a] transition-colors">{title}</h4>
-          <span className="font-body text-sm font-semibold text-[#1c1b1b]">
-            {price}
-          </span>
+          <div className="text-right shrink-0">
+             <span className="font-body text-sm font-semibold text-[#1c1b1b] block">
+               {price}
+             </span>
+             {stock !== undefined && (
+               <span className={`font-body text-[9px] uppercase tracking-tighter ${stock === 0 ? 'text-red-500 font-bold' : stock < 5 ? 'text-amber-500 animate-pulse' : 'text-[#747878]'}`}>
+                 {stock === 0 ? 'Out of Stock' : `${stock} pieces left`}
+               </span>
+             )}
+          </div>
         </div>
 
         <div className="flex items-center gap-1 mb-2">

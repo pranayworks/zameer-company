@@ -401,10 +401,49 @@ function AccountContent() {
                                <span className="text-[9px] uppercase tracking-widest text-[#a3851a] font-bold">Order #{order.order_id}</span>
                                <h4 className="font-headline text-3xl mb-4 mt-2">{order.product_name}</h4>
                                <div className="mb-12">
-                                  <div className="flex justify-between mb-2">
-                                     <span className="text-[10px] font-bold uppercase">{order.order_status}</span>
+                                  <div className="flex justify-between mb-6">
+                                     <span className="text-[10px] font-bold uppercase tracking-widest text-[#a3851a]">Shipment Progress</span>
+                                     <span className="text-[10px] font-body text-[#747878] uppercase tracking-widest">Tracking ID: {order.tracking_id || 'TBA'}</span>
                                   </div>
-                                  <div className="w-full h-[2px] bg-[#1c1c18]/10 relative"><motion.div animate={{ width: order.order_status === 'Preparing' ? '30%' : order.order_status === 'Dispatched' ? '65%' : '90%' }} className="absolute inset-0 bg-[#a3851a]" /></div>
+                                  
+                                  <div className="relative pt-8 pb-4">
+                                     {/* Progress Line */}
+                                     <div className="absolute top-8 left-0 w-full h-[1px] bg-[#1c1c18]/10" />
+                                     <motion.div 
+                                       initial={{ width: 0 }}
+                                       animate={{ width: 
+                                         order.order_status === 'Preparing' ? '25%' : 
+                                         order.order_status === 'Dispatched' ? '50%' : 
+                                         order.order_status === 'Out for Delivery' ? '75%' : 
+                                         order.order_status === 'Delivered' ? '100%' : '10%' 
+                                       }} 
+                                       className="absolute top-8 left-0 h-[1px] bg-[#a3851a]" 
+                                     />
+
+                                     {/* Milestones */}
+                                     <div className="relative flex justify-between">
+                                        {[
+                                          { id: 'Confirmed', label: 'Placed', icon: 'check_circle' },
+                                          { id: 'Preparing', label: 'Atelier', icon: 'auto_fix_high' },
+                                          { id: 'Dispatched', label: 'Transit', icon: 'local_shipping' },
+                                          { id: 'Delivered', label: 'Received', icon: 'inventory_2' }
+                                        ].map((step, idx) => {
+                                          const statuses = ['Confirmed', 'Preparing', 'Dispatched', 'Delivered']
+                                          const currentIdx = statuses.indexOf(order.order_status)
+                                          const isDone = idx <= (currentIdx === -1 ? 0 : currentIdx)
+                                          
+                                          return (
+                                            <div key={step.id} className="flex flex-col items-center gap-3">
+                                               <div className={`w-3 h-3 rounded-full border-2 transition-colors duration-500 ${isDone ? 'bg-[#a3851a] border-[#a3851a]' : 'bg-white border-[#1c1c18]/10'}`} />
+                                               <div className="flex flex-col items-center">
+                                                  <span className={`material-symbols-outlined text-lg mb-1 ${isDone ? 'text-[#a3851a]' : 'text-[#1c1c18]/10'}`}>{step.icon}</span>
+                                                  <span className={`text-[8px] uppercase tracking-widest font-bold ${isDone ? 'text-[#1c1c18]' : 'text-[#747878]'}`}>{step.label}</span>
+                                               </div>
+                                            </div>
+                                          )
+                                        })}
+                                     </div>
+                                  </div>
                                </div>
                                <div className="flex flex-wrap gap-4">
                                   <button onClick={() => setSelectedInvoiceOrder(order)} className="bg-[#1c1c18] text-white px-6 py-3 text-[9px] uppercase tracking-widest font-bold">View Invoice</button>

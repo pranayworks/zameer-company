@@ -586,8 +586,66 @@ export default function CheckoutPage() {
                 className="flex flex-col sm:flex-row gap-4 w-full"
               >
                 <button
-                  onClick={() => router.push('/account?tab=orders')}
+                  onClick={async () => {
+                    const jsPDF = (await import('jspdf')).default
+                    const html2canvas = (await import('html2canvas')).default
+                    const doc = new jsPDF()
+                    
+                    doc.setFont("times", "normal")
+                    doc.setFontSize(22)
+                    doc.text("FRIENDS OF 4", 105, 20, { align: 'center' })
+                    doc.setFontSize(10)
+                    doc.text("STYLE OF TRADITION", 105, 28, { align: 'center' })
+                    
+                    doc.setDrawColor(163, 133, 26) // Gold color
+                    doc.line(20, 35, 190, 35)
+                    
+                    doc.setFontSize(14)
+                    doc.text("DIGITAL ACQUISITION RECEIPT", 20, 50)
+                    
+                    doc.setFontSize(10)
+                    doc.text(`Order ID: ${orderId}`, 20, 60)
+                    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 65)
+                    doc.text(`Customer: ${profile?.name}`, 20, 70)
+                    doc.text(`Email: ${profile?.email}`, 20, 75)
+                    doc.text(`Address: ${profile?.address}`, 20, 80)
+                    
+                    let y = 100
+                    doc.setFontSize(12)
+                    doc.text("Item Details", 20, y)
+                    y += 10
+                    doc.line(20, y, 190, y)
+                    y += 10
+                    
+                    doc.setFontSize(10)
+                    cart.forEach(item => {
+                      doc.text(`${item.name} (${item.quantity})`, 20, y)
+                      const price = typeof item.price === 'string' ? item.price : `₹${item.price.toLocaleString()}`
+                      doc.text(price, 170, y, { align: 'right' })
+                      y += 10
+                    })
+                    
+                    y += 10
+                    doc.line(20, y, 190, y)
+                    y += 10
+                    doc.setFontSize(14)
+                    doc.text("TOTAL PAYABLE", 20, y)
+                    doc.text(`₹${subtotal.toLocaleString('en-IN')}`, 170, y, { align: 'right' })
+                    
+                    doc.setFontSize(8)
+                    doc.setTextColor(150, 150, 150)
+                    doc.text("Thank you for choosing Friends of 4. This is a computer-generated digital receipt.", 105, 280, { align: 'center' })
+                    
+                    doc.save(`FriendsOf4_Receipt_${orderId || 'ORD'}.pdf`)
+                  }}
                   className="flex-1 gold-satin text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                >
+                  <span className="material-symbols-outlined text-sm">download</span>
+                  Download Digital Receipt
+                </button>
+                <button
+                  onClick={() => router.push('/account?tab=orders')}
+                  className="flex-1 border border-[#1c1c18]/20 text-[#1c1c18] py-5 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#1c1c18]/5 transition-all flex items-center justify-center gap-3"
                 >
                   <span className="material-symbols-outlined text-sm">history</span>
                   View My Orders

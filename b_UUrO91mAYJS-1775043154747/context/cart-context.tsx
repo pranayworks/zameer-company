@@ -163,10 +163,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Get user profile for order details including address
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
+      const orderedItems = [];
+      let totalAmount = 0;
+      const checkoutOrderId = `ORD-${Math.floor(Math.random() * 1000000)}`;
+
       for (const item of cart) {
         const price = typeof item.price === 'string' 
           ? parseFloat(item.price.replace('₹', '').replace(',', '')) 
           : item.price;
+
+        totalAmount += price * item.quantity;
+        orderedItems.push({
+          name: item.name,
+          price: price,
+          quantity: item.quantity,
+          selectedSize: item.selectedSize,
+          selectedColor: item.selectedColor
+        });
 
         const orderEntry = {
           user_id: userId,
@@ -178,7 +191,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           size: item.selectedSize || 'Standard',
           color: item.selectedColor || 'Default',
           price: price,
-          order_id: `ORD-${Math.floor(Math.random() * 1000000)}`,
+          order_id: checkoutOrderId,
           order_status: 'Preparing',
           payment_status: 'Paid'
         };
@@ -187,7 +200,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         
         if (!error) {
            // 🚨 CRITICAL: Decrement Stock in the Atelier Vault
-           // We use an RPC call or a simple update for now, but update is faster for this implementation
            const { data: pData } = await supabase.from('products').select('stock').eq('id', item.id).single();
            if (pData) {
              const newStock = Math.max(0, (pData.stock || 0) - item.quantity);
@@ -196,6 +208,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
            // Send Instant Mobile Alert to Admin
            await sendAdminNotification(orderEntry);
+        }
+      }
+
+      // --- SEND CLIENT INVOICE EMAIL ---
+      if (profile?.email) {
+        try {
+          await fetch('/api/send-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: profile.email,
+              name: profile.name || 'Valued Customer',
+              orderId: checkoutOrderId,
+              items: orderedItems,
+              total: totalAmount
+            })
+          });
+        } catch (e) {
+          console.error("Invoice dispatch failed.", e);
         }
       }
 

@@ -43,6 +43,9 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [communityReviews, setCommunityReviews] = useState<any[]>([])
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false)
+  const [notifyEmail, setNotifyEmail] = useState('')
+  const [isSubmittingNotify, setIsSubmittingNotify] = useState(false)
 
   useEffect(() => {
     fetchProductAndRelated()
@@ -314,24 +317,35 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex gap-4 mb-12">
-                <button 
-                   onClick={handleAddToCart}
-                   disabled={product.stock === 0}
-                   className={`flex-1 ${product.stock === 0 ? 'bg-[#1c1c18]/20 cursor-not-allowed text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold transition-all`}
-                >
-                  {product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}
-                </button>
-                <button 
-                  onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))}
-                  className={`p-6 border border-[#1c1c18]/10 transition-all flex items-center justify-center ${product && isInWishlist(product.id) ? 'bg-red-50 text-red-500 border-red-200' : 'hover:bg-[#1c1c18] hover:text-white'}`}
-                >
-                  <span className={`material-symbols-outlined text-2xl ${product && isInWishlist(product.id) ? 'fill-1' : ''}`} style={{ fontVariationSettings: product && isInWishlist(product.id) ? "'FILL' 1" : "'FILL' 0" }}>
-                    favorite
-                  </span>
-                </button>
-              </div>
+                <div className="flex flex-col gap-4 mb-12">
+                  <div className="flex gap-4">
+                    <button 
+                       onClick={handleAddToCart}
+                       disabled={product.stock === 0}
+                       className={`flex-1 ${product.stock === 0 ? 'bg-[#1c1c18]/20 cursor-not-allowed text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold transition-all`}
+                    >
+                      {product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}
+                    </button>
+                    <button 
+                      onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))}
+                      className={`p-6 border border-[#1c1c18]/10 transition-all flex items-center justify-center ${product && isInWishlist(product.id) ? 'bg-red-50 text-red-500 border-red-200' : 'hover:bg-[#1c1c18] hover:text-white'}`}
+                    >
+                      <span className={`material-symbols-outlined text-2xl ${product && isInWishlist(product.id) ? 'fill-1' : ''}`} style={{ fontVariationSettings: product && isInWishlist(product.id) ? "'FILL' 1" : "'FILL' 0" }}>
+                        favorite
+                      </span>
+                    </button>
+                  </div>
+                  
+                  {product.stock === 0 && (
+                    <button 
+                      onClick={() => setIsNotifyModalOpen(true)}
+                      className="w-full bg-[#1c1c18] text-white py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                    >
+                      <span className="material-symbols-outlined text-sm">notifications</span>
+                      Notify Me When In Stock
+                    </button>
+                  )}
+                </div>
               <button className="w-full border border-[#1c1c18]/10 py-6 font-body uppercase tracking-[0.3em] text-[10px] text-[#1c1c18] hover:bg-[#1c1c18] hover:text-white transition-all mb-16">
                 Find In Boutique
               </button>
@@ -570,6 +584,91 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       </main>
 
       <Footer />
+
+      {/* Notify Me Modal */}
+      <AnimatePresence>
+        {isNotifyModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsNotifyModalOpen(false)}
+              className="fixed inset-0 bg-[#0b0c10]/60 backdrop-blur-sm z-[100] cursor-pointer"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#fdf9f2] p-10 z-[101] shadow-2xl border border-[#1c1c18]/10"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-[#a3851a]/10 rounded-full flex items-center justify-center mx-auto mb-6 text-[#a3851a]">
+                  <span className="material-symbols-outlined text-3xl">notifications_active</span>
+                </div>
+                <h3 className="font-headline text-3xl text-[#1c1c18] mb-4">Back in Stock Notification</h3>
+                <p className="font-body text-xs text-[#747878] mb-8 leading-relaxed uppercase tracking-widest">
+                  We will meticulously alert you as soon as this piece is restored to our atelier archive.
+                </p>
+
+                <div className="space-y-4">
+                  <div className="text-left">
+                    <label className="text-[9px] uppercase tracking-[0.3em] text-[#747878] mb-2 block">Your Email Address</label>
+                    <input 
+                      type="email" 
+                      value={notifyEmail}
+                      onChange={(e) => setNotifyEmail(e.target.value)}
+                      placeholder="concierge@example.com"
+                      className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-xs focus:outline-none focus:border-[#a3851a] transition-colors"
+                    />
+                  </div>
+
+                  <button 
+                    disabled={isSubmittingNotify || !notifyEmail}
+                    onClick={async () => {
+                      setIsSubmittingNotify(true)
+                      try {
+                        const { error } = await supabase.from('stock_notifications').insert({
+                          product_id: product.id,
+                          product_name: product.title,
+                          email: notifyEmail,
+                          status: 'pending'
+                        })
+                        if (error) throw error
+                        alert('Your request has been filed with the atelier.')
+                        setIsNotifyModalOpen(false)
+                        setNotifyEmail('')
+                      } catch (e: any) {
+                        console.error(e)
+                        alert('Our archives are currently busy. Please try again.')
+                      } finally {
+                        setIsSubmittingNotify(false)
+                      }
+                    }}
+                    className="w-full bg-[#1c1c18] text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:bg-[#a3851a] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingNotify ? (
+                      <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-sm">mail</span>
+                        Enroll for Restock Alert
+                      </>
+                    )}
+                  </button>
+
+                  <button 
+                    onClick={() => setIsNotifyModalOpen(false)}
+                    className="text-[9px] uppercase tracking-widest text-[#747878] hover:text-[#1c1c18] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Image Zoom Lightbox */}
       <AnimatePresence>

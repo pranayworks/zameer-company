@@ -151,6 +151,24 @@ export default function CheckoutPage() {
             // 4. Place order in Supabase + send Telegram notification
             setOrderId(response.razorpay_payment_id)
             await placeOrder()
+            
+            // 5. Send confirmation email
+            try {
+              await fetch('/api/send-invoice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: profile.email,
+                  name: profile.name,
+                  orderId: response.razorpay_payment_id,
+                  items: cart,
+                  total: subtotal
+                })
+              })
+            } catch (emailError) {
+              console.error('Failed to trigger confirmation email:', emailError)
+            }
+
             setStep('success')
           } else {
             setStep('address')

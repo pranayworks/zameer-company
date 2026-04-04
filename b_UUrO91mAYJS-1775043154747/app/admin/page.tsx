@@ -234,6 +234,39 @@ export default function AdminPage() {
     video_url: ''
   })
 
+  const [uploading, setUploading] = useState(false)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true)
+      const file = e.target.files?.[0]
+      if (!file) return
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Math.random()}.${fileExt}`
+      const filePath = `products/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-media')
+        .upload(filePath, file)
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-media')
+        .getPublicUrl(filePath)
+
+      setFormData(prev => ({ ...prev, image: publicUrl }))
+      alert("Image uploaded successfully!")
+    } catch (error: any) {
+      alert("Error uploading image: " + error.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   useEffect(() => {
     const checkAdmin = async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -539,20 +572,27 @@ export default function AdminPage() {
                             layout
                             className="bg-white border border-[#1c1c18]/5 p-4 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow relative group"
                           >
-                            <div className="relative w-full aspect-[3/4] bg-[#fdf9f2] overflow-hidden">
-                               <Image src={product.image} alt={product.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
-                               <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <div className="relative w-full aspect-[3/4] bg-[#fdf9f2] overflow-hidden border-b">
+                               <Image 
+                                 src={product.image || '/placeholder.png'} 
+                                 alt={product.title} 
+                                 fill 
+                                 className="object-cover group-hover:scale-105 transition-transform duration-700" 
+                               />
+                               <div className="absolute bottom-2 right-2 flex gap-2">
                                   <button 
                                     onClick={() => handleEdit(product)}
-                                    className="w-8 h-8 bg-white/90 backdrop-blur shadow-sm flex items-center justify-center hover:bg-[#1c1c18] hover:text-white transition-all"
+                                    className="w-10 h-10 bg-white/90 backdrop-blur shadow-md flex items-center justify-center hover:bg-[#1c1c18] hover:text-white transition-all rounded-full"
+                                    title="Edit Product"
                                   >
-                                    <span className="material-symbols-outlined text-[14px]">edit</span>
+                                    <span className="material-symbols-outlined text-[16px]">edit</span>
                                   </button>
                                   <button 
                                     onClick={() => handleDelete(product.id)}
-                                    className="w-8 h-8 bg-white/90 backdrop-blur shadow-sm flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+                                    className="w-10 h-10 bg-white/90 backdrop-blur shadow-md flex items-center justify-center hover:bg-red-500 hover:text-white transition-all rounded-full"
+                                    title="Delete Product"
                                   >
-                                    <span className="material-symbols-outlined text-[14px]">delete</span>
+                                    <span className="material-symbols-outlined text-[16px]">delete</span>
                                   </button>
                                </div>
                             </div>
@@ -838,32 +878,38 @@ export default function AdminPage() {
                          </div>
                          <div className="flex flex-col gap-4">
                              <div>
-                                <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Image URL</label>
+                                <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Product Image</label>
+                                <div className="flex flex-col gap-4">
+                                   <div className="flex gap-4">
+                                      <input 
+                                         type="text" required value={formData.image}
+                                         onChange={e => setFormData({ ...formData, image: e.target.value })}
+                                         className="flex-1 bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
+                                         placeholder="Paste URL or upload below"
+                                      />
+                                      <label className="cursor-pointer bg-[#1c1c18] text-white px-6 py-4 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 hover:bg-[#a3851a] transition-all shrink-0">
+                                         <span className="material-symbols-outlined text-[14px]">{uploading ? 'sync' : 'upload'}</span>
+                                         {uploading ? 'Uploading...' : 'Upload File'}
+                                         <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
+                                      </label>
+                                   </div>
+                                   {formData.image && (
+                                      <div className="relative w-full aspect-[3/2] bg-white border border-[#1c1c18]/5 overflow-hidden rounded-sm">
+                                         <Image src={formData.image} alt="Preview" fill className="object-cover" />
+                                      </div>
+                                   )}
+                                </div>
+                             </div>
+                             <div>
+                                <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Cinematic Reel (MP4 URL)</label>
                                 <input 
-                                   type="text" required value={formData.image}
-                                   onChange={e => setFormData({ ...formData, image: e.target.value })}
+                                   type="text" value={formData.video_url || ''}
+                                   onChange={e => setFormData({ ...formData, video_url: e.target.value })}
                                    className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
-                                   placeholder="/saree_1.png"
+                                   placeholder="e.g https://your-server.com/saree_reel.mp4"
                                 />
                              </div>
-                             {formData.image && (
-                                <div className="relative w-full aspect-[3/2] bg-white border border-[#1c1c18]/5 overflow-hidden">
-                                   <Image src={formData.image} alt="Preview" fill className="object-cover" />
-                                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
-                                      <p className="text-white text-[10px] uppercase tracking-widest font-bold">Image Preview</p>
-                                   </div>
-                                </div>
-                             )}
                           </div>
-                         <div>
-                            <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Cinematic Reel (MP4 URL)</label>
-                            <input 
-                               type="text" value={formData.video_url || ''}
-                               onChange={e => setFormData({ ...formData, video_url: e.target.value })}
-                               className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
-                               placeholder="e.g https://your-server.com/saree_reel.mp4"
-                            />
-                         </div>
                       </div>
 
                       {/* Right: Technical Specs */}

@@ -49,15 +49,15 @@ export default function MenPage() {
 
         <motion.div 
           style={{ opacity }}
-          className="relative z-10 text-left px-24 max-w-4xl"
+          className="relative z-10 text-left px-6 md:px-24 max-w-4xl"
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
         >
-          <span className="font-body uppercase tracking-[0.4em] text-[10px] text-white/80 mb-6 block">
+          <span className="font-body uppercase tracking-[0.4em] text-[8px] md:text-[10px] text-white/80 mb-6 block font-bold">
             Seasonal Selection
           </span>
-          <h1 className="font-headline text-[120px] text-white tracking-tighter leading-[0.8] mb-12">
+          <h1 className="font-headline text-[60px] md:text-[120px] text-white tracking-tighter leading-[0.8] mb-12">
             The Modern <br /> Gentleman
           </h1>
           <motion.div 
@@ -72,21 +72,20 @@ export default function MenPage() {
         </motion.div>
       </section>
 
-      {/* Filters Bar */}
-      <div className="sticky top-[80px] z-30 bg-[#fdf9f2]/80 backdrop-blur-lg border-y border-[#1c1c18]/5">
-        <div className="max-w-[1920px] mx-auto px-12 py-6 flex justify-between items-center text-[10px] font-body uppercase tracking-widest">
-          <div className="flex gap-12">
-            <button className="hover:text-[#a3851a] transition-colors flex items-center gap-2">
-              Filter By Category <span className="material-symbols-outlined text-[14px]">expand_more</span>
+      <div className="sticky top-[70px] md:top-[80px] z-30 bg-[#fdf9f2]/80 backdrop-blur-lg border-y border-[#1c1c18]/5">
+        <div className="max-w-[1920px] mx-auto px-6 md:px-12 py-4 md:py-6 flex flex-col md:flex-row justify-between items-center text-[9px] md:text-[10px] font-body uppercase tracking-widest gap-4 md:gap-0">
+          <div className="flex gap-8 md:gap-12">
+            <button className="hover:text-[#a3851a] transition-colors flex items-center gap-2 font-bold">
+              Filter <span className="material-symbols-outlined text-[14px]">expand_more</span>
             </button>
-            <button className="hover:text-[#a3851a] transition-colors flex items-center gap-2">
+            <button className="hover:text-[#a3851a] transition-colors flex items-center gap-2 font-bold">
               Size <span className="material-symbols-outlined text-[14px]">expand_more</span>
             </button>
           </div>
-          <div className="flex gap-12">
-            <span className="text-[#c1bdb6]">Showing 12 / 148 items</span>
-            <button className="hover:text-[#a3851a] transition-colors flex items-center gap-2">
-              Sort By <span className="material-symbols-outlined text-[14px]">expand_more</span>
+          <div className="flex gap-8 md:gap-12">
+            <span className="text-[#c1bdb6] hidden sm:inline">12 / 148 items</span>
+            <button className="hover:text-[#a3851a] transition-colors flex items-center gap-2 font-bold">
+              Sort <span className="material-symbols-outlined text-[14px]">expand_more</span>
             </button>
           </div>
         </div>

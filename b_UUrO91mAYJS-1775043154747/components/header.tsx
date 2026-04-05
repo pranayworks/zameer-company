@@ -39,8 +39,8 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 glass-header">
-      <nav className="flex justify-between items-center w-full px-6 md:px-12 py-4 md:py-6 max-w-[1920px] mx-auto">
+      <header className="fixed top-0 left-0 right-0 z-[100] glass-header">
+      <nav className="flex justify-between items-center w-full px-4 md:px-12 py-3 md:py-6 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-4 md:gap-12">
           {/* Mobile Hamburger Button */}
           <button 
@@ -64,12 +64,12 @@ export function Header() {
             </motion.div>
             <motion.div
                whileHover={{ x: 2 }}
-               className="flex flex-col"
+               className="flex flex-col max-w-[120px] sm:max-w-none"
             >
-              <span className="text-xl md:text-2xl font-headline tracking-tight text-[#1c1b1b] leading-none mb-1">
+              <span className="text-sm sm:text-xl md:text-2xl font-headline tracking-tight text-[#1c1b1b] leading-tight mb-0.5 truncate sm:overflow-visible">
                 Style Of Traditionals
               </span>
-              <span className="text-[10px] md:text-xs font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none">
+              <span className="text-[8px] md:text-xs font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none">
                 Friends of 4
               </span>
             </motion.div>
@@ -95,7 +95,7 @@ export function Header() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 md:gap-6 ml-auto">
           <motion.button 
              onClick={() => setIsSearchOpen(true)}
              className="text-[#1c1b1b] hover:text-[#a3851a] transition-colors"
@@ -140,7 +140,7 @@ export function Header() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <span className="material-symbols-outlined text-2xl">person</span>
+              <span className="material-symbols-outlined text-xl md:text-2xl">person</span>
             </motion.div>
           </Link>
         </div>

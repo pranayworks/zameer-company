@@ -20,12 +20,12 @@ export function FeaturedProducts() {
   }, [])
 
   return (
-    <section ref={ref} className="py-24 px-12 max-w-[1920px] mx-auto bg-[#fdf9f2]">
+    <section ref={ref} className="py-16 md:py-24 px-6 md:px-12 max-w-[1920px] mx-auto bg-[#fdf9f2]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.6 }}
-        className="flex justify-between items-end mb-16"
+        className="flex justify-between items-end mb-12 md:mb-16"
       >
         <div>
           <span className="font-body uppercase tracking-widest text-xs text-[#735c00] mb-2 block">

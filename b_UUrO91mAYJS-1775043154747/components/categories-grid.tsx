@@ -57,23 +57,23 @@ export function CategoriesGrid() {
   }
 
   return (
-    <section ref={ref} className="py-24 px-12 max-w-[1920px] mx-auto bg-[#f7f3ec]">
+    <section ref={ref} className="py-16 md:py-24 px-6 md:px-12 max-w-[1920px] mx-auto bg-[#f7f3ec]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.6 }}
-        className="mb-16 flex flex-col items-center"
+        className="mb-12 md:mb-16 flex flex-col items-center"
       >
-        <span className="font-body uppercase tracking-widest text-xs text-[#735c00] mb-2 block">
+        <span className="font-body uppercase tracking-widest text-[10px] md:text-xs text-[#735c00] mb-2 block">
           Curated Collections
         </span>
-        <h2 className="font-headline text-4xl text-[#1c1b1b] italic text-center">
+        <h2 className="font-headline text-3xl md:text-4xl text-[#1c1b1b] italic text-center">
           Shop by Category
         </h2>
       </motion.div>
 
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-6 h-auto md:h-[900px]"
+        className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 md:gap-6 h-auto md:h-[900px]"
         variants={containerVariants}
         initial="hidden"
         animate={inView ? 'visible' : 'hidden'}

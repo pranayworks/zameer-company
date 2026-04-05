@@ -46,18 +46,18 @@ export default function WomenPage() {
           <div className="absolute inset-0 bg-white/5" />
         </motion.div>
 
-        <div className="relative z-10 max-w-[1920px] mx-auto w-full px-12 md:px-24 flex justify-end">
+        <div className="relative z-10 max-w-[1920px] mx-auto w-full px-6 md:px-24 flex justify-end">
           <motion.div 
             style={{ opacity }}
-            className="bg-white/40 backdrop-blur-md p-16 border border-white/50 shadow-2xl md:w-1/2 lg:w-2/5"
+            className="bg-white/40 backdrop-blur-md p-8 md:p-16 border border-white/50 shadow-2xl w-full md:w-1/2 lg:w-2/5"
             initial={{ opacity: 0, x: 80 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="font-body uppercase tracking-[0.6em] text-[10px] text-[#1c1c18] mb-6 block">
+            <span className="font-body uppercase tracking-[0.6em] text-[8px] md:text-[10px] text-[#1c1c18] mb-6 block font-bold">
               Autumn / Winter &apos;24
             </span>
-            <h1 className="font-headline text-8xl md:text-9xl text-[#1c1c18] leading-[0.85] mb-10 tracking-tighter">
+            <h1 className="font-headline text-[50px] sm:text-[70px] md:text-8xl lg:text-9xl text-[#1c1c18] leading-[0.85] mb-10 tracking-tighter">
               Timeless <br /> Femininity
             </h1>
             <p className="font-body text-[#1c1c18] text-sm mb-12 max-w-sm leading-relaxed font-semibold">
@@ -74,19 +74,18 @@ export default function WomenPage() {
         </div>
       </section>
 
-      {/* Categories Bar */}
-      <div className="sticky top-[80px] z-30 bg-[#fdf9f2]/90 backdrop-blur-xl border-b border-[#1c1c18]/10">
-        <div className="max-w-[1920px] mx-auto px-12 py-8 flex justify-between items-center text-[10px] font-body uppercase tracking-[0.2em]">
-          <div className="flex gap-16">
+      <div className="sticky top-[70px] md:top-[80px] z-30 bg-[#fdf9f2]/90 backdrop-blur-xl border-b border-[#1c1c18]/10">
+        <div className="max-w-[1920px] mx-auto px-6 md:px-12 py-4 md:py-8 flex justify-between items-center text-[9px] md:text-[10px] font-body uppercase tracking-[0.2em]">
+          <div className="flex gap-6 md:gap-16 overflow-x-auto scrollbar-hide">
             {['All Items', 'Dresses', 'Blouses', 'Trousers', 'Knitwear'].map((cat) => (
-              <button key={cat} className="hover:text-[#a3851a] transition-colors relative group">
+              <button key={cat} className="hover:text-[#a3851a] transition-colors relative group whitespace-nowrap font-bold">
                 {cat}
                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a3851a] transition-all group-hover:w-full" />
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-2 font-semibold">
-            Filter & Sort <span className="material-symbols-outlined text-sm">tune</span>
+          <button className="flex items-center gap-2 font-bold ml-4">
+             <span className="material-symbols-outlined text-sm">tune</span>
           </button>
         </div>
       </div>

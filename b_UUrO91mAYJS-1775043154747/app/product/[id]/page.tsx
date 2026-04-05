@@ -242,18 +242,28 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                <AnimatePresence mode='wait'>
                  <motion.div 
                    key={currentImageIndex}
-                   initial={{ opacity: 0, x: 100 }}
+                   initial={{ opacity: 0, x: 20 }}
                    animate={{ opacity: 1, x: 0 }}
-                   exit={{ opacity: 0, x: -100 }}
-                   transition={{ duration: 0.5, ease: "easeInOut" }}
+                   exit={{ opacity: 0, x: -20 }}
+                   transition={{ duration: 0.4, ease: "easeOut" }}
                    className="absolute inset-0 cursor-zoom-in"
                    onClick={() => setZoomedImage(allImages[currentImageIndex])}
+                   drag="x"
+                   dragConstraints={{ left: 0, right: 0 }}
+                   dragElastic={0.2}
+                   onDragEnd={(_, info) => {
+                     if (info.offset.x > 50) {
+                       setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
+                     } else if (info.offset.x < -50) {
+                       setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
+                     }
+                   }}
                  >
                    <Image
                      src={allImages[currentImageIndex] || '/placeholder.jpg'}
                      alt={`${product.title} - View ${currentImageIndex + 1}`}
                      fill
-                     className="object-cover group-hover:scale-105 transition-transform duration-1000"
+                     className="object-cover group-hover:scale-105 transition-transform duration-1000 select-none pointer-events-none"
                      priority
                    />
                  </motion.div>
@@ -262,22 +272,22 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                {/* Carousel Controls */}
                {allImages.length > 1 && (
                  <>
-                   <div className="absolute inset-y-0 left-4 flex items-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="absolute inset-y-0 left-4 flex items-center z-10 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                      <button 
                        onClick={() => {
                          setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
                        }}
-                       className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg"
+                       className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg text-[#1c1c18]"
                      >
                        <span className="material-symbols-outlined">chevron_left</span>
                      </button>
                    </div>
-                   <div className="absolute inset-y-0 right-4 flex items-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="absolute inset-y-0 right-4 flex items-center z-10 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                      <button 
                        onClick={() => {
                          setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
                        }}
-                       className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg"
+                       className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg text-[#1c1c18]"
                      >
                        <span className="material-symbols-outlined">chevron_right</span>
                      </button>
@@ -639,19 +649,20 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
              </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="flex lg:grid overflow-x-auto lg:overflow-visible gap-8 lg:gap-12 pb-12 lg:pb-0 snap-x scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 lg:grid-cols-3">
              {relatedProducts.map((item, i) => (
-                <ProductCard 
-                  key={item.id} 
-                  id={item.id}
-                  title={item.title}
-                  price={typeof item.price === 'number' ? `₹${item.price.toLocaleString()}` : item.price}
-                  image={item.image}
-                  rating={item.rating || 5}
-                  reviews={item.reviews || 0}
-                  stock={item.stock}
-                  index={i} 
-                />
+                <div key={item.id} className="min-w-[280px] lg:min-w-0 snap-center">
+                  <ProductCard 
+                    id={item.id}
+                    title={item.title}
+                    price={typeof item.price === 'number' ? `₹${item.price.toLocaleString()}` : item.price}
+                    image={item.image}
+                    rating={item.rating || 5}
+                    reviews={item.reviews || 0}
+                    stock={item.stock}
+                    index={i} 
+                  />
+                </div>
              ))}
           </div>
         </section>
@@ -666,14 +677,14 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
              </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="flex lg:grid overflow-x-auto lg:overflow-visible gap-6 lg:gap-8 pb-12 lg:pb-0 snap-x scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 lg:grid-cols-4">
             {/* Real Community Stories first */}
             {communityReviews.map((rev, i) => (
                <motion.div 
                  key={rev.id}
                  whileHover={{ y: -10 }}
                  transition={{ delay: i * 0.1 }}
-                 className="aspect-[3/4] bg-[#1c1c18]/5 relative overflow-hidden group shadow-lg"
+                 className="min-w-[240px] md:min-w-[300px] lg:min-w-0 aspect-[3/4] bg-[#1c1c18]/5 relative overflow-hidden group shadow-lg snap-center"
                >
                   <Image src={rev.image_url || '/placeholder.svg'} alt={rev.user_name || 'Community Member'} fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700" />
                   <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent translate-y-4 group-hover:translate-y-0 transition-transform duration-500">

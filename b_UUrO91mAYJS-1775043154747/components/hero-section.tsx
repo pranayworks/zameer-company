@@ -26,9 +26,9 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-[900px] lg:h-[1024px] w-full pt-32 pb-24 overflow-hidden bg-[#0a0a0a]">
+    <section className="relative min-h-[700px] md:min-h-[900px] lg:h-[1024px] w-full pt-20 md:pt-32 pb-16 md:pb-24 overflow-hidden bg-[#0a0a0a]">
       <motion.div
-        className="relative z-10 h-full flex flex-col-reverse lg:flex-row items-center justify-between px-8 md:px-12 lg:px-24 max-w-[1920px] mx-auto gap-16 lg:gap-8"
+        className="relative z-10 h-full flex flex-col-reverse lg:flex-row items-center justify-between px-6 md:px-12 lg:px-24 max-w-[1920px] mx-auto gap-8 lg:gap-8"
         variants={containerVariants}
         initial="hidden"
         animate="visible"

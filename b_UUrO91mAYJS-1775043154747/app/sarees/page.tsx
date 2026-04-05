@@ -25,20 +25,20 @@ export default function SareesPage() {
 
       {/* Hero Section */}
       <section className="relative h-[85vh] w-full pt-20 flex flex-col justify-center overflow-hidden">
-        <div className="max-w-[1920px] mx-auto w-full px-12 md:px-24 grid lg:grid-cols-2 items-center gap-16 relative">
+        <div className="max-w-[1920px] mx-auto w-full px-6 md:px-24 grid lg:grid-cols-2 items-center gap-12 lg:gap-16 relative">
           <motion.div 
-            className="z-10"
+            className="z-10 text-center lg:text-left"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2 }}
           >
-            <span className="font-body uppercase tracking-[0.4em] text-[10px] text-[#1c1c18]/40 mb-6 block">
+            <span className="font-body uppercase tracking-[0.4em] text-[8px] md:text-[10px] text-[#1c1c18]/40 mb-6 block font-bold">
               Legacy Collection
             </span>
-            <h1 className="font-headline text-8xl md:text-9xl text-[#1c1c18] leading-none mb-10 tracking-tighter">
-              The Drape <br /> of <br /> Heritage
+            <h1 className="font-headline text-[50px] sm:text-[70px] md:text-8xl lg:text-9xl text-[#1c1c18] leading-[0.9] mb-10 tracking-tighter">
+              The Drape <br className="hidden md:block" /> of <br className="hidden md:block" /> Heritage
             </h1>
-            <p className="font-body text-[#1c1c18]/70 text-sm mb-12 max-w-sm leading-relaxed">
+            <p className="font-body text-[#1c1c18]/70 text-sm mb-12 max-w-sm mx-auto lg:mx-0 leading-relaxed font-medium">
               In this archive, the saree is a story of 5,000 years, curated for the modern connoisseur of fine handloom and artisanal weave.
             </p>
             <motion.button 
@@ -111,28 +111,28 @@ export default function SareesPage() {
       </section>
 
       {/* Mastering The Nivi Section */}
-      <section className="bg-white py-32 overflow-hidden border-y border-[#1c1c18]/5">
-         <div className="max-w-[1920px] mx-auto px-12 flex flex-col-reverse lg:flex-row items-center gap-24">
+      <section className="bg-white py-24 md:py-32 overflow-hidden border-y border-[#1c1c18]/5">
+         <div className="max-w-[1920px] mx-auto px-6 md:px-12 flex flex-col-reverse lg:flex-row items-center gap-16 lg:gap-24">
             <motion.div 
-              className="w-full lg:w-1/2 aspect-video bg-black relative flex items-center justify-center group"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              transition={{ duration: 1 }}
+               className="w-full lg:w-1/2 aspect-video bg-black relative flex items-center justify-center group"
+               initial={{ opacity: 0 }}
+               whileInView={{ opacity: 1 }}
+               transition={{ duration: 1 }}
             >
                <span className="material-symbols-outlined text-white text-6xl opacity-30 group-hover:opacity-100 transition-opacity cursor-pointer">play_circle</span>
             </motion.div>
             
-            <div className="w-full lg:w-1/2">
-                <span className="font-body uppercase tracking-[0.4em] text-[10px] text-[#a3851a] mb-8 block"> The Atelier Series </span>
-                <h3 className="font-headline text-6xl text-[#1c1c18] mb-10 leading-tight">Mastering the Art of <br /> The Nivi Drape</h3>
-                <p className="font-body text-[#747878] text-sm leading-relaxed mb-12 max-w-lg">
+            <div className="w-full lg:w-1/2 text-center lg:text-left">
+                <span className="font-body uppercase tracking-[0.4em] text-[10px] text-[#a3851a] mb-8 block font-bold"> The Atelier Series </span>
+                <h3 className="font-headline text-4xl md:text-6xl text-[#1c1c18] mb-10 leading-tight">Mastering the Art of <br /> The Nivi Drape</h3>
+                <p className="font-body text-[#747878] text-sm leading-relaxed mb-12 max-w-lg mx-auto lg:mx-0 font-medium">
                   Draping a saree is more than just wearing a garment; it is a ritual. Join our master stylist as she guides you through the nuances of the classic Nivi drape, ensuring every pleat is in place and your pallu breathes elegance.
                 </p>
-                <div className="space-y-6">
+                <div className="space-y-6 flex flex-col items-center lg:items-start">
                     {['1. THE PERFECT FOUNDATION TUCK', '2. PRECISION PLEATING TECHNIQUE', '3. THE PALLU: FLOW & STRENGTH'].map((step, i) => (
                          <div key={i} className="flex items-center gap-6 group cursor-pointer">
                             <span className="font-headline text-xl text-[#a3851a]">{String(i+1).padStart(2, '0')}.</span>
-                            <span className="font-body uppercase tracking-widest text-[9px] group-hover:text-[#a3851a] transition-all">{step}</span>
+                            <span className="font-body uppercase tracking-widest text-[9px] group-hover:text-[#a3851a] transition-all font-bold">{step}</span>
                          </div>
                     ))}
                 </div>
@@ -148,7 +148,7 @@ export default function SareesPage() {
             transition={{ duration: 1.2 }}
             className="relative z-10"
           >
-             <h2 className="font-headline text-7xl text-[#fdf9f2] mb-12 tracking-tighter">The Soul of <br /> The Weaver</h2>
+             <h2 className="font-headline text-5xl md:text-7xl text-[#fdf9f2] mb-12 tracking-tighter">The Soul of <br /> The Weaver</h2>
              <p className="font-body text-[#fdf9f2]/60 text-sm mb-16 max-w-xl mx-auto leading-relaxed italic">
                Every thread in our Banarasi collection is hand-twisted and dip-dyed in small batches. It takes six months and two master weavers to complete a single six-yard archive masterpiece.
              </p>

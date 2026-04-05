@@ -24,7 +24,7 @@ export default function JewelleryPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative h-[95vh] w-full pt-20 flex flex-col justify-center overflow-hidden">
+      <section className="relative h-[80vh] md:h-[95vh] w-full pt-20 flex flex-col justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
             src="/emerald_choker.png"
@@ -33,23 +33,23 @@ export default function JewelleryPage() {
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-black/50" />
         </div>
         
-        <div className="max-w-[1920px] mx-auto w-full px-12 md:px-24 grid items-center relative z-10">
+        <div className="max-w-[1920px] mx-auto w-full px-6 md:px-24 grid items-center relative z-10">
           <motion.div 
             className="text-center"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="font-body uppercase tracking-[0.8em] text-[10px] text-[#a3851a] mb-10 block drop-shadow-lg"> Collection: Vintage & Bespoke </span>
-            <h1 className="font-headline text-[100px] md:text-[180px] text-white leading-none mb-12 tracking-tighter drop-shadow-2xl">
+            <span className="font-body uppercase tracking-[0.5em] md:tracking-[0.8em] text-[8px] md:text-[10px] text-[#e2bb53] mb-6 md:mb-10 block drop-shadow-lg font-bold"> Collection: Vintage & Bespoke </span>
+            <h1 className="font-headline text-[50px] sm:text-[70px] md:text-[120px] lg:text-[180px] text-white leading-[0.9] mb-8 md:mb-12 tracking-tighter drop-shadow-2xl">
               The Fine <br /> Ornament
             </h1>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-10">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
                 <motion.button 
-                  className="bg-[#a3851a] text-white px-16 py-6 font-body uppercase tracking-widest text-[10px] shadow-2xl hover:bg-white hover:text-black transition-all"
+                  className="bg-[#a3851a] text-white px-10 md:px-16 py-4 md:py-6 font-body uppercase tracking-widest text-[9px] md:text-[10px] shadow-2xl hover:bg-white hover:text-black transition-all font-bold"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -62,14 +62,13 @@ export default function JewelleryPage() {
         </div>
       </section>
 
-      {/* Curated Selections Bar */}
       <div className="border-b border-[#1c1c18]/5">
-        <div className="max-w-[1920px] mx-auto px-12 py-10 flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="md:w-1/3">
+        <div className="max-w-[1920px] mx-auto px-6 md:px-12 py-10 flex flex-col lg:flex-row justify-between items-center gap-8">
+            <div className="w-full lg:w-1/3 text-center lg:text-left">
                 <h2 className="font-headline text-3xl mb-4">Curated Selections</h2>
                 <p className="font-body text-[#747878] text-[11px] leading-relaxed italic">Each piece is meticulously restored or handcrafted, a timeless narrative of craftsmanship. Curated for the contemporary silhouette.</p>
             </div>
-            <div className="flex gap-12 font-body uppercase tracking-[0.2em] text-[9px] text-[#747878]">
+            <div className="flex flex-wrap justify-center gap-6 md:gap-12 font-body uppercase tracking-[0.2em] text-[9px] text-[#747878]">
                 {['Necklaces', 'Earrings', 'Bracelets', 'Rings'].map((cat) => (
                     <button key={cat} className="hover:text-[#a3851a] transition-colors">{cat}</button>
                 ))}
@@ -78,7 +77,7 @@ export default function JewelleryPage() {
       </div>
 
       {/* Product Grid */}
-      <section className="max-w-[1920px] mx-auto px-12 py-32">
+      <section className="max-w-[1920px] mx-auto px-6 md:px-12 py-16 md:py-32">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-24">
             {jewelleryProducts.map((product, index) => (
                 <ProductCard 
@@ -97,8 +96,8 @@ export default function JewelleryPage() {
       </section>
 
       {/* Personalized Curation Section */}
-      <section className="bg-white py-40 border-y border-[#1c1c18]/5">
-         <div className="max-w-[1920px] mx-auto px-12 flex flex-col md:flex-row items-center gap-32">
+      <section className="bg-white py-24 md:py-40 border-y border-[#1c1c18]/5">
+         <div className="max-w-[1920px] mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
              <div className="w-full md:w-1/2 aspect-[4/5] bg-[#f1ede6] relative shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden">
                  <Image
                     src="/jewelry_story.png"
@@ -119,13 +118,13 @@ export default function JewelleryPage() {
       </section>
 
       {/* Jewelry Care */}
-      <section className="py-40 px-12 max-w-[1920px] mx-auto">
-         <div className="flex flex-col md:flex-row justify-between gap-24 mb-24 items-end">
-             <h2 className="font-headline text-5xl md:text-6xl text-[#1c1c18] tracking-tighter shrink-0">Jewelry Care <br /> Essentials</h2>
+      <section className="py-24 md:py-40 px-6 md:px-12 max-w-[1920px] mx-auto">
+         <div className="flex flex-col md:flex-row justify-between gap-12 md:gap-24 mb-16 md:mb-24 items-start md:items-end">
+             <h2 className="font-headline text-4xl md:text-5xl lg:text-6xl text-[#1c1c18] tracking-tighter shrink-0">Jewelry Care <br /> Essentials</h2>
              <p className="font-body text-[#747878] text-xs max-w-md leading-relaxed italic">The jewelry in our archive is meant to last lifetimes. Proper maintenance ensures each piece remains as radiant as the day it was constructed.</p>
          </div>
          
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-12">
              {careSteps.map((step, i) => (
                  <div key={i} className="group border-l border-[#1c1c18]/5 pl-8 hover:border-[#a3851a] transition-all">
                       <span className="font-headline text-2xl text-[#a3851a] mb-6 block leading-none">{step.id}</span>

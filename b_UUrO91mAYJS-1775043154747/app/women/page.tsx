@@ -21,10 +21,15 @@ export default function WomenPage() {
     fetchWomenProducts()
   }, [])
   const heroRef = useRef(null)
+  const productsRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start'],
   })
+
+  const scrollToProducts = () => {
+    productsRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '20%'])
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
@@ -64,6 +69,7 @@ export default function WomenPage() {
               A curated selection of luxury womenswear where heritage craft meets minimalist silhouettes for the modern woman.
             </p>
             <motion.button 
+              onClick={scrollToProducts}
               className="bg-[#735c00] text-white px-14 py-6 font-body uppercase tracking-[0.3em] text-[10px]"
               whileHover={{ scale: 1.05, backgroundColor: '#1c1c18' }}
               whileTap={{ scale: 0.95 }}
@@ -77,7 +83,7 @@ export default function WomenPage() {
 
 
       {/* Product Grid */}
-      <section className="max-w-[1920px] mx-auto px-12 py-32">
+      <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-32">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-24">
           {womenProducts.map((product, index) => (
             <ProductCard 

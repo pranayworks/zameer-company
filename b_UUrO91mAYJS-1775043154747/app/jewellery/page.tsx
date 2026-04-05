@@ -6,12 +6,17 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
 
-import { useState, useEffect } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function JewelleryPage() {
   const [jewelleryProducts, setJewelleryProducts] = useState<any[]>([])
-  
+  const productsRef = useRef<HTMLDivElement>(null)
+
+  const scrollToProducts = () => {
+    productsRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   useEffect(() => {
     async function fetchJewelleryProducts() {
       const { data } = await supabase.from('products').select('*').eq('category', 'Jewellery')
@@ -49,6 +54,7 @@ export default function JewelleryPage() {
             </h1>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
                 <motion.button 
+                  onClick={scrollToProducts}
                   className="bg-[#a3851a] text-white px-10 md:px-16 py-4 md:py-6 font-body uppercase tracking-widest text-[9px] md:text-[10px] shadow-2xl hover:bg-white hover:text-black transition-all font-bold"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -77,7 +83,7 @@ export default function JewelleryPage() {
       </div>
 
       {/* Product Grid */}
-      <section className="max-w-[1920px] mx-auto px-6 md:px-12 py-16 md:py-32">
+      <section ref={productsRef} className="max-w-[1920px] mx-auto px-6 md:px-12 py-16 md:py-32">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-24">
             {jewelleryProducts.map((product, index) => (
                 <ProductCard 

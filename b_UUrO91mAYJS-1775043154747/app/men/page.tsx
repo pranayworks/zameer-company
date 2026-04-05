@@ -22,10 +22,15 @@ export default function MenPage() {
     fetchMenProducts()
   }, [])
   const heroRef = useRef(null)
+  const productsRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ['start start', 'end start'],
   })
+
+  const scrollToProducts = () => {
+    productsRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%'])
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
@@ -65,7 +70,10 @@ export default function MenPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.8 }}
           >
-            <button className="bg-white text-black px-12 py-5 font-body uppercase tracking-widest text-[10px] hover:bg-[#a3851a] hover:text-white transition-all shadow-2xl">
+            <button 
+              onClick={scrollToProducts}
+              className="bg-white text-black px-12 py-5 font-body uppercase tracking-widest text-[10px] hover:bg-[#a3851a] hover:text-white transition-all shadow-2xl"
+            >
               Explore Collection
             </button>
           </motion.div>
@@ -75,7 +83,7 @@ export default function MenPage() {
 
 
       {/* Product Grid */}
-      <section className="max-w-[1920px] mx-auto px-12 py-24">
+      <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20">
           {menProducts.map((product, index) => (
             <ProductCard

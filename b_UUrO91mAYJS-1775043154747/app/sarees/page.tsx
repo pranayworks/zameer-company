@@ -6,11 +6,16 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
 
-import { useState, useEffect } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function SareesPage() {
   const [sareeProducts, setSareeProducts] = useState<any[]>([])
+  const productsRef = useRef<HTMLDivElement>(null)
+  
+  const scrollToProducts = () => {
+    productsRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
   
   useEffect(() => {
     async function fetchSareeProducts() {
@@ -42,6 +47,7 @@ export default function SareesPage() {
               In this archive, the saree is a story of 5,000 years, curated for the modern connoisseur of fine handloom and artisanal weave.
             </p>
             <motion.button 
+              onClick={scrollToProducts}
               className="gold-satin text-white px-12 py-5 font-body uppercase tracking-widest text-[10px] hover:scale-105 transition-all"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -84,7 +90,7 @@ export default function SareesPage() {
       </section>
 
       {/* Masterpiece Series */}
-      <section className="max-w-[1920px] mx-auto px-12 py-32">
+      <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-32">
         <div className="flex flex-col md:flex-row justify-between items-end mb-24">
             <div>
               <span className="font-body uppercase tracking-[0.4em] text-[10px] text-[#a3851a] mb-6 block"> Masterpiece Series </span>

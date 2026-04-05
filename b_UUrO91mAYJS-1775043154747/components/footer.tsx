@@ -92,6 +92,7 @@ export function Footer() {
                       'Sarees': '/sarees',
                       'Jewellery': '/jewellery',
                       'Contact': '/contact',
+                      'About Us': '/visionaries',
                       'Returns': '/legal/refund-policy',
                       'Shipping': '/legal/shipping-policy',
                       'Privacy Policy': '/legal/privacy-policy',

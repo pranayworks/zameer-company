@@ -128,14 +128,29 @@ export async function upsertProduct(formData: Partial<Product>, editingId: strin
   const { error } = await supabase.from('products').upsert([productData])
 
   if (error) {
-    if (error.message.includes('image2') || error.message.includes('image3')) {
-      const { image2, image3, ...safeData } = productData
+    // Handle missing columns gracefully (schema cache issues or actual missing columns)
+    const errorMsg = error.message.toLowerCase()
+    
+    if (
+      errorMsg.includes('return_policy') || 
+      errorMsg.includes('image2') || 
+      errorMsg.includes('image3') || 
+      errorMsg.includes('video_url')
+    ) {
+      // Remove problematic columns and retry
+      const { return_policy, image2, image3, video_url, ...safeData } = productData
       const { error: retryError } = await supabase.from('products').upsert([safeData])
+      
       if (retryError) {
-        return { success: false, error: retryError.message }
+        return { success: false, error: `Critical sync failure: ${retryError.message}` }
       }
-      return { success: true, note: "Extra images were not saved because 'image2' and 'image3' columns are missing in your Supabase table." }
+      
+      return { 
+        success: true, 
+        note: `Product saved, but some advanced info (Images/Video/Return Policy) was skipped because those columns are missing in your Supabase 'products' table. Please add them to enable full features.`
+      }
     }
+    
     return { success: false, error: error.message }
   }
   return { success: true }

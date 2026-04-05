@@ -80,8 +80,9 @@ const downloadInvoicePDF = async (order: any) => {
   if (order.phone) doc.text(order.phone, 20, 86)
 
   // Address (wrap long text)
-  const address = order.address || 'Address not provided'
-  const addressLines = doc.splitTextToSize(address, 60)
+  const shippingMatchHeader = order.address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+  const cleanAddressHeader = order.address ? order.address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : (order.address || 'Address not provided')
+  const addressLines = doc.splitTextToSize(cleanAddressHeader, 60)
   doc.setTextColor(...grey)
   doc.text(addressLines, 90, 75)
 
@@ -134,21 +135,39 @@ const downloadInvoicePDF = async (order: any) => {
   doc.setTextColor(255, 255, 255)
   doc.text('PAYMENT VERIFIED', 28 + 14, 144.5, { align: 'center' })
 
+  // Shipping analysis
+  const shippingMatch = order.address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+  const sMethod = shippingMatch ? shippingMatch[1] : null
+  const sFee = shippingMatch ? parseInt(shippingMatch[2]) : 0
+  const cleanAddress = order.address ? order.address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : (order.address || 'Address not provided')
+
   // Total summary box
+  const boxY = 162
   doc.setFillColor(...dark)
-  doc.roundedRect(18, 168, W - 36, 24, 3, 3, 'F')
+  doc.roundedRect(18, boxY, W - 36, 32, 3, 3, 'F')
+  
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(255, 255, 255)
-  doc.text('TOTAL AMOUNT PAID', 28, 178)
+  doc.text('SUBTOTAL', 28, boxY + 8)
+  doc.text(`Rs. ${(order.price || 0).toLocaleString('en-IN')}`, W - 28, boxY + 8, { align: 'right' })
+
+  if (sMethod) {
+    doc.text(`SHIPPING (${sMethod.toUpperCase()})`, 28, boxY + 14)
+    doc.text(`Rs. ${sFee.toLocaleString('en-IN')}`, W - 28, boxY + 14, { align: 'right' })
+  }
+
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
+  doc.setFontSize(14)
   doc.setTextColor(...gold)
-  doc.text(`Rs. ${(order.price || 0).toLocaleString('en-IN')}`, W - 28, 181, { align: 'right' })
+  doc.text('TOTAL VOLUME', 28, boxY + 24)
+  const totalAmount = (order.price || 0) + sFee
+  doc.text(`Rs. ${totalAmount.toLocaleString('en-IN')}`, W - 28, boxY + 24, { align: 'right' })
+  
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
   doc.setTextColor(180, 180, 180)
-  doc.text('Free Express Delivery Included', 28, 186)
+  doc.text(sMethod === 'Express' ? 'Express Boutique Delivery' : 'Standard Atelier Delivery', 28, boxY + 28)
 
   // Footer quote
   doc.setFont('helvetica', 'italic')

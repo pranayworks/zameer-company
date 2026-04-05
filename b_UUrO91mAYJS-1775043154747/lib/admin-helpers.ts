@@ -221,7 +221,9 @@ export const downloadInvoicePDF = async (order: Order) => {
   doc.setTextColor(...grey)
   doc.text(order.email || '', 20, 81)
   doc.text(order.phone || '', 20, 87)
-  const addressLines = doc.splitTextToSize(order.address || 'N/A', 60)
+  const shippingMatchHeader = order.address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+  const cleanAddressHeader = order.address ? order.address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : 'N/A'
+  const addressLines = doc.splitTextToSize(cleanAddressHeader, 60)
   doc.text(addressLines, 90, 75)
   doc.setFontSize(10)
   doc.setTextColor(...gold)
@@ -258,14 +260,31 @@ export const downloadInvoicePDF = async (order: Order) => {
   doc.setFontSize(8)
   doc.setTextColor(...grey)
   doc.setFont('helvetica', 'normal')
-  doc.text('SUBTOTAL', 100, 157)
+  doc.setFont('helvetica', 'normal')
+  const shippingMatch = order.address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+  const sMethod = shippingMatch ? shippingMatch[1] : null
+  const sFee = shippingMatch ? parseInt(shippingMatch[2]) : 0
+  const cleanAddress = order.address ? order.address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : 'N/A'
+  
+  doc.text('SUBTOTAL', 100, 153)
   doc.setTextColor(...dark)
   doc.setFont('helvetica', 'bold')
-  doc.text(priceStr, W - 24, 157, { align: 'right' })
+  doc.text(priceStr, W - 24, 153, { align: 'right' })
+
+  if (sMethod) {
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...grey)
+    doc.text(`SHIPPING (${sMethod.toUpperCase()})`, 100, 160)
+    doc.setTextColor(...dark)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`₹${sFee.toLocaleString()}`, W - 24, 160, { align: 'right' })
+  }
+
   doc.setTextColor(...gold)
   doc.setFontSize(12)
-  doc.text('TOTAL', 100, 170)
-  doc.text(priceStr, W - 24, 170, { align: 'right' })
+  doc.text('TOTAL', 100, 172)
+  const totalAmount = (order.price || 0) + sFee
+  doc.text(`₹${totalAmount.toLocaleString()}`, W - 24, 172, { align: 'right' })
   doc.setFillColor(...dark)
   doc.rect(0, 273, W, 24, 'F')
   doc.setFont('helvetica', 'normal')

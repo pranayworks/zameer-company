@@ -36,6 +36,8 @@ export default function CheckoutPage() {
   const [addressConfirmed, setAddressConfirmed] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [orderId, setOrderId] = useState('')
+  const [shippingMethod, setShippingMethod] = useState<'Normal' | 'Express'>('Normal')
+  const [shippingFee, setShippingFee] = useState(100)
 
   // Load Razorpay script
   useEffect(() => {
@@ -84,6 +86,11 @@ export default function CheckoutPage() {
     setStep('address')
   }
 
+  const handleShippingChange = (method: 'Normal' | 'Express') => {
+    setShippingMethod(method)
+    setShippingFee(method === 'Normal' ? 100 : 200)
+  }
+
   const handlePay = async () => {
     if (!profile) return
     setPaymentError('')
@@ -95,7 +102,7 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: subtotal,
+          amount: subtotal + shippingFee,
           currency: 'INR',
           receipt: `rcpt_${Date.now()}`,
         }),
@@ -150,7 +157,8 @@ export default function CheckoutPage() {
           if (verifyData.success) {
             // 4. Place order in Supabase + send Telegram notification
             setOrderId(response.razorpay_payment_id)
-            await placeOrder()
+            // @ts-ignore
+            await placeOrder(shippingMethod, shippingFee)
             
             // 5. Send confirmation email
             try {
@@ -162,7 +170,9 @@ export default function CheckoutPage() {
                   name: profile.name,
                   orderId: response.razorpay_payment_id,
                   items: cart,
-                  total: subtotal
+                  total: subtotal + shippingFee,
+                  shippingMethod,
+                  shippingFee
                 })
               })
               const emailData = await emailResp.json()
@@ -315,17 +325,53 @@ export default function CheckoutPage() {
                       <span className="uppercase tracking-widest text-[#747878]">Subtotal</span>
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="flex justify-between text-xs font-body">
-                      <span className="uppercase tracking-widest text-[#747878]">Shipping</span>
-                      <span className="text-green-600 font-bold">FREE</span>
+                    <div className="flex flex-col gap-4 py-4 border-y border-[#1c1c18]/5">
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-[#1c1c18]">Shipping Selection</span>
+                      <div className="space-y-3">
+                        <label 
+                          onClick={() => handleShippingChange('Normal')}
+                          className={`flex items-center justify-between p-5 border cursor-pointer transition-all duration-300 ${shippingMethod === 'Normal' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]/30'}`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Normal' ? 'border-[#a3851a]' : 'border-[#1c1c18]/20'}`}>
+                              {shippingMethod === 'Normal' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Normal Delivery</span>
+                              <span className="text-[9px] text-[#747878] uppercase">Expected: 5-7 Business Days</span>
+                            </div>
+                          </div>
+                          <span className="font-headline text-xl text-[#1c1c18]">₹100</span>
+                        </label>
+
+                        <label 
+                          onClick={() => handleShippingChange('Express')}
+                          className={`flex items-center justify-between p-5 border cursor-pointer transition-all duration-300 ${shippingMethod === 'Express' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]/30'}`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Express' ? 'border-[#a3851a]' : 'border-[#1c1c18]/20'}`}>
+                              {shippingMethod === 'Express' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Express Delivery</span>
+                              <span className="text-[9px] text-[#747878] uppercase font-bold text-[#a3851a]">Priority: 1-3 Business Days</span>
+                            </div>
+                          </div>
+                          <span className="font-headline text-xl text-[#1c1c18]">₹200</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs font-body pt-4">
+                      <span className="uppercase tracking-widest text-[#747878]">Shipping Fee</span>
+                      <span>₹{shippingFee}</span>
                     </div>
                     <div className="flex justify-between text-xs font-body">
                       <span className="uppercase tracking-widest text-[#747878]">GST (incl.)</span>
-                      <span>₹{Math.round(subtotal * 0.05).toLocaleString('en-IN')}</span>
+                      <span>₹{Math.round((subtotal + shippingFee) * 0.05).toLocaleString('en-IN')}</span>
                     </div>
                     <div className="border-t border-[#1c1c18]/10 pt-4 flex justify-between items-baseline">
                       <span className="text-[10px] uppercase tracking-widest font-bold">Total Payable</span>
-                      <span className="font-headline text-3xl text-[#a3851a]">₹{subtotal.toLocaleString('en-IN')}</span>
+                      <span className="font-headline text-3xl text-[#a3851a]">₹{(subtotal + shippingFee).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 
@@ -520,7 +566,7 @@ export default function CheckoutPage() {
                         className="w-full gold-satin text-white py-6 font-body uppercase tracking-[0.3em] text-[11px] font-bold shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4"
                       >
                         <span className="material-symbols-outlined">payment</span>
-                        Pay ₹{subtotal.toLocaleString('en-IN')} Securely
+                        Pay ₹{(subtotal + shippingFee).toLocaleString('en-IN')} Securely
                       </button>
 
                       <p className="text-center text-[9px] text-[#747878] uppercase tracking-widest mt-4">
@@ -659,7 +705,7 @@ export default function CheckoutPage() {
                     y += 10
                     doc.setFontSize(14)
                     doc.text("TOTAL PAYABLE", 20, y)
-                    doc.text(`₹${subtotal.toLocaleString('en-IN')}`, 170, y, { align: 'right' })
+                    doc.text(`₹${(subtotal + shippingFee).toLocaleString('en-IN')}`, 170, y, { align: 'right' })
                     
                     doc.setFontSize(8)
                     doc.setTextColor(150, 150, 150)

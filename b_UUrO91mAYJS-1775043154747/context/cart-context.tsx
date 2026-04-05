@@ -25,7 +25,7 @@ interface CartContextType {
   totalItems: number
   subtotal: number
   activeOrders: CartItem[]
-  placeOrder: () => void
+  placeOrder: (shippingMethod?: string, shippingFee?: number) => void
   cancelOrder: (id: string | number, selectedSize?: string, selectedColor?: string) => void
 }
 
@@ -39,51 +39,50 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast()
 
   useEffect(() => {
+    // 1. Load from localStorage first (Immediate UX)
+    const savedCart = localStorage.getItem('atelier-cart')
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart))
+      } catch (e) {
+        console.error("Cart hydration failed")
+      }
+    }
+
     const initCart = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       if (user) {
         setUserId(user.id)
-        // Fetch cart from supabase with product details
-        const { data: cartData } = await supabase
-          .from('cart')
-          .select('*, products(*)')
-          .eq('user_id', user.id)
-        
-        if (cartData && cartData.length > 0) {
-          const syncedCart: CartItem[] = cartData.map(c => ({
-            id: c.product_id,
-            name: c.products?.name || 'Unknown Product',
-            price: c.products?.price || 0,
-            quantity: c.quantity,
-            image: c.products?.image_url || '/placeholder.svg',
-            selectedSize: c.size
-          }))
-          setCart(syncedCart)
-        }
-
-        // Fetch orders
-        const { data: orderData } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('user_id', user.id)
-        
-        if (orderData) {
-          // Map backend orders to CartItem format for the UI
-          const mappedOrders = orderData.map(o => ({
-            id: o.id,
-            name: o.product_name,
-            price: o.price,
-            quantity: 1, // Order row per item usually
-            image: '/placeholder.svg', // Fallback
-            order_id: o.order_id
-          }))
-          // We'll update AccountPage to fetch this directly, but keep local for immediate UX
+        // If local cart is empty, fetch from Supabase
+        if (!savedCart || savedCart === '[]') {
+          const { data: cartData } = await supabase
+            .from('cart')
+            .select('*, products(*)')
+            .eq('user_id', user.id)
+          
+          if (cartData && cartData.length > 0) {
+            const syncedCart: CartItem[] = cartData.map(c => ({
+              id: c.product_id,
+              name: c.products?.name || 'Unknown Product',
+              price: c.products?.price || 0,
+              quantity: c.quantity,
+              image: c.products?.image_url || '/placeholder.svg',
+              selectedSize: c.size
+            }))
+            setCart(syncedCart)
+            localStorage.setItem('atelier-cart', JSON.stringify(syncedCart))
+          }
         }
       }
     }
     initCart()
   }, [])
+
+  // Persist to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('atelier-cart', JSON.stringify(cart))
+  }, [cart])
 
   const addToCart = async (newItem: CartItem) => {
     setCart((prevCart) => {
@@ -140,11 +139,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const sendAdminNotification = async (orderData: any) => {
     // --- ATELIER SECURE SERVER HERALD ---
+    const shippingMatch = orderData.address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+    const sMethod = shippingMatch ? shippingMatch[1] : 'Standard'
+    const sFee = shippingMatch ? shippingMatch[2] : '0'
+    const cleanAddress = orderData.address ? orderData.address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : (orderData.address || 'N/A')
+
     const message = `<b>🚨 NEU ATELIER ACQUISITION 🚨</b>\n\n` +
       `<b>Masterpiece:</b> ${orderData.product_name}\n` +
       `<b>Valuation:</b> ₹${orderData.price.toLocaleString('en-IN')}\n` +
+      `<b>Shipping:</b> ${sMethod.toUpperCase()} (₹${sFee})\n` +
       `<b>Client:</b> ${orderData.customer_name}\n` +
-      `<b>Dispatch At:</b> <i>${orderData.address}</i>\n` +
+      `<b>Dispatch At:</b> <i>${cleanAddress}</i>\n` +
       `<b>ID:</b> <code>${orderData.order_id}</code>\n\n` +
       `<i>Tradition, Secured.</i>`;
 
@@ -159,7 +164,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const placeOrder = async () => {
+  const placeOrder = async (shippingMethod: string = 'Normal', shippingFee: number = 100) => {
     if (userId && cart.length > 0) {
       // Get user profile for order details including address
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
@@ -167,6 +172,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const orderedItems = [];
       let totalAmount = 0;
       const checkoutOrderId = `ORD-${Math.floor(Math.random() * 1000000)}`;
+      const fullAddress = `${profile?.address || 'Address not set'} [${shippingMethod} Delivery: ₹${shippingFee}]`;
 
       for (const item of cart) {
         const price = typeof item.price === 'string' 
@@ -187,7 +193,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           customer_name: profile?.name || 'Valued Customer',
           email: profile?.email || 'No Email provided',
           phone: profile?.phone || 'No Phone provided',
-          address: profile?.address || 'Address not set in profile',
+          address: fullAddress,
           product_name: item.name,
           size: item.selectedSize || 'Standard',
           color: item.selectedColor || 'Default',
@@ -223,7 +229,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               name: profile.name || 'Valued Customer',
               orderId: checkoutOrderId,
               items: orderedItems,
-              total: totalAmount
+              total: totalAmount + shippingFee,
+              shippingMethod,
+              shippingFee
             })
           });
         } catch (e) {
@@ -231,13 +239,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Clear cart in supabase
+      // Clear cart
       await supabase.from('cart').delete().eq('user_id', userId);
+      setCart([])
+      localStorage.removeItem('atelier-cart')
+    } else {
+      setCart([])
+      localStorage.removeItem('atelier-cart')
     }
     
     showToast('Your order has been placed with the atelier.', 'success', 'auto_awesome')
-    setActiveOrders((prev) => [...prev, ...cart])
-    setCart([])
   }
 
   const cancelOrder = (id: string | number, selectedSize?: string, selectedColor?: string) => {

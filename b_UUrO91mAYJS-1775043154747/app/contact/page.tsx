@@ -8,16 +8,44 @@ import { Footer } from '@/components/footer'
 export default function ContactPage() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: 'Boutique Order Support',
+    message: ''
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // Here we'd typically send an email via Resend or another service
-    // For now, simulate success
-    setTimeout(() => {
-      setLoading(false)
-      setSent(true)
-    }, 1500)
+    
+    try {
+      const response = await fetch("https://formsubmit.co/ajax/friendsof4.support@gmail.com", {
+        method: "POST",
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            subject: `Contact Form Inquiry: ${formData.subject}`,
+            message: formData.message,
+            _template: 'box' // Clean professional HTML template
+        })
+      });
+      
+      if (response.ok) {
+        setSent(true);
+        setFormData({ name: '', email: '', subject: 'Boutique Order Support', message: '' });
+      } else {
+        alert("There was an issue sending your inquiry. Please email us directly.");
+      }
+    } catch {
+      alert("Network error. Please try again or email us directly.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -45,9 +73,7 @@ export default function ContactPage() {
                    <div>
                       <h4 className="font-headline text-2xl mb-2">Our Presence</h4>
                       <p className="font-body text-sm text-[#747878] leading-relaxed max-w-xs">
-                        Friends of 4 Headquarters,<br />
-                        Boutique Row 102, Atelier Street,<br />
-                        Mumbai, India.
+                        Financial district Hyderabad
                       </p>
                    </div>
                 </div>
@@ -58,7 +84,7 @@ export default function ContactPage() {
                    </div>
                    <div>
                       <h4 className="font-headline text-2xl mb-2">Electronic Post</h4>
-                      <p className="font-body text-sm text-[#747878]">atelier@friends-of-4.com</p>
+                      <p className="font-body text-sm text-[#747878]">friendsof4.support@gmail.com</p>
                       <p className="font-body text-sm text-[10px] uppercase tracking-widest text-[#a3851a] mt-2 font-bold">24hr Response Time</p>
                    </div>
                 </div>
@@ -69,8 +95,8 @@ export default function ContactPage() {
                    </div>
                    <div>
                       <h4 className="font-headline text-2xl mb-2">Voice Assistance</h4>
-                      <p className="font-body text-sm text-[#747878]">+91 (800) ARCHIVE</p>
-                      <p className="font-body text-sm text-[#747878]">+91 (22) Atelier-Z-4</p>
+                      <p className="font-body text-sm text-[#747878]">No.1: 8008992170</p>
+                      <p className="font-body text-sm text-[#747878]">No.2: 7981447882</p>
                    </div>
                 </div>
               </div>
@@ -94,19 +120,19 @@ export default function ContactPage() {
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                       <div className="relative">
+                        <div className="relative">
                           <label className="text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Name of the Patron</label>
-                          <input required type="text" className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none" placeholder="e.g Miraya Seth" />
+                          <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none" placeholder="e.g Miraya Seth" />
                        </div>
                        <div className="relative">
                           <label className="text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Email Channel</label>
-                          <input required type="email" className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none" placeholder="curated@atelier.com" />
+                          <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none" placeholder="curated@atelier.com" />
                        </div>
                     </div>
 
                     <div>
                        <label className="text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Subject of Inquiry</label>
-                       <select className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none">
+                       <select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none">
                           <option>Boutique Order Support</option>
                           <option>Custom Hand-Loom Request</option>
                           <option>Wholesale Partnerships</option>
@@ -117,7 +143,7 @@ export default function ContactPage() {
 
                     <div>
                        <label className="text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Your Narrative / Message</label>
-                       <textarea required rows={5} className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none resize-none" placeholder="We would love to hear from you..." />
+                       <textarea required value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} rows={5} className="w-full border-b border-[#1c1c18]/20 bg-transparent py-4 text-sm focus:border-[#a3851a] outline-none resize-none" placeholder="We would love to hear from you..." />
                     </div>
 
                     <button 

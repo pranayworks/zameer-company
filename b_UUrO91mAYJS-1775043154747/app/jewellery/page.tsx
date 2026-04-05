@@ -99,34 +99,21 @@ export default function JewelleryPage() {
       {/* Personalized Curation Section */}
       <section className="bg-white py-40 border-y border-[#1c1c18]/5">
          <div className="max-w-[1920px] mx-auto px-12 flex flex-col md:flex-row items-center gap-32">
-             <div className="w-full md:w-1/2 aspect-[4/5] bg-gray-100 relative shadow-2xl overflow-hidden">
+             <div className="w-full md:w-1/2 aspect-[4/5] bg-[#f1ede6] relative shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden">
                  <Image
-                    src="/kundan_pair.png"
-                    alt="Bespoke Curation"
+                    src="/jewelry_story.png"
+                    alt="A Jewelry Story"
                     fill
-                    className="object-cover grayscale"
+                    className="object-cover transition-transform duration-[3s] hover:scale-110"
                  />
-                 <div className="absolute -bottom-10 -right-10 w-2/3 aspect-square bg-[#a3851a] flex flex-col items-center justify-center p-12 text-center text-white">
-                      <span className="material-symbols-outlined text-4xl mb-6">shield</span>
-                      <span className="font-body uppercase tracking-[0.2em] text-[9px] font-bold">Lifetime Authenticity Guaranteed</span>
-                 </div>
              </div>
              
              <div className="w-full md:w-1/2">
-                <h3 className="font-headline text-6xl text-[#1c1c18] mb-12 tracking-tight leading-tight">Personalized <br /> Curation</h3>
-                <p className="font-body text-[#747878] text-sm mb-16 max-w-sm leading-relaxed">
-                  Speak with our lead designers to commission a custom masterpiece or find the perfect heirloom for your family archive. Our bespoke concierge service ensures every detail is captured with precision.
+                 <h3 className="font-headline text-6xl text-[#1c1c18] mb-12 tracking-tight leading-tight">A Timeless <br /> Narrative</h3>
+                <p className="font-body text-[#747878] text-sm mb-16 max-w-sm leading-[1.8] italic">
+                  &quot;Every piece of jewellery tells a story. It is the language of heritage, a whisper of the past, and a promise for the future. We curate not just ornaments, but legacies meant to be worn across eras.&quot;
                 </p>
-                <div className="space-y-10 border-t border-[#1c1c18]/5 pt-10">
-                    <div className="flex justify-between items-center group cursor-pointer border-b border-[#1c1c18]/5 pb-6">
-                        <span className="font-body uppercase tracking-widest text-[10px]">Speak with our Head Designer</span>
-                        <span className="material-symbols-outlined text-sm opacity-50 group-hover:opacity-100 transition-opacity">arrow_forward</span>
-                    </div>
-                    <div className="flex justify-between items-center group cursor-pointer pb-6">
-                        <span className="font-body uppercase tracking-widest text-[10px]">Last Presentation Request</span>
-                        <span className="material-symbols-outlined text-sm opacity-50 group-hover:opacity-100 transition-opacity">arrow_forward</span>
-                    </div>
-                </div>
+
              </div>
          </div>
       </section>

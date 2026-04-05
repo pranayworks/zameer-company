@@ -19,7 +19,7 @@ export interface Product {
   care?: string[]
   fit?: string[]
   video_url?: string
-  has_return_policy?: boolean
+  return_policy?: string
 }
 
 export interface Order {
@@ -346,5 +346,5 @@ export const DEFAULT_FORM_DATA: Partial<Product> = {
   care: [],
   fit: [],
   video_url: '',
-  has_return_policy: true
+  return_policy: ''
 }

@@ -13,6 +13,9 @@ export interface Product {
   reviews: number
   category: string
   colors?: { name: string, hex: string }[]
+  return_policy?: string
+  video_url?: string
+  stock?: number
 }
 
 export const products: Product[] = [

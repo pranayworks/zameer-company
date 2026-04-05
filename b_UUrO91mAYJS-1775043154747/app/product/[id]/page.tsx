@@ -34,7 +34,7 @@ interface Product {
   care?: string[]
   fit?: string[]
   video_url?: string
-  has_return_policy?: boolean
+  return_policy?: string
 }
 
 export default function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -491,20 +491,15 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                {/* Return Policy Note */}
                <div className="mb-12 p-5 bg-[#1c1c18]/5 border-l-2 border-[#a3851a] group hover:bg-[#1c1c18]/10 transition-colors">
                  <div className="flex items-center gap-4">
-                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) ? 'bg-[#a3851a]/10 text-[#a3851a]' : 'bg-red-500/10 text-red-500'}`}>
-                      <span className="material-symbols-outlined text-sm">
-                        {(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) ? 'assignment_return' : 'rule'}
+                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${product.return_policy?.toLowerCase().includes('non-returnable') ? 'bg-red-500/10 text-red-500' : 'bg-[#a3851a]/10 text-[#a3851a]'}`}>
+                      <span className="material-symbols-outlined text-[18px]">
+                        {product.return_policy?.toLowerCase().includes('non-returnable') ? 'rule' : 'assignment_return'}
                       </span>
                    </div>
                    <div>
-                     <h4 className="font-body text-[10px] uppercase tracking-[0.2em] font-bold text-[#1c1c18]">
-                       {(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) ? 'Atelier Return Policy' : 'Fixed Creation Notice'}
-                     </h4>
-                     <p className="font-body text-[#747878] text-[9px] uppercase tracking-widest mt-1">
-                       {(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) 
-                         ? '✓ Can be returned by 5 days' 
-                         : '✕ Non-returnable'
-                       }
+                     <h4 className="font-headline text-lg group-hover:text-[#a3851a] transition-colors">Atelier Return Policy</h4>
+                     <p className="font-body text-xs text-[#747878]">
+                       {product.return_policy || (product.category === 'Jewellery' ? 'Non-returnable' : 'Can be returned within 5 days')}
                      </p>
                    </div>
                  </div>

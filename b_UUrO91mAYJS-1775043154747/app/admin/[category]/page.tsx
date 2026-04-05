@@ -19,6 +19,7 @@ import {
   CATEGORY_ICONS,
   CATEGORY_DESCRIPTIONS,
 } from '@/lib/admin-helpers'
+import { supabase } from '@/lib/supabase'
 
 export default function AdminCategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category: rawCategory } = use(params)
@@ -36,7 +37,6 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   const [formData, setFormData] = useState<Partial<Product>>({ ...DEFAULT_FORM_DATA, category })
   const [isDragging, setIsDragging] = useState(false)
   const [isVideoDragging, setIsVideoDragging] = useState(false)
-  const drivePickerRef = useRef<Window | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -60,8 +60,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   }
 
   const handleOpenAdd = () => {
-    const defaultReturnPolicy = category !== 'Jewellery'
-    setFormData({ ...DEFAULT_FORM_DATA, category: category === 'Others' ? 'Kids' : category, has_return_policy: defaultReturnPolicy })
+    const defaultReturnPolicy = category !== 'Jewellery' ? 'Can be returned within 5 days' : 'Non-returnable'
+    setFormData({ ...DEFAULT_FORM_DATA, category: category === 'Others' ? 'Kids' : category, return_policy: defaultReturnPolicy })
     setIsAdding(true)
     setEditingId(null)
   }
@@ -104,6 +104,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   }
 
   // Upload via server-side API (auto-creates bucket if missing)
+  const BUCKET_NAME = 'product-images'
+
   const handleMultipleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const files = Array.from(e.target.files || [])
@@ -121,34 +123,40 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
       for (let i = 0; i < filesToUpload.length; i++) {
         setUploadProgress(`Syncing image ${i + 1} of ${filesToUpload.length} with Atelier Cloud...`)
         const file = filesToUpload[i]
-        const formDataUpload = new FormData()
-        formDataUpload.append('files', file)
+        
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const fileName = `${Date.now()}_${i}.${fileExt}`
+        const filePath = `products/${fileName}`
 
-        const resp = await fetch('/api/upload-image', {
-          method: 'POST',
-          body: formDataUpload
-        })
+        const { data, error } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(filePath, file, {
+            contentType: file.type,
+            upsert: false
+          })
 
-        const result = await resp.json()
-
-        if (!resp.ok || !result.success) {
-          throw new Error(result.error || `Failed to upload image ${i + 1}`)
+        if (error) {
+           console.error('Storage error:', error)
+           throw new Error(error.message || `Failed to sync image ${i + 1}`)
         }
         
-        urls.push(...result.urls)
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(filePath)
+        
+        urls.push(publicUrl)
       }
       
       const allNewUrls = [...urls]
       
       setFormData(prev => {
-        const existingUrls = [
+        const existingData = [
           ...(prev.image?.split(',') || []),
           prev.image2,
           prev.image3
         ].filter(Boolean) as string[]
         
-        // Remove duplicates if any
-        const combined = Array.from(new Set([...existingUrls, ...allNewUrls])).slice(0, 12)
+        const combined = Array.from(new Set([...existingData, ...allNewUrls])).slice(0, 12)
         
         const primary = [combined[0], ...combined.slice(3)].filter(Boolean).join(',')
         const secondary = combined[1] || ''
@@ -179,25 +187,34 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
       const file = files[0] as File
 
       setUploading(true)
-      setUploadProgress('Preparing cinematic reel...')
+      setUploadProgress('Syncing cinematic reel...')
 
-      const formDataUpload = new FormData()
-      formDataUpload.append('files', file)
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp4'
+      const fileName = `${Date.now()}_video.${fileExt}`
+      const filePath = `products/${fileName}`
 
-      const resp = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formDataUpload
-      })
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: false
+        })
 
-      const result = await resp.json()
-      if (!resp.ok || !result.success) throw new Error(result.error || 'Video sync failed')
+      if (error) {
+        console.error('Video Sync Error:', error)
+        throw new Error(error.message || 'Direct sync to Atelier Storage failed')
+      }
 
-      setFormData(prev => ({ ...prev, video_url: result.urls[0] }))
+      const { data: { publicUrl } } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(filePath)
+
+      setFormData(prev => ({ ...prev, video_url: publicUrl }))
       setUploadProgress('')
       alert('✓ Cinematic reel synced successfully!')
     } catch (error: any) {
       setUploadProgress('')
-      alert('Video error: ' + error.message)
+      alert('Video logic error: ' + error.message)
     } finally {
       setUploading(false)
     }
@@ -686,40 +703,18 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         />
                       </div>
 
-                      {/* Return Policy */}
+                      {/* Additional Data / Return Policy */}
                       <div className="space-y-4 pt-6 mt-4 border-t border-[#1c1c18]/10">
-                        <label className="font-body text-[10px] uppercase tracking-[0.2em] text-[#a3851a] font-bold">Return Policy</label>
-                        <div className="flex flex-col sm:flex-row gap-6">
-                          <label className="flex items-center gap-3 cursor-pointer group">
-                             <div className="relative flex items-center justify-center">
-                               <input 
-                                 type="radio" 
-                                 name="return_policy" 
-                                 checked={formData.has_return_policy === true} 
-                                 onChange={() => setFormData({ ...formData, has_return_policy: true })}
-                                 className="appearance-none w-5 h-5 border border-[#1c1c18]/20 rounded-full checked:border-[#a3851a] transition-all"
-                               />
-                               <div className={`absolute w-2.5 h-2.5 bg-[#a3851a] rounded-full transition-transform ${formData.has_return_policy === true ? 'scale-100' : 'scale-0'}`} />
-                             </div>
-                             <span className="font-body text-[10px] font-bold uppercase tracking-widest text-[#1c1c18]">Allow Return (5 Days)</span>
-                          </label>
-
-                          <label className="flex items-center gap-3 cursor-pointer group">
-                             <div className="relative flex items-center justify-center">
-                               <input 
-                                 type="radio" 
-                                 name="return_policy" 
-                                 checked={formData.has_return_policy === false} 
-                                 onChange={() => setFormData({ ...formData, has_return_policy: false })}
-                                 className="appearance-none w-5 h-5 border border-[#1c1c18]/20 rounded-full checked:border-[#a3851a] transition-all"
-                               />
-                               <div className={`absolute w-2.5 h-2.5 bg-[#a3851a] rounded-full transition-transform ${formData.has_return_policy === false ? 'scale-100' : 'scale-0'}`} />
-                             </div>
-                             <span className="font-body text-[10px] font-bold uppercase tracking-widest text-[#1c1c18]">Non-Returnable</span>
-                          </label>
-                        </div>
+                        <label className="font-body text-[10px] uppercase tracking-[0.2em] text-[#a3851a] font-bold">Additional Data / Return Policy</label>
+                        <textarea
+                          rows={3}
+                          value={formData.return_policy || ''}
+                          onChange={e => setFormData({ ...formData, return_policy: e.target.value })}
+                          placeholder="e.g. Can be returned within 5 days"
+                          className="w-full bg-white border border-[#1c1c18]/10 p-4 focus:border-[#a3851a] outline-none resize-none text-sm font-body"
+                        />
                         <p className="font-body text-[9px] text-[#747878] italic bg-white/50 p-3 border-l-2 border-[#a3851a]">
-                          {formData.has_return_policy ? "Customer View: ✓ Can be returned by 5 days" : "Customer View: ✕ Non-returnable"}
+                          {formData.return_policy ? `Customer View: ✓ ${formData.return_policy}` : "Customer View: ✕ No additional info"}
                         </p>
                       </div>
                     </div>

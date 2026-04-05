@@ -241,58 +241,60 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
             {/* Main Product Image Carousel */}
             <div className="relative aspect-[3/4] bg-white overflow-hidden shadow-2xl group">
                <AnimatePresence mode='wait'>
-                 <motion.div 
-                   key={currentImageIndex}
-                   initial={{ opacity: 0, x: 20 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   exit={{ opacity: 0, x: -20 }}
-                   transition={{ duration: 0.4, ease: "easeOut" }}
-                   className="absolute inset-0 cursor-zoom-in"
-                   onClick={() => setZoomedImage(allImages[currentImageIndex])}
-                   drag="x"
-                   dragConstraints={{ left: 0, right: 0 }}
-                   dragElastic={0.2}
-                   onDragEnd={(_, info) => {
-                     if (info.offset.x > 50) {
-                       setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
-                     } else if (info.offset.x < -50) {
-                       setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
-                     }
-                   }}
-                 >
-                   <Image
-                     src={allImages[currentImageIndex] || '/placeholder.jpg'}
-                     alt={`${product.title} - View ${currentImageIndex + 1}`}
-                     fill
-                     className="object-cover group-hover:scale-105 transition-transform duration-1000 select-none pointer-events-none"
-                     priority
-                   />
-                 </motion.div>
-               </AnimatePresence>
+                   <motion.div 
+                    key={currentImageIndex}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="absolute inset-0 cursor-zoom-in"
+                    onClick={() => setZoomedImage(allImages[currentImageIndex])}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    dragListener={true}
+                    style={{ touchAction: 'pan-y' }}
+                    onDragEnd={(_, info) => {
+                      if (info.offset.x > 30) {
+                        setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
+                      } else if (info.offset.x < -30) {
+                        setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
+                      }
+                    }}
+                  >
+                    <Image
+                      src={allImages[currentImageIndex] || '/placeholder.jpg'}
+                      alt={`${product.title} - View ${currentImageIndex + 1}`}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-1000 select-none pointer-events-none"
+                      priority
+                    />
+                  </motion.div>
+                </AnimatePresence>
 
-               {/* Carousel Controls */}
-               {allImages.length > 1 && (
-                 <>
-                   <div className="absolute inset-y-0 left-4 flex items-center z-10 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                     <button 
-                       onClick={() => {
-                         setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
-                       }}
-                       className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg text-[#1c1c18]"
-                     >
-                       <span className="material-symbols-outlined">chevron_left</span>
-                     </button>
-                   </div>
-                   <div className="absolute inset-y-0 right-4 flex items-center z-10 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                     <button 
-                       onClick={() => {
-                         setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
-                       }}
-                       className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg text-[#1c1c18]"
-                     >
-                       <span className="material-symbols-outlined">chevron_right</span>
-                     </button>
-                   </div>
+                {/* Carousel Controls */}
+                {allImages.length > 1 && (
+                  <>
+                    <div className="absolute inset-y-0 left-4 flex items-center z-10 lg:group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
+                        }}
+                        className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg text-[#1c1c18]"
+                      >
+                        <span className="material-symbols-outlined">chevron_left</span>
+                      </button>
+                    </div>
+                    <div className="absolute inset-y-0 right-4 flex items-center z-10 lg:group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
+                        }}
+                        className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg text-[#1c1c18]"
+                      >
+                        <span className="material-symbols-outlined">chevron_right</span>
+                      </button>
+                    </div>
                    
                    {/* Indicators */}
                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">

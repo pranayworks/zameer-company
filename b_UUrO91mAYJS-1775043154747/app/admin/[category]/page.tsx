@@ -34,6 +34,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
   const [formData, setFormData] = useState<Partial<Product>>({ ...DEFAULT_FORM_DATA, category })
+  const [isDragging, setIsDragging] = useState(false)
+  const [isVideoDragging, setIsVideoDragging] = useState(false)
   const drivePickerRef = useRef<Window | null>(null)
 
   useEffect(() => {
@@ -136,28 +138,66 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
         urls.push(...result.urls)
       }
       
-      // Smart distribution: 
-      // index 0 -> image
-      // index 1 -> image2
-      // index 2 -> image3
-      // index 3 to 9 -> append to image as comma-separated string
+      const allNewUrls = [...urls]
       
-      const primaryImage = [urls[0], ...urls.slice(3)].filter(Boolean).join(',')
-      const secondaryImage = urls[1]
-      const tertiaryImage = urls[2]
-
-      setFormData(prev => ({
-        ...prev,
-        image:  primaryImage || prev.image,
-        image2: secondaryImage || prev.image2,
-        image3: tertiaryImage || prev.image3
-      }))
+      setFormData(prev => {
+        const existingUrls = [
+          ...(prev.image?.split(',') || []),
+          prev.image2,
+          prev.image3
+        ].filter(Boolean) as string[]
+        
+        // Remove duplicates if any
+        const combined = Array.from(new Set([...existingUrls, ...allNewUrls])).slice(0, 12)
+        
+        const primary = [combined[0], ...combined.slice(3)].filter(Boolean).join(',')
+        const secondary = combined[1] || ''
+        const tertiary = combined[2] || ''
+        
+        return {
+          ...prev,
+          image: primary,
+          image2: secondary,
+          image3: tertiary
+        }
+      })
 
       setUploadProgress('')
       alert(`✓ ${urls.length} image${urls.length > 1 ? 's' : ''} uploaded to the atelier successfully!`)
     } catch (error: any) {
       setUploadProgress('')
       alert('Upload error: ' + error.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleVideoUpload = async (e: any) => {
+    try {
+      const files = Array.from((e.target?.files || e.dataTransfer?.files) || [])
+      if (files.length === 0) return
+      const file = files[0] as File
+
+      setUploading(true)
+      setUploadProgress('Preparing cinematic reel...')
+
+      const formDataUpload = new FormData()
+      formDataUpload.append('files', file)
+
+      const resp = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formDataUpload
+      })
+
+      const result = await resp.json()
+      if (!resp.ok || !result.success) throw new Error(result.error || 'Video sync failed')
+
+      setFormData(prev => ({ ...prev, video_url: result.urls[0] }))
+      setUploadProgress('')
+      alert('✓ Cinematic reel synced successfully!')
+    } catch (error: any) {
+      setUploadProgress('')
+      alert('Video error: ' + error.message)
     } finally {
       setUploading(false)
     }
@@ -349,21 +389,20 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                 onClick={() => setIsAdding(false)}
                 className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100]"
               />
-              <motion.div
+               <motion.div
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                className="fixed inset-8 md:inset-16 bg-[#fdf9f2] z-[101] shadow-2xl overflow-y-auto p-8 md:p-12"
+                className="fixed inset-4 md:inset-16 bg-[#fdf9f2] z-[101] shadow-2xl overflow-y-auto p-6 md:p-12"
               >
                 <div className="max-w-4xl mx-auto">
-                  <div className="flex justify-between items-center mb-12">
-                    <h2 className="font-headline text-4xl">{editingId ? 'Edit Masterpiece' : `New ${displayName} Creation`}</h2>
+                  <div className="flex justify-between items-center mb-10">
+                    <h2 className="font-headline text-3xl md:text-4xl">{editingId ? 'Edit Masterpiece' : `New ${displayName} Creation`}</h2>
                     <button onClick={() => setIsAdding(false)} className="material-symbols-outlined text-2xl hover:text-red-500 transition-colors">close</button>
                   </div>
-
                   <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     {/* Left Column */}
-                    <div className="space-y-8">
+                    <div className="space-y-8 text-left">
                       <div>
                         <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Item ID (Used in URLs)</label>
                         <input
@@ -409,46 +448,45 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none resize-none"
                         />
                       </div>
+
                       {/* Images */}
-                      {/* Direct Image Upload System */}
                       <div className="space-y-4">
                         <label className="font-body text-[10px] uppercase tracking-widest text-[#a3851a] font-bold mb-2 block">Atelier Visual Assets (Multi-Upload)</label>
                         
-                        {!formData.image && (
-                          <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-[#1c1c18]/10 bg-white hover:border-[#a3851a] transition-all group cursor-pointer relative">
-                            <span className="material-symbols-outlined text-4xl text-[#747878] mb-4 group-hover:scale-110 transition-transform">cloud_upload</span>
-                            <p className="font-headline text-lg">Acquire Masterpiece Images</p>
-                            <p className="font-body text-[10px] uppercase tracking-widest text-[#747878] mt-2">Select up to 10 files from your device</p>
+                        {!formData.image ? (
+                          <div 
+                            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              setIsDragging(false)
+                              const files = e.dataTransfer.files
+                              if (files.length > 0) {
+                                handleMultipleFileUpload({ target: { files } } as any)
+                              }
+                            }}
+                            className={`flex flex-col items-center justify-center p-12 border-2 border-dashed transition-all group cursor-pointer relative z-20 ${isDragging ? 'border-[#a3851a] bg-[#a3851a]/10 scale-[1.02] shadow-[0_0_40px_rgba(163,133,26,0.1)]' : 'border-[#1c1c18]/10 bg-white hover:border-[#a3851a]'}`}
+                          >
+                            <span className={`material-symbols-outlined text-4xl mb-4 text-[#747878] group-hover:text-[#a3851a]`}>
+                              cloud_upload
+                            </span>
+                            <p className="font-headline text-lg text-[#1c1c18]">Acquire Masterpiece Images</p>
+                            <p className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mt-2">Drag & Drop files or click below</p>
                             
-                            <div className="flex gap-4 mt-8">
-                              {/* Browse Local */}
-                              <label className="gold-satin text-white px-6 py-3 text-[9px] uppercase tracking-widest font-bold cursor-pointer hover:shadow-lg transition-all flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[14px]">folder_open</span>
-                                Browse Local
-                                <input type="file" multiple className="hidden" accept="image/*" onChange={handleMultipleFileUpload} disabled={uploading} />
-                              </label>
-                            </div>
-
-                            {uploading && (
-                              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                                <div className="w-12 h-12 border-4 border-[#a3851a]/20 border-t-[#a3851a] rounded-full animate-spin mb-4" />
-                                <p className="font-body text-[10px] uppercase tracking-widest font-bold text-[#a3851a] text-center max-w-[200px]">
-                                  {uploadProgress || 'Syncing with Cloud Storage...'}
-                                </p>
-                              </div>
-                            )}
+                            <label className="gold-satin text-white px-8 py-3 text-[9px] uppercase tracking-widest font-bold mt-6 cursor-pointer hover:shadow-lg">
+                              Browse Local
+                              <input type="file" multiple className="hidden" accept="image/*" onChange={handleMultipleFileUpload} disabled={uploading} />
+                            </label>
                           </div>
-                        )}
-
-                        {formData.image && (
-                          <div className="space-y-6">
+                        ) : (
+                          <div className="space-y-6 p-4 border border-[#1c1c18]/5 rounded-sm bg-white shadow-inner">
                             <div className="grid grid-cols-3 gap-4">
                               {[
                                 { url: formData.image, label: 'Front' },
                                 { url: formData.image2, label: 'Secondary' },
                                 { url: formData.image3, label: 'Tertiary' }
                               ].map((img, idx) => (
-                                <div key={idx} className="relative aspect-[3/4] bg-white border border-[#1c1c18]/5 overflow-hidden group shadow-md">
+                                <div key={idx} className="relative aspect-[3/4] bg-[#fdf9f2] overflow-hidden group">
                                   {img.url ? (
                                     <>
                                       <Image src={img.url?.split(',')[0]} alt={img.label} fill className="object-cover" />
@@ -457,7 +495,6 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                                           +{img.url.split(',').length - 1} More
                                         </div>
                                       )}
-                                      <div className="absolute bottom-0 inset-x-0 p-2 bg-black/60 backdrop-blur-sm text-white text-[8px] uppercase tracking-widest text-center">{img.label}</div>
                                       <button 
                                         type="button"
                                         onClick={() => setFormData(prev => ({ ...prev, [idx === 0 ? 'image' : idx === 1 ? 'image2' : 'image3']: '' }))}
@@ -475,27 +512,55 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                                 </div>
                               ))}
                             </div>
-                            <div className="flex justify-between items-center bg-[#1c1c18] text-white p-4 rounded-sm shadow-xl">
-                              <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-[#a3851a]">verified</span>
-                                <span className="text-[9px] uppercase tracking-widest font-bold">Assets Curated Successfully</span>
-                              </div>
-                              <label className="text-[9px] uppercase tracking-widest font-bold border border-[#a3851a]/30 px-3 py-1 hover:bg-[#a3851a] transition-all cursor-pointer">
-                                Replace All
-                                <input type="file" multiple className="hidden" accept="image/*" onChange={handleMultipleFileUpload} disabled={uploading} />
-                              </label>
+                            <div className="flex items-center justify-between pt-4 border-t border-[#1c1c18]/5">
+                               <div className="flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-[#a3851a] text-sm">verified</span>
+                                  <span className="text-[9px] uppercase tracking-widest font-bold text-[#747878]">Assets Synced</span>
+                               </div>
+                               <label className="text-[9px] uppercase tracking-widest font-bold text-[#a3851a] cursor-pointer hover:underline">
+                                 Replace All
+                                 <input type="file" multiple className="hidden" onChange={handleMultipleFileUpload} />
+                               </label>
                             </div>
                           </div>
                         )}
                       </div>
-                      <div>
-                        <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Video URL</label>
-                        <input
-                          type="text" value={formData.video_url || ''}
-                          onChange={e => setFormData({ ...formData, video_url: e.target.value })}
-                          className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none text-sm"
-                          placeholder="e.g https://cdn.example.com/reel.mp4"
-                        />
+
+                      {/* Cinematic Reel (Video) */}
+                      <div className="space-y-4">
+                        <label className="font-body text-[10px] uppercase tracking-[0.2em] text-[#a3851a] font-bold mb-2 block">Cinematic Product Reel</label>
+                        
+                        {!formData.video_url ? (
+                          <div 
+                            onDragOver={(e) => { e.preventDefault(); setIsVideoDragging(true) }}
+                            onDragLeave={() => setIsVideoDragging(false)}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              setIsVideoDragging(false)
+                              handleVideoUpload(e)
+                            }}
+                            className={`flex flex-col items-center justify-center p-8 border-2 border-dashed transition-all group cursor-pointer relative z-20 ${isVideoDragging ? 'border-[#a3851a] bg-[#a3851a]/10 scale-[1.02]' : 'border-[#1c1c18]/10 bg-white'}`}
+                          >
+                            <span className="material-symbols-outlined text-3xl mb-3 text-[#747878]">movie</span>
+                            <p className="font-headline text-md">Feature Film</p>
+                            <p className="font-body text-[9px] uppercase tracking-widest text-[#747878]">Drop video or click to upload</p>
+                            <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="video/*" onChange={handleVideoUpload} disabled={uploading} />
+                          </div>
+                        ) : (
+                          <div className="relative aspect-video bg-[#1c1c18] group overflow-hidden shadow-lg border-2 border-transparent">
+                            <video src={formData.video_url} className="w-full h-full object-cover opacity-60" muted loop autoPlay />
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                               <span className="material-symbols-outlined text-white text-4xl opacity-40 group-hover:scale-125 transition-transform">play_circle</span>
+                            </div>
+                            <button 
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, video_url: '' }))}
+                              className="absolute top-4 right-4 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                            >
+                              <span className="material-symbols-outlined text-sm">delete</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 

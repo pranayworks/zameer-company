@@ -11,10 +11,10 @@ export function AboutSection() {
   }
 
   const visionaries = [
-    { name: 'Zameer Pattan', role: 'FOUNDER', desc: 'Master artisans in traditional Indian weaves.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775091849/WhatsApp_Image_2026-04-02_at_6.32.32_AM_zommec.jpg' },
-    { name: 'Sarvajeeth Singh ', role: 'CHIEF DESIGNER', desc: 'Bridging the gap between contemporary form and heritage fabric.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775092015/WhatsApp_Image_2026-04-02_at_6.36.35_AM_fqkwvw.jpg' },
-    { name: 'Dhanush', role: 'TEXTILE SPECIALIST', desc: 'Ensuring absolute purity and ethical sourcing of our fabrics globally.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775092714/WhatsApp_Image_2026-04-02_at_6.44.44_AM_eap0xg.jpg' },
-    { name: 'Pranay', role: 'SUSTAINABILITY LEAD', desc: 'Implementing zero-waste techniques into traditional handloom setups.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775092713/WhatsApp_Image_2026-04-02_at_6.48.04_AM_jksqr0.jpg' }
+    { name: 'Pattan Zameer', role: 'FOUNDER', desc: 'Pattan Zameer is the Founder of the company and the driving force behind its creation. He defines the vision, business model, and long-term goals. With strong knowledge of business and Indian stock markets, he focuses on strategic planning, investment decisions, and identifying profitable opportunities. He guides the leadership team and ensures the company grows in the right direction.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775091849/WhatsApp_Image_2026-04-02_at_6.32.32_AM_zommec.jpg' },
+    { name: 'M. Pranay Kumar', role: 'CEO', desc: 'M. Pranay Kumar is responsible for executing the vision set by the founder. As CEO, he manages the overall business activities, leads the team, and ensures daily operations align with company goals. He focuses on growth, sales performance, and building the brand in the e-commerce market.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775092713/WhatsApp_Image_2026-04-02_at_6.48.04_AM_jksqr0.jpg' },
+    { name: 'R. Sarvajeeth Singh', role: 'COO', desc: 'R. Sarvajeeth Singh handles the core operations of the business. He manages inventory, supplier relationships, order processing, packaging, and delivery. His role ensures smooth and efficient day-to-day functioning of the company.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775092015/WhatsApp_Image_2026-04-02_at_6.36.35_AM_fqkwvw.jpg' },
+    { name: 'R. Dhanush Rao', role: 'CFO', desc: 'R. Dhanush Rao oversees the financial side of the business. He manages budgeting, tracks expenses and profits, sets pricing strategies, and ensures financial stability. His role is key to maintaining profitability and sustainable growth.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775092714/WhatsApp_Image_2026-04-02_at_6.44.44_AM_eap0xg.jpg' }
   ]
 
   return (
@@ -100,11 +100,11 @@ export function AboutSection() {
                     initial={{ filter: "grayscale(1)", scale: 1 }}
                     transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
                   >
-                    <Image 
-                      src={person.img} 
-                      alt={person.name} 
-                      fill 
-                      className="object-cover" 
+                    <Image
+                      src={person.img}
+                      alt={person.name}
+                      fill
+                      className="object-cover"
                     />
                   </motion.div>
                 </div>

@@ -58,7 +58,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   }
 
   const handleOpenAdd = () => {
-    setFormData({ ...DEFAULT_FORM_DATA, category: category === 'Others' ? 'Kids' : category })
+    const defaultReturnPolicy = category !== 'Jewellery'
+    setFormData({ ...DEFAULT_FORM_DATA, category: category === 'Others' ? 'Kids' : category, has_return_policy: defaultReturnPolicy })
     setIsAdding(true)
     setEditingId(null)
   }
@@ -618,6 +619,43 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addToArray('sizes', e.currentTarget.value); e.currentTarget.value = '' } }}
                           className="w-full bg-white border-b border-[#1c1c18]/20 p-4 text-sm outline-none focus:border-[#a3851a]"
                         />
+                      </div>
+
+                      {/* Return Policy */}
+                      <div className="space-y-4 pt-6 mt-4 border-t border-[#1c1c18]/10">
+                        <label className="font-body text-[10px] uppercase tracking-[0.2em] text-[#a3851a] font-bold">Return Policy</label>
+                        <div className="flex flex-col sm:flex-row gap-6">
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                             <div className="relative flex items-center justify-center">
+                               <input 
+                                 type="radio" 
+                                 name="return_policy" 
+                                 checked={formData.has_return_policy === true} 
+                                 onChange={() => setFormData({ ...formData, has_return_policy: true })}
+                                 className="appearance-none w-5 h-5 border border-[#1c1c18]/20 rounded-full checked:border-[#a3851a] transition-all"
+                               />
+                               <div className={`absolute w-2.5 h-2.5 bg-[#a3851a] rounded-full transition-transform ${formData.has_return_policy === true ? 'scale-100' : 'scale-0'}`} />
+                             </div>
+                             <span className="font-body text-[10px] font-bold uppercase tracking-widest text-[#1c1c18]">Allow Return (5 Days)</span>
+                          </label>
+
+                          <label className="flex items-center gap-3 cursor-pointer group">
+                             <div className="relative flex items-center justify-center">
+                               <input 
+                                 type="radio" 
+                                 name="return_policy" 
+                                 checked={formData.has_return_policy === false} 
+                                 onChange={() => setFormData({ ...formData, has_return_policy: false })}
+                                 className="appearance-none w-5 h-5 border border-[#1c1c18]/20 rounded-full checked:border-[#a3851a] transition-all"
+                               />
+                               <div className={`absolute w-2.5 h-2.5 bg-[#a3851a] rounded-full transition-transform ${formData.has_return_policy === false ? 'scale-100' : 'scale-0'}`} />
+                             </div>
+                             <span className="font-body text-[10px] font-bold uppercase tracking-widest text-[#1c1c18]">Non-Returnable</span>
+                          </label>
+                        </div>
+                        <p className="font-body text-[9px] text-[#747878] italic bg-white/50 p-3 border-l-2 border-[#a3851a]">
+                          {formData.has_return_policy ? "Customer View: ✓ Can be returned by 5 days" : "Customer View: ✕ Non-returnable"}
+                        </p>
                       </div>
                     </div>
 

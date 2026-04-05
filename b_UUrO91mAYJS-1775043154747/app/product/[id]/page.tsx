@@ -34,6 +34,7 @@ interface Product {
   care?: string[]
   fit?: string[]
   video_url?: string
+  has_return_policy?: boolean
 }
 
 export default function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -470,59 +471,82 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
 
-              {/* Stock Status Indicator */}
-              {product.stock !== undefined && (
-                <div className="mb-8">
-                  {product.stock > 0 ? (
-                    <p className={`font-body text-[10px] uppercase tracking-widest ${product.stock < 5 ? 'text-amber-500 animate-pulse' : 'text-green-600'}`}>
-                      {product.stock < 5 ? `⚠️ Only ${product.stock} Pieces Left in Archive` : '✓ Piece Available in Atelier'}
-                    </p>
-                  ) : (
-                    <p className="font-body text-[10px] uppercase tracking-widest text-red-500 font-bold">
-                      ❌ Atelier Vault Empty (Restocking in Progress)
-                    </p>
-                  )}
-                </div>
-              )}
+               {/* Stock Status Indicator */}
+               {product.stock !== undefined && (
+                 <div className="mb-8">
+                   {product.stock > 0 ? (
+                     <p className={`font-body text-[10px] uppercase tracking-widest ${product.stock < 5 ? 'text-amber-500 animate-pulse' : 'text-green-600'}`}>
+                       {product.stock < 5 ? `⚠️ Only ${product.stock} Pieces Left in Archive` : '✓ Piece Available in Atelier'}
+                     </p>
+                   ) : (
+                     <p className="font-body text-[10px] uppercase tracking-widest text-red-500">
+                       ✕ Piece Out of Archive (Restocking Soon)
+                     </p>
+                   )}
+                 </div>
+               )}
 
-                <div className="flex flex-col gap-4 mb-12">
-                  <div className="flex gap-4">
-                    <button 
-                       onClick={handleAddToCart}
-                       disabled={product.stock === 0}
-                       className={`flex-1 ${product.stock === 0 ? 'bg-[#1c1c18]/20 cursor-not-allowed text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold transition-all`}
-                    >
-                      {product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}
-                    </button>
-                    <button 
-                      onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))}
-                      className={`p-6 border border-[#1c1c18]/10 transition-all flex items-center justify-center ${product && isInWishlist(product.id) ? 'bg-red-50 text-red-500 border-red-200' : 'hover:bg-[#1c1c18] hover:text-white'}`}
-                    >
-                      <span className={`material-symbols-outlined text-2xl ${product && isInWishlist(product.id) ? 'fill-1' : ''}`} style={{ fontVariationSettings: product && isInWishlist(product.id) ? "'FILL' 1" : "'FILL' 0" }}>
-                        favorite
+               {/* Return Policy Note */}
+               <div className="mb-12 p-5 bg-[#1c1c18]/5 border-l-2 border-[#a3851a] group hover:bg-[#1c1c18]/10 transition-colors">
+                 <div className="flex items-center gap-4">
+                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) ? 'bg-[#a3851a]/10 text-[#a3851a]' : 'bg-red-500/10 text-red-500'}`}>
+                      <span className="material-symbols-outlined text-sm">
+                        {(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) ? 'assignment_return' : 'rule'}
                       </span>
-                    </button>
-                    <button 
-                      onClick={handleShare}
-                      className="p-6 border border-[#1c1c18]/10 transition-all flex items-center justify-center hover:bg-[#a3851a] hover:text-white hover:border-[#a3851a] group relative"
-                      title="Share Masterpiece"
-                    >
-                      <span className="material-symbols-outlined text-2xl">
-                        ios_share
-                      </span>
-                    </button>
-                  </div>
-                  
-                  {product.stock === 0 && (
-                    <button 
-                      onClick={() => setIsNotifyModalOpen(true)}
-                      className="w-full bg-[#1c1c18] text-white py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-                    >
-                      <span className="material-symbols-outlined text-sm">notifications</span>
-                      Notify Me When In Stock
-                    </button>
-                  )}
-                </div>
+                   </div>
+                   <div>
+                     <h4 className="font-body text-[10px] uppercase tracking-[0.2em] font-bold text-[#1c1c18]">
+                       {(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) ? 'Atelier Return Policy' : 'Fixed Creation Notice'}
+                     </h4>
+                     <p className="font-body text-[#747878] text-[9px] uppercase tracking-widest mt-1">
+                       {(product.has_return_policy !== false && (product.has_return_policy === true || product.category !== 'Jewellery')) 
+                         ? '✓ Can be returned by 5 days' 
+                         : '✕ Non-returnable'
+                       }
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="flex flex-col gap-4 mb-12">
+                 <div className="flex gap-4">
+                   <button 
+                      onClick={handleAddToCart}
+                      disabled={product.stock === 0}
+                      className={`flex-1 ${product.stock === 0 ? 'bg-[#1c1c18]/20 cursor-not-allowed text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold transition-all`}
+                   >
+                     {product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}
+                   </button>
+                   <button 
+                     onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))}
+                     className={`p-6 border border-[#1c1c18]/10 transition-all flex items-center justify-center ${product && isInWishlist(product.id) ? 'bg-red-50 text-red-500 border-red-200' : 'hover:bg-[#1c1c18] hover:text-white'}`}
+                   >
+                     <span className={`material-symbols-outlined text-2xl ${product && isInWishlist(product.id) ? 'fill-1' : ''}`} style={{ fontVariationSettings: product && isInWishlist(product.id) ? "'FILL' 1" : "'FILL' 0" }}>
+                       favorite
+                     </span>
+                   </button>
+                   <button 
+                     onClick={handleShare}
+                     className="p-6 border border-[#1c1c18]/10 transition-all flex items-center justify-center hover:bg-[#a3851a] hover:text-white hover:border-[#a3851a] group relative"
+                     title="Share Masterpiece"
+                   >
+                     <span className="material-symbols-outlined text-2xl">
+                       ios_share
+                     </span>
+                   </button>
+                 </div>
+                 
+                 {product.stock === 0 && (
+                   <button 
+                     onClick={() => setIsNotifyModalOpen(true)}
+                     className="w-full bg-[#1c1c18] text-white py-6 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                   >
+                     <span className="material-symbols-outlined text-sm">notifications</span>
+                     Notify Me When In Stock
+                   </button>
+                 )}
+               </div>
+
               <button className="w-full border border-[#1c1c18]/10 py-6 font-body uppercase tracking-[0.3em] text-[10px] text-[#1c1c18] hover:bg-[#1c1c18] hover:text-white transition-all mb-16">
                 Find In Boutique
               </button>

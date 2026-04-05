@@ -113,23 +113,27 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
       setUploadProgress('Preparing files...')
 
       const filesToUpload = files.slice(0, 10)
-      const formDataUpload = new FormData()
-      filesToUpload.forEach(file => formDataUpload.append('files', file))
+      const urls: string[] = []
 
-      setUploadProgress('Syncing with Atelier Cloud Storage...')
+      for (let i = 0; i < filesToUpload.length; i++) {
+        setUploadProgress(`Syncing image ${i + 1} of ${filesToUpload.length} with Atelier Cloud...`)
+        const file = filesToUpload[i]
+        const formDataUpload = new FormData()
+        formDataUpload.append('files', file)
 
-      const resp = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formDataUpload
-      })
+        const resp = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formDataUpload
+        })
 
-      const result = await resp.json()
+        const result = await resp.json()
 
-      if (!resp.ok || !result.success) {
-        throw new Error(result.error || 'Upload failed')
+        if (!resp.ok || !result.success) {
+          throw new Error(result.error || `Failed to upload image ${i + 1}`)
+        }
+        
+        urls.push(...result.urls)
       }
-
-      const urls: string[] = result.urls
       
       // Smart distribution: 
       // index 0 -> image

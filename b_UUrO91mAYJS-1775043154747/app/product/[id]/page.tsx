@@ -133,7 +133,8 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
     </div>
   )
 
-  
+  const allImages = [...(product.image?.split(',') || []), product.image2, product.image3].filter(Boolean) as string[];
+
 
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : (product.category === 'Jewellery' ? ['One Size'] : ['XS', 'S', 'M', 'L', 'XL'])
   const handleAddToCart = () => {
@@ -158,7 +159,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       id: product.id,
       name: product.title,
       price: product.price,
-      image: product.image,
+      image: allImages[0] || '',
       quantity: quantity,
       selectedSize: (isOneSizeCategory 
         ? (product.category === 'Jewellery' ? 'One Size' : 'Standard 6-Yard Drape') 
@@ -173,7 +174,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
     "@context": "https://schema.org",
     "@type": "Product",
     "name": product.title,
-    "image": [product.image, product.image2, product.image3].filter(Boolean),
+    "image": allImages,
     "description": product.description,
     "sku": product.id,
     "brand": {
@@ -228,10 +229,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                    exit={{ opacity: 0, x: -100 }}
                    transition={{ duration: 0.5, ease: "easeInOut" }}
                    className="absolute inset-0 cursor-zoom-in"
-                   onClick={() => setZoomedImage([product.image, product.image2, product.image3].filter(Boolean)[currentImageIndex] as string)}
+                   onClick={() => setZoomedImage(allImages[currentImageIndex])}
                  >
                    <Image
-                     src={[product.image, product.image2, product.image3].filter(Boolean)[currentImageIndex] || '/placeholder.jpg'}
+                     src={allImages[currentImageIndex] || '/placeholder.jpg'}
                      alt={`${product.title} - View ${currentImageIndex + 1}`}
                      fill
                      className="object-cover group-hover:scale-105 transition-transform duration-1000"
@@ -241,13 +242,12 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                </AnimatePresence>
 
                {/* Carousel Controls */}
-               {[product.image, product.image2, product.image3].filter(Boolean).length > 1 && (
+               {allImages.length > 1 && (
                  <>
                    <div className="absolute inset-y-0 left-4 flex items-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                      <button 
                        onClick={() => {
-                         const images = [product.image, product.image2, product.image3].filter(Boolean);
-                         setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+                         setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
                        }}
                        className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg"
                      >
@@ -257,8 +257,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                    <div className="absolute inset-y-0 right-4 flex items-center z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                      <button 
                        onClick={() => {
-                         const images = [product.image, product.image2, product.image3].filter(Boolean);
-                         setCurrentImageIndex((prev) => (prev + 1) % images.length)
+                         setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
                        }}
                        className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center hover:bg-[#a3851a] hover:text-white transition-all shadow-lg"
                      >
@@ -268,7 +267,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                    
                    {/* Indicators */}
                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-                     {[product.image, product.image2, product.image3].filter(Boolean).map((_, idx) => (
+                     {allImages.map((_, idx) => (
                        <button 
                          key={idx}
                          onClick={() => setCurrentImageIndex(idx)}
@@ -291,9 +290,9 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                  initial={{ opacity: 0 }}
                  animate={{ opacity: 1 }}
                  transition={{ delay: 0.2 }}
-                 onClick={() => setZoomedImage(product?.image || '')}
+                 onClick={() => setZoomedImage(allImages[0] || '')}
                >
-                 <Image src={product?.image || ''} alt="Detail 1" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
+                 <Image src={allImages[0] || '/placeholder.jpg'} alt="Detail 1" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <span className="material-symbols-outlined text-white text-3xl drop-shadow-lg">zoom_in</span>
                  </div>

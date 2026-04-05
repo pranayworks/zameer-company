@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -8,7 +8,6 @@ import Image from 'next/image'
 import { use } from 'react'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
-import { supabase } from '@/lib/supabase'
 import {
   Product,
   checkAdminAuth,
@@ -33,7 +32,9 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState('')
   const [formData, setFormData] = useState<Partial<Product>>({ ...DEFAULT_FORM_DATA, category })
+  const drivePickerRef = useRef<Window | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -81,6 +82,10 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.image) {
+      alert("Atelier requirement: Please select at least one masterpiece image for this creation.")
+      return
+    }
     setLoading(true)
     const result = await upsertProduct(formData, editingId)
     if (!result.success) {
@@ -95,26 +100,65 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
     setLoading(false)
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload via server-side API (auto-creates bucket if missing)
+  const handleMultipleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
+      const files = Array.from(e.target.files || [])
+      if (files.length === 0) return
+      if (files.length > 10) {
+        alert('Maximum 10 images allowed. Only the first 10 will be uploaded.')
+      }
+
       setUploading(true)
-      const file = e.target.files?.[0]
-      if (!file) return
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}.${fileExt}`
-      const filePath = `products/${fileName}`
-      const { error: uploadError } = await supabase.storage.from('product-images').upload(filePath, file)
-      if (uploadError) throw uploadError
-      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(filePath)
-      setFormData(prev => ({ ...prev, image: publicUrl }))
-      alert("Image uploaded successfully!")
+      setUploadProgress('Preparing files...')
+
+      const filesToUpload = files.slice(0, 10)
+      const formDataUpload = new FormData()
+      filesToUpload.forEach(file => formDataUpload.append('files', file))
+
+      setUploadProgress('Syncing with Atelier Cloud Storage...')
+
+      const resp = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formDataUpload
+      })
+
+      const result = await resp.json()
+
+      if (!resp.ok || !result.success) {
+        throw new Error(result.error || 'Upload failed')
+      }
+
+      const urls: string[] = result.urls
+      
+      // Smart distribution: 
+      // index 0 -> image
+      // index 1 -> image2
+      // index 2 -> image3
+      // index 3 to 9 -> append to image as comma-separated string
+      
+      const primaryImage = [urls[0], ...urls.slice(3)].filter(Boolean).join(',')
+      const secondaryImage = urls[1]
+      const tertiaryImage = urls[2]
+
+      setFormData(prev => ({
+        ...prev,
+        image:  primaryImage || prev.image,
+        image2: secondaryImage || prev.image2,
+        image3: tertiaryImage || prev.image3
+      }))
+
+      setUploadProgress('')
+      alert(`✓ ${urls.length} image${urls.length > 1 ? 's' : ''} uploaded to the atelier successfully!`)
     } catch (error: any) {
-      alert("Error uploading: " + error.message)
+      setUploadProgress('')
+      alert('Upload error: ' + error.message)
     } finally {
       setUploading(false)
     }
   }
 
+  // Google Drive Picker via OAuth popup
   const addToArray = (field: 'fabric' | 'care' | 'fit' | 'sizes', val: string) => {
     if (!val) return
     setFormData(prev => ({ ...prev, [field]: [...((prev[field] as string[]) || []), val] }))
@@ -361,42 +405,83 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         />
                       </div>
                       {/* Images */}
+                      {/* Direct Image Upload System */}
                       <div className="space-y-4">
-                        <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Product Images</label>
-                        <div className="flex flex-col gap-4">
-                          <div className="flex gap-4">
-                            <input
-                              type="text" required value={formData.image}
-                              onChange={e => setFormData({ ...formData, image: e.target.value })}
-                              className="flex-1 bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none text-sm"
-                              placeholder="Primary image URL"
-                            />
-                            <label className="cursor-pointer bg-[#1c1c18] text-white px-6 py-4 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 hover:bg-[#a3851a] transition-all shrink-0">
-                              <span className="material-symbols-outlined text-[14px]">{uploading ? 'sync' : 'upload'}</span>
-                              {uploading ? '...' : 'Upload'}
-                              <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
-                            </label>
-                          </div>
-                          <input
-                            type="text" value={formData.image2 || ''}
-                            onChange={e => setFormData({ ...formData, image2: e.target.value })}
-                            className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none text-sm"
-                            placeholder="Secondary image URL"
-                          />
-                          <input
-                            type="text" value={formData.image3 || ''}
-                            onChange={e => setFormData({ ...formData, image3: e.target.value })}
-                            className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none text-sm"
-                            placeholder="Tertiary image URL"
-                          />
-                          <div className="grid grid-cols-3 gap-4 mt-2">
-                            {[formData.image, formData.image2, formData.image3].map((img, idx) => img && (
-                              <div key={idx} className="relative aspect-[3/2] bg-white border border-[#1c1c18]/5 overflow-hidden">
-                                <Image src={img} alt={`Preview ${idx + 1}`} fill className="object-cover" />
+                        <label className="font-body text-[10px] uppercase tracking-widest text-[#a3851a] font-bold mb-2 block">Atelier Visual Assets (Multi-Upload)</label>
+                        
+                        {!formData.image && (
+                          <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-[#1c1c18]/10 bg-white hover:border-[#a3851a] transition-all group cursor-pointer relative">
+                            <span className="material-symbols-outlined text-4xl text-[#747878] mb-4 group-hover:scale-110 transition-transform">cloud_upload</span>
+                            <p className="font-headline text-lg">Acquire Masterpiece Images</p>
+                            <p className="font-body text-[10px] uppercase tracking-widest text-[#747878] mt-2">Select up to 10 files from your device</p>
+                            
+                            <div className="flex gap-4 mt-8">
+                              {/* Browse Local */}
+                              <label className="gold-satin text-white px-6 py-3 text-[9px] uppercase tracking-widest font-bold cursor-pointer hover:shadow-lg transition-all flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[14px]">folder_open</span>
+                                Browse Local
+                                <input type="file" multiple className="hidden" accept="image/*" onChange={handleMultipleFileUpload} disabled={uploading} />
+                              </label>
+                            </div>
+
+                            {uploading && (
+                              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+                                <div className="w-12 h-12 border-4 border-[#a3851a]/20 border-t-[#a3851a] rounded-full animate-spin mb-4" />
+                                <p className="font-body text-[10px] uppercase tracking-widest font-bold text-[#a3851a] text-center max-w-[200px]">
+                                  {uploadProgress || 'Syncing with Cloud Storage...'}
+                                </p>
                               </div>
-                            ))}
+                            )}
                           </div>
-                        </div>
+                        )}
+
+                        {formData.image && (
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-3 gap-4">
+                              {[
+                                { url: formData.image, label: 'Front' },
+                                { url: formData.image2, label: 'Secondary' },
+                                { url: formData.image3, label: 'Tertiary' }
+                              ].map((img, idx) => (
+                                <div key={idx} className="relative aspect-[3/4] bg-white border border-[#1c1c18]/5 overflow-hidden group shadow-md">
+                                  {img.url ? (
+                                    <>
+                                      <Image src={img.url?.split(',')[0]} alt={img.label} fill className="object-cover" />
+                                      {img.label === 'Front' && img.url?.includes(',') && (
+                                        <div className="absolute top-2 left-2 bg-black/80 text-white text-[9px] px-2 py-1 rounded">
+                                          +{img.url.split(',').length - 1} More
+                                        </div>
+                                      )}
+                                      <div className="absolute bottom-0 inset-x-0 p-2 bg-black/60 backdrop-blur-sm text-white text-[8px] uppercase tracking-widest text-center">{img.label}</div>
+                                      <button 
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, [idx === 0 ? 'image' : idx === 1 ? 'image2' : 'image3']: '' }))}
+                                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <span className="material-symbols-outlined text-sm">close</span>
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-[#747878] opacity-20 border-2 border-dashed border-[#1c1c18]/10">
+                                      <span className="material-symbols-outlined">image</span>
+                                      <span className="text-[8px] uppercase">{img.label} Empty</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex justify-between items-center bg-[#1c1c18] text-white p-4 rounded-sm shadow-xl">
+                              <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-[#a3851a]">verified</span>
+                                <span className="text-[9px] uppercase tracking-widest font-bold">Assets Curated Successfully</span>
+                              </div>
+                              <label className="text-[9px] uppercase tracking-widest font-bold border border-[#a3851a]/30 px-3 py-1 hover:bg-[#a3851a] transition-all cursor-pointer">
+                                Replace All
+                                <input type="file" multiple className="hidden" accept="image/*" onChange={handleMultipleFileUpload} disabled={uploading} />
+                              </label>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Video URL</label>

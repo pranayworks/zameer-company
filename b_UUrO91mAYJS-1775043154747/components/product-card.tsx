@@ -54,7 +54,7 @@ export function ProductCard({
       <Link href={productPath} className="block relative">
         <div className="aspect-[3/4] overflow-hidden bg-[#f1ede6] relative mb-6">
           <Image
-            src={image || '/placeholder.jpg'}
+            src={image ? image.split(',')[0] : '/placeholder.jpg'}
             alt={title || 'Product Image'}
             fill
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

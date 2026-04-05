@@ -65,11 +65,11 @@ export function Header() {
                whileHover={{ x: 2 }}
                className="flex flex-col"
             >
-              <span className="text-[10px] md:text-xs font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none mb-1">
-                Friends of 4
+              <span className="text-xl md:text-2xl font-headline tracking-tight text-[#1c1b1b] leading-none mb-1">
+                Style Of Traditionals
               </span>
-              <span className="text-xl md:text-2xl font-headline tracking-tight text-[#1c1b1b] leading-none">
-                Style of Tradition
+              <span className="text-[10px] md:text-xs font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none">
+                Friends of 4
               </span>
             </motion.div>
           </Link>

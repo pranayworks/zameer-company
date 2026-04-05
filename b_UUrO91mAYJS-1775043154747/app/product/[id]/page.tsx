@@ -126,24 +126,34 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   )
 
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : (product.category === 'Jewellery' ? ['One Size'] : ['XS', 'S', 'M', 'L', 'XL'])
-
   const handleAddToCart = () => {
-    if (!selectedSize) {
-      alert('Please select a size')
-      return
+    // Standardize selections based on category
+    const isOneSizeCategory = product.category === 'Jewellery' || product.category === 'Sarees';
+    
+    if (!isOneSizeCategory) {
+      if (!selectedSize) {
+        alert('Please select a size')
+        return
+      }
     }
-    if (product.colors && !selectedColor) {
+    
+    if (product.colors && product.category !== 'Jewellery' && !selectedColor) {
       alert('Please select a color')
       return
     }
+
+    if (!product) return;
+
     addToCart({
       id: product.id,
       name: product.title,
       price: product.price,
       image: product.image,
       quantity: quantity,
-      selectedSize: selectedSize,
-      selectedColor: selectedColor || undefined
+      selectedSize: (isOneSizeCategory 
+        ? (product.category === 'Jewellery' ? 'One Size' : 'Standard 6-Yard Drape') 
+        : selectedSize) as string,
+      selectedColor: (product.category === 'Jewellery' || !product.colors) ? undefined : (selectedColor || undefined)
     })
   }
 
@@ -332,28 +342,30 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 {product.description}
               </p>
 
-              {/* Size Selector */}
-              <div className="mb-8">
-                <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Size</span>
-                <div className="flex flex-wrap gap-4">
-                  {sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`h-12 px-6 border transition-all ${
-                        selectedSize === size
-                          ? 'border-[#a3851a] bg-[#a3851a] text-white font-bold'
-                          : 'border-[#1c1c18]/20 text-[#1c1c18] hover:border-[#1c1c18]'
-                      } font-body text-xs tracking-widest uppercase flex items-center justify-center`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+              {/* Size Selector - Hidden for Jewellery and Sarees */}
+              {product.category !== 'Jewellery' && product.category !== 'Sarees' && (
+                <div className="mb-8">
+                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Size</span>
+                  <div className="flex flex-wrap gap-4">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`h-12 px-6 border transition-all ${
+                          selectedSize === size
+                            ? 'border-[#a3851a] bg-[#a3851a] text-white font-bold'
+                            : 'border-[#1c1c18]/20 text-[#1c1c18] hover:border-[#1c1c18]'
+                        } font-body text-xs tracking-widest uppercase flex items-center justify-center`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Color Selector */}
-              {product.colors && (
+              {/* Color Selector - Hidden for Jewellery */}
+              {product.colors && product.category !== 'Jewellery' && (
                 <div className="mb-12">
                   <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Tone: {selectedColor || 'None Selected'}</span>
                   <div className="flex flex-wrap gap-4">

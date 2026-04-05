@@ -66,7 +66,7 @@ export function HeroSection() {
           </Link>
         </div>
 
-        {/* Logo/Hero Image Element with Background Removal Blend Mode */}
+        {/* New 'Friends of 4' Heritage Crest */}
         <div className="flex-1 w-full flex justify-center items-center lg:justify-end relative">
           <motion.div 
             variants={itemVariants} 
@@ -74,9 +74,9 @@ export function HeroSection() {
           >
             <Image
               src="/hero-logo.png"
-              alt="Friends of 4 Crest"
+              alt="Friends of 4 Heritage Crest"
               fill
-              className="object-contain mix-blend-screen opacity-95 scale-110 lg:scale-[1.2]"
+              className="object-contain opacity-100 scale-100 lg:scale-[1.1]"
               priority
             />
           </motion.div>

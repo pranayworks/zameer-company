@@ -34,11 +34,11 @@ export function LoadingScreen() {
           transition={{ duration: 1.5, ease: "easeOut" }}
           className="relative w-32 h-32 md:w-48 md:h-48 mb-8"
         >
-          <Image src="/logo.png" alt="Friends of 4 Logo" fill className="object-contain mix-blend-multiply drop-shadow-sm" priority />
+          <Image src="/logo.png" alt="Friends of 4 Logo" fill className="object-contain drop-shadow-sm" priority />
         </motion.div>
 
-        <h1 className="text-4xl md:text-6xl font-display italic text-[#1c1b1b] tracking-tight mb-16 flex flex-wrap justify-center overflow-hidden">
-          {"Style of Tradition".split("").map((letter, i) => (
+        <h1 className="text-4xl md:text-6xl font-display italic text-[#1c1b1b] tracking-tight mb-2 flex flex-wrap justify-center overflow-hidden">
+          {"Style Of Traditionals".split("").map((letter, i) => (
             <motion.span
               key={i}
               initial={{ y: "100%", opacity: 0 }}
@@ -54,6 +54,9 @@ export function LoadingScreen() {
             </motion.span>
           ))}
         </h1>
+        <p className="font-body text-[10px] md:text-xs text-[#747878] uppercase tracking-[0.4em] mb-16 font-bold">
+          Friends of 4
+        </p>
 
         {/* Progress Bar */}
         <div className="w-full max-w-2xl h-[2px] bg-[#e6e2db] rounded-full overflow-hidden">

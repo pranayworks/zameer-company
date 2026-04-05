@@ -144,11 +144,14 @@ export function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <Image src="/logo.png" alt="Friends of 4 Logo" width={32} height={32} className="object-contain invert brightness-0" />
-                <p className="font-headline text-lg">Style of Tradition</p>
+                <Image src="/logo.png" alt="Friends of 4 Logo" width={44} height={44} className="object-contain" />
+                <div className="flex flex-col">
+                  <p className="font-headline text-xl leading-none mb-1">Style Of Traditionals</p>
+                  <p className="font-body text-[10px] text-white/50 uppercase tracking-widest leading-none">Friends of 4</p>
+                </div>
               </div>
-              <p className="text-white/40 text-sm font-body">
-                © {new Date().getFullYear()} Friends of 4. All rights reserved.
+              <p className="text-white/40 text-[10px] font-body mt-4">
+                © {new Date().getFullYear()} Friends of 4 Heritage. All rights reserved.
               </p>
             </div>
 

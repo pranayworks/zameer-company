@@ -317,10 +317,11 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                </motion.div>
                {product.video_url ? (
                  <motion.div 
-                   className="aspect-square bg-black relative overflow-hidden group shadow-xl"
+                   className="aspect-square bg-black relative overflow-hidden group shadow-xl cursor-zoom-in"
                    initial={{ opacity: 0 }}
                    animate={{ opacity: 1 }}
                    transition={{ delay: 0.3 }}
+                   onClick={() => product.video_url && setZoomedImage(product.video_url)}
                  >
                    {(() => {
                      const getYoutubeId = (url: string) => {
@@ -853,14 +854,46 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-4 md:inset-12 z-[101] pointer-events-none flex items-center justify-center"
             >
-              <div className="relative w-full h-full pointer-events-auto">
-                <Image 
-                  src={zoomedImage} 
-                  alt="Zoomed Product View" 
-                  fill 
-                  className="object-contain" 
-                  quality={100}
-                />
+              <div className="relative w-full h-full pointer-events-auto flex items-center justify-center">
+                {product?.video_url === zoomedImage ? (
+                  <div className="w-full h-full max-w-5xl aspect-video relative">
+                    {(() => {
+                      const getYoutubeId = (url: string) => {
+                         const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?v=)|(\&v=)|(\/shorts\/))([^#\&\?]*).*/;
+                         const match = url.match(regExp);
+                         return (match && match[9].length === 11) ? match[9] : null;
+                      };
+                      const videoId = getYoutubeId(zoomedImage);
+                      if (videoId) {
+                        return (
+                          <iframe 
+                            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`}
+                            className="w-full h-full border-0 rounded-2xl shadow-2xl"
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            allowFullScreen
+                          />
+                        )
+                      }
+                      return (
+                        <video 
+                          src={zoomedImage}
+                          autoPlay 
+                          controls
+                          loop 
+                          className="w-full h-full object-contain rounded-2xl shadow-2xl"
+                        />
+                      )
+                    })()}
+                  </div>
+                ) : (
+                  <Image 
+                    src={zoomedImage} 
+                    alt="Zoomed Product View" 
+                    fill 
+                    className="object-contain" 
+                    quality={100}
+                  />
+                )}
                 <button 
                   onClick={() => setZoomedImage(null)}
                   className="absolute top-4 right-4 md:top-8 md:right-8 w-12 h-12 bg-white/10 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-colors backdrop-blur-md"

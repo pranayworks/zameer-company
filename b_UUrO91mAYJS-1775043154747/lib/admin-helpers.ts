@@ -140,6 +140,38 @@ export async function upsertProduct(formData: Partial<Product>, editingId: strin
   return { success: true }
 }
 
+export async function deleteOrder(id: string, order_id?: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Attempt deletion by both ID and Order ID using an OR filter for maximum compatibility
+    const matchQuery = order_id ? `id.eq.${id},order_id.eq.${order_id}` : `id.eq.${id}`
+    const { data: deletedRows, error } = await supabase
+      .from('orders')
+      .delete()
+      .or(matchQuery)
+      .select()
+    
+    if (error) throw error
+    
+    if (!deletedRows || deletedRows.length === 0) {
+       // Final fallback for manual records that might have been created with order_id in the 'id' field
+       if (order_id) {
+         const { data: fallbackRows, error: errorFallback } = await supabase
+           .from('orders')
+           .delete()
+           .eq('order_id', order_id.replace('ORD-', ''))
+           .select()
+         if (!errorFallback && fallbackRows && fallbackRows.length > 0) return { success: true }
+       }
+       
+       return { success: false, error: "Record not found or protected by security policies. Ensure you have administrative privileges for historical removal." }
+    }
+    
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err.message || JSON.stringify(err) }
+  }
+}
+
 export async function updateOrderStatus(orderId: string, status: string, orders: Order[]): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
     .from('orders')

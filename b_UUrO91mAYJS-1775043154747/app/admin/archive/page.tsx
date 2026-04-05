@@ -13,6 +13,7 @@ import {
   fetchAllOrders,
   updateOrderStatus as updateStatus,
   downloadInvoicePDF,
+  deleteOrder,
 } from '@/lib/admin-helpers'
 
 export default function AdminArchivePage() {
@@ -48,10 +49,29 @@ export default function AdminArchivePage() {
     await loadOrders()
   }
 
-  const handleDeleteOrder = async (id: string) => {
-    if (!confirm('Permanently remove this record from history?')) return
-    const { error } = await supabase.from('orders').delete().eq('id', id)
-    if (!error) await loadOrders()
+  const handleDeleteOrder = async (order: Order) => {
+    if (!order.id) {
+      alert("Atelier Archive Error: This record has an invalid ID and cannot be identified for deletion.")
+      return
+    }
+    
+    if (!confirm(`Are you sure you want to permanently remove order ORD-${order.order_id} from history? This action is irreversible.`)) return
+    
+    try {
+      setLoading(true)
+      const result = await deleteOrder(order.id, order.order_id)
+      
+      if (!result.success) {
+        alert(`Atelier Archive Error: ${result.error}. This usually happens if you don't have enough permissions or if the record was already removed.`)
+      } else {
+        await loadOrders()
+        alert(`✓ Record ORD-${order.order_id} has been removed from the archives.`)
+      }
+    } catch (err: any) {
+      alert(`Network/Security Error: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleAddManualShipment = async (e: React.FormEvent) => {
@@ -210,9 +230,15 @@ export default function AdminArchivePage() {
                       </div>
                     </td>
                     <td className="p-6">
-                      <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => downloadInvoicePDF(order)} className="material-symbols-outlined text-[18px] text-[#747878] hover:text-[#1c1c18]">download</button>
-                        <button onClick={() => handleDeleteOrder(order.id)} className="material-symbols-outlined text-[18px] text-red-300 hover:text-red-600">delete</button>
+                      <div className="flex gap-4">
+                        <button 
+                          onClick={() => downloadInvoicePDF(order)} 
+                          title="Download Invoice"
+                          className="material-symbols-outlined text-[18px] text-[#747878] hover:text-[#1c1c18] transition-colors"
+                        >
+                          download
+                        </button>
+                        <button onClick={() => handleDeleteOrder(order)} className="material-symbols-outlined text-[18px] text-red-500/40 hover:text-red-600 transition-colors">delete</button>
                       </div>
                     </td>
                   </tr>

@@ -74,21 +74,7 @@ export default function WomenPage() {
         </div>
       </section>
 
-      <div className="sticky top-[70px] md:top-[80px] z-30 bg-[#fdf9f2]/90 backdrop-blur-xl border-b border-[#1c1c18]/10">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-12 py-4 md:py-8 flex justify-between items-center text-[9px] md:text-[10px] font-body uppercase tracking-[0.2em]">
-          <div className="flex gap-6 md:gap-16 overflow-x-auto scrollbar-hide">
-            {['All Items', 'Dresses', 'Blouses', 'Trousers', 'Knitwear'].map((cat) => (
-              <button key={cat} className="hover:text-[#a3851a] transition-colors relative group whitespace-nowrap font-bold">
-                {cat}
-                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#a3851a] transition-all group-hover:w-full" />
-              </button>
-            ))}
-          </div>
-          <button className="flex items-center gap-2 font-bold ml-4">
-             <span className="material-symbols-outlined text-sm">tune</span>
-          </button>
-        </div>
-      </div>
+
 
       {/* Product Grid */}
       <section className="max-w-[1920px] mx-auto px-12 py-32">

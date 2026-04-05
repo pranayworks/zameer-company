@@ -251,40 +251,40 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                       Low Stock: {product.stock}
                     </div>
                   )}
-                  <div className="absolute bottom-4 right-4 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEdit(product)}
-                      className="w-10 h-10 bg-white/90 backdrop-blur shadow-md flex items-center justify-center hover:bg-[#1c1c18] hover:text-white transition-all rounded-full"
-                      title="Edit Product"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">edit</span>
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}
-                      className="w-10 h-10 bg-white/90 backdrop-blur shadow-md flex items-center justify-center hover:bg-red-500 hover:text-white transition-all rounded-full"
-                      title="Delete Product"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  </div>
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
                   <h3 className="font-headline text-lg leading-tight mb-2">{product.title}</h3>
                   <p className="font-body text-[11px] text-[#747878] line-clamp-2 mb-4 flex-1">{product.description}</p>
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex justify-between items-center mb-6">
                     <span className="font-headline text-lg text-[#a3851a]">₹{product.price?.toLocaleString()}</span>
                     <span className={`font-body text-[10px] font-bold ${product.stock < 10 ? 'text-red-500' : 'text-[#747878]'}`}>
                       Stock: {product.stock}
                     </span>
                   </div>
-                  <Link
-                    href={`/product/${product.id}`}
-                    target="_blank"
-                    className="text-[9px] uppercase tracking-widest text-[#a3851a] hover:text-[#1c1c18] font-bold transition-all flex items-center gap-1 group/link"
-                  >
-                    View in Boutique
-                    <span className="material-symbols-outlined text-[10px] group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform">north_east</span>
-                  </Link>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-[#1c1c18]/10 mt-auto">
+                    <button
+                      onClick={() => handleEdit(product)}
+                      className="text-[9px] uppercase tracking-widest text-[#1c1c18] hover:text-[#a3851a] font-bold transition-all flex items-center gap-1 bg-[#1c1c18]/5 px-3 py-1.5 rounded-sm"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">edit_square</span>
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product.id)}
+                      className="text-[9px] uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-500 font-bold transition-all flex items-center gap-1 bg-red-50 px-3 py-1.5 rounded-sm"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">delete</span>
+                      Trash
+                    </button>
+                    <Link
+                      href={`/product/${product.id}`}
+                      target="_blank"
+                      className="text-[9px] uppercase tracking-widest text-[#a3851a] hover:text-[#1c1c18] font-bold transition-all flex items-center gap-1 group/link ml-auto"
+                    >
+                      View
+                      <span className="material-symbols-outlined text-[11px] group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform">north_east</span>
+                    </Link>
+                  </div>
                 </div>
               </motion.div>
             ))}

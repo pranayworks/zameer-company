@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/cart-context'
-import { supabase } from '@/lib/supabase'
+import { getSessionUser } from '@/lib/supabase'
 
 interface CartDrawerProps {
   isOpen: boolean
@@ -27,7 +27,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   }, [isOpen])
 
   const handlePayment = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user } = await getSessionUser()
     if (!user) {
       onClose();
       router.push('/signup');

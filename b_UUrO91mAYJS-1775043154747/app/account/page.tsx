@@ -9,7 +9,7 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { useCart } from '@/context/cart-context'
 import { useWishlist } from '@/context/wishlist-context'
-import { supabase } from '@/lib/supabase'
+import { supabase, getSessionUser } from '@/lib/supabase'
 
 const downloadInvoicePDF = async (order: any) => {
   if (typeof window === 'undefined') return;
@@ -209,7 +209,7 @@ function AccountContent() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const { user, error: authError } = await getSessionUser();
       if (authError || !user) {
         router.push('/login');
         return;
@@ -260,7 +260,7 @@ function AccountContent() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getSessionUser();
     if (!user) return;
 
     const { error } = await supabase

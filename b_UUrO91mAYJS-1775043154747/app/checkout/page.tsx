@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { useCart } from '@/context/cart-context'
-import { supabase } from '@/lib/supabase'
+import { supabase, getSessionUser } from '@/lib/supabase'
 import Link from 'next/link'
 
 declare global {
@@ -49,7 +49,7 @@ export default function CheckoutPage() {
   // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser()
+      const { user, error } = await getSessionUser()
       if (error || !user) {
         router.push('/login')
         return
@@ -411,7 +411,7 @@ export default function CheckoutPage() {
                       onClick={async () => {
                         // Re-fetch in case user just updated
                         setLoading(true)
-                        const { data: { user } } = await supabase.auth.getUser()
+                        const { user } = await getSessionUser()
                         if (user) {
                           const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
                           if (profileData?.address) {

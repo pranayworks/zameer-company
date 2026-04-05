@@ -1,6 +1,7 @@
 'use client'
 
-import { supabase } from '@/lib/supabase'
+import { supabase, getSessionUser } from '@/lib/supabase'
+import { slugify } from '@/lib/utils'
 
 export interface Product {
   id: string
@@ -59,8 +60,8 @@ export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 }
 
 export async function checkAdminAuth(): Promise<{ authorized: boolean; email?: string }> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return { authorized: false }
+  const { user } = await getSessionUser()
+  if (!user) return { authorized: false }
   if (ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
     return { authorized: true, email: user.email || '' }
   }
@@ -116,9 +117,9 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
 export async function upsertProduct(formData: Partial<Product>, editingId: string | null): Promise<{ success: boolean; error?: string; note?: string }> {
   let finalId = (formData.id || '').trim()
   if (!finalId && formData.title) {
-    finalId = formData.title.toLowerCase().replace(/ /g, '-')
+    finalId = slugify(formData.title)
   } else {
-    finalId = finalId.toLowerCase().replace(/ /g, '-')
+    finalId = slugify(finalId)
   }
 
   const productData = { ...formData, id: finalId }

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
-import { supabase } from '@/lib/supabase'
+import { supabase, getSessionUser } from '@/lib/supabase'
 import {
   Product,
   Order,
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
   }
 
   const handleTestEmail = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user } = await getSessionUser()
     if (!user) return alert("Session expired")
     try {
       const resp = await fetch('/api/send-invoice', {

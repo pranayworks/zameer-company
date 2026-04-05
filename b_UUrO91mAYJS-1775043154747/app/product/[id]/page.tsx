@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase'
 import { use } from 'react'
 import { useToast } from '@/context/toast-context'
 import Head from 'next/head'
+import { slugify } from '@/lib/utils'
 
 interface Product {
   id: string
@@ -36,10 +37,12 @@ interface Product {
 }
 
 export default function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+  const { id: rawId } = use(params)
+  const id = decodeURIComponent(rawId)
   const [product, setProduct] = useState<Product | null>(null)
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+  const { showToast } = useToast()
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
@@ -65,13 +68,16 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
     try {
       // 1. Fetch current product - SUPER-FINDER SEARCH
       // We try exact matches, slugified variations, and title keywords
+      const decodedId = decodeURIComponent(trimmedId)
+      const normalizedSlug = slugify(decodedId)
       const slugId = trimmedId.toLowerCase().replace(/ /g, '-')
       const cleanId = trimmedId.replace(/%20/g, ' ')
 
+      // Try searching by ID variants and title ilike
       const { data, error: pError } = await supabase
         .from('products')
         .select('*')
-        .or(`id.eq."${trimmedId}",id.eq."${slugId}",id.eq."${cleanId}",title.ilike."%${trimmedId}%"`)
+        .or(`id.eq."${trimmedId}",id.eq."${decodedId}",id.eq."${normalizedSlug}",id.eq."${slugId}",id.eq."${cleanId}",title.ilike."%${decodedId}%"`)
         .limit(1)
 
       const p = data && data.length > 0 ? data[0] : null
@@ -127,7 +133,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
     </div>
   )
 
-  const { showToast } = useToast()
+  
 
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : (product.category === 'Jewellery' ? ['One Size'] : ['XS', 'S', 'M', 'L', 'XL'])
   const handleAddToCart = () => {

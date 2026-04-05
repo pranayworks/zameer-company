@@ -40,7 +40,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initCart = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (user) {
         setUserId(user.id)
         // Fetch cart from supabase with product details

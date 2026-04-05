@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/context/cart-context'
+import { slugify } from '@/lib/utils'
 
 interface ProductCardProps {
   id?: string | number
@@ -27,7 +28,7 @@ export function ProductCard({
   stock,
 }: ProductCardProps) {
   const { addToCart } = useCart()
-  const productPath = `/product/${id || (title || '').toLowerCase().replace(/ /g, '-')}`
+  const productPath = `/product/${id || slugify(title)}`
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()

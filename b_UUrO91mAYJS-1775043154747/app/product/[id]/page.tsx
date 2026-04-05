@@ -137,6 +137,24 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
 
 
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : (product.category === 'Jewellery' ? ['One Size'] : ['XS', 'S', 'M', 'L', 'XL'])
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : `https://friendsof4.in/product/${id}`
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.title,
+          text: `Check out ${product.title} at Friends of 4 Atelier`,
+          url: url
+        })
+      } catch (err) {
+        console.error('Share failed', err)
+      }
+    } else {
+      navigator.clipboard.writeText(url)
+      showToast('Link copied to clipboard!', 'success', 'content_copy')
+    }
+  }
+
   const handleAddToCart = () => {
     // Standardize selections based on category
     const isOneSizeCategory = product.category === 'Jewellery' || product.category === 'Sarees';
@@ -471,6 +489,15 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                     >
                       <span className={`material-symbols-outlined text-2xl ${product && isInWishlist(product.id) ? 'fill-1' : ''}`} style={{ fontVariationSettings: product && isInWishlist(product.id) ? "'FILL' 1" : "'FILL' 0" }}>
                         favorite
+                      </span>
+                    </button>
+                    <button 
+                      onClick={handleShare}
+                      className="p-6 border border-[#1c1c18]/10 transition-all flex items-center justify-center hover:bg-[#a3851a] hover:text-white hover:border-[#a3851a] group relative"
+                      title="Share Masterpiece"
+                    >
+                      <span className="material-symbols-outlined text-2xl">
+                        ios_share
                       </span>
                     </button>
                   </div>

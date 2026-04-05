@@ -38,7 +38,8 @@ export function Header() {
   }, [isMobileMenuOpen])
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 glass-header">
+    <>
+      <header className="fixed top-0 left-0 right-0 z-40 glass-header">
       <nav className="flex justify-between items-center w-full px-6 md:px-12 py-4 md:py-6 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-4 md:gap-12">
           {/* Mobile Hamburger Button */}
@@ -145,15 +146,6 @@ export function Header() {
         </div>
       </nav>
 
-      <CartDrawer 
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-      />
-
-      <SearchOverlay 
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
 
       {/* Mobile Dropdown Menu */}
       <AnimatePresence>
@@ -225,6 +217,17 @@ export function Header() {
           </>
         )}
       </AnimatePresence>
-    </header>
+      </header>
+
+      <CartDrawer 
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+      />
+
+      <SearchOverlay 
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
+    </>
   )
 }

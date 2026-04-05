@@ -12,6 +12,8 @@ import { useWishlist } from '@/context/wishlist-context'
 import { products } from '@/data/products'
 import { supabase } from '@/lib/supabase'
 import { use } from 'react'
+import { useToast } from '@/context/toast-context'
+import Head from 'next/head'
 
 interface Product {
   id: string
@@ -125,6 +127,8 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
     </div>
   )
 
+  const { showToast } = useToast()
+
   const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : (product.category === 'Jewellery' ? ['One Size'] : ['XS', 'S', 'M', 'L', 'XL'])
   const handleAddToCart = () => {
     // Standardize selections based on category
@@ -155,6 +159,30 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
         : selectedSize) as string,
       selectedColor: (product.category === 'Jewellery' || !product.colors) ? undefined : (selectedColor || undefined)
     })
+
+    showToast(`Masterpiece added to your archive.`, 'success', 'shopping_bag')
+  }
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.title,
+    "image": [product.image, product.image2, product.image3].filter(Boolean),
+    "description": product.description,
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": "Style Of Traditionals | Friends of 4"
+    },
+    "offers": {
+      "@context": "https://schema.org",
+      "@type": "Offer",
+      "url": `https://friendsof4.in/product/${product.id}`,
+      "priceCurrency": "INR",
+      "price": typeof product.price === 'number' ? product.price : parseFloat(product.price?.toString().replace(/[^0-9.]/g, '') || '0'),
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": product.stock && product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+    }
   }
 
   const sections = [
@@ -165,6 +193,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="min-h-screen bg-[#fdf9f2]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
       
       <main className="pt-32 pb-24 px-8 md:px-24 max-w-[1920px] mx-auto">

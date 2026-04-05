@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 
 export default function MenPage() {
   const [menProducts, setMenProducts] = useState<any[]>([])
-  
+
   useEffect(() => {
     async function fetchMenProducts() {
       const { data } = await supabase.from('products').select('*').eq('category', 'Men')
@@ -47,7 +47,7 @@ export default function MenPage() {
           <div className="absolute inset-0 bg-black/20" />
         </motion.div>
 
-        <motion.div 
+        <motion.div
           style={{ opacity }}
           className="relative z-10 text-left px-6 md:px-24 max-w-4xl"
           initial={{ opacity: 0, x: -50 }}
@@ -60,7 +60,7 @@ export default function MenPage() {
           <h1 className="font-headline text-[60px] md:text-[120px] text-white tracking-tighter leading-[0.8] mb-12">
             The Modern <br /> Gentleman
           </h1>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.8 }}
@@ -78,7 +78,7 @@ export default function MenPage() {
       <section className="max-w-[1920px] mx-auto px-12 py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20">
           {menProducts.map((product, index) => (
-            <ProductCard 
+            <ProductCard
               key={product.id}
               id={product.id}
               title={product.title}
@@ -87,7 +87,7 @@ export default function MenPage() {
               rating={product.rating}
               reviews={product.reviews}
               stock={product.stock}
-              index={index} 
+              index={index}
             />
           ))}
         </div>
@@ -96,7 +96,7 @@ export default function MenPage() {
       {/* Editorial Advice Section */}
       <section className="bg-[#1c1c18] py-32 px-12 overflow-hidden">
         <div className="max-w-[1920px] mx-auto flex flex-col lg:flex-row items-center gap-24">
-          <motion.div 
+          <motion.div
             className="w-full lg:w-1/2 aspect-[4/5] relative overflow-hidden"
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -110,8 +110,8 @@ export default function MenPage() {
               className="object-cover"
             />
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="w-full lg:w-1/2"
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -132,11 +132,11 @@ export default function MenPage() {
             <p className="font-body text-sm text-[#fdf9f2]/60 mb-12 leading-relaxed max-w-lg">
               Modern masculinity is defined not by the quantity of garments, but by the quiet confidence of their fit and fabrication. Discover how our artisans merge century-old weaves with contemporary silhouettes for an effortless transition from boardroom to ballroom.
             </p>
-            <motion.button 
-              className="border-b border-[#a3851a] text-[#a3851a] pb-2 font-body uppercase tracking-widest text-[10px] block hover:text-[#fdf9f2] hover:border-[#fdf9f2] transition-all"
+            <motion.button
+              className="text-[#a3851a] font-body uppercase tracking-widest text-[10px] block hover:text-[#fdf9f2] transition-all"
               whileHover={{ x: 10 }}
             >
-              Read Full Editorial Guide
+
             </motion.button>
           </motion.div>
         </div>
@@ -144,7 +144,7 @@ export default function MenPage() {
 
       {/* Newsletter Signup */}
       <section className="py-32 px-6 text-center border-b border-[#1c1c18]/5">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}

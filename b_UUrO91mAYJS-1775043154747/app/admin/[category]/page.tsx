@@ -444,7 +444,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Price (₹)</label>
                           <input
                             type="number" required value={formData.price}
-                            onChange={e => setFormData({ ...formData, price: Number(e.target.value) })}
+                            onChange={e => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
                             className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
                           />
                         </div>
@@ -452,7 +452,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Stock</label>
                           <input
                             type="number" required value={formData.stock}
-                            onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
+                            onChange={e => setFormData(prev => ({ ...prev, stock: Number(e.target.value) }))}
                             className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none"
                           />
                         </div>
@@ -461,7 +461,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Description</label>
                         <textarea
                           rows={4} required value={formData.description}
-                          onChange={e => setFormData({ ...formData, description: e.target.value })}
+                          onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                           className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none resize-none"
                         />
                       </div>
@@ -587,7 +587,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Category</label>
                         <select
                           value={formData.category}
-                          onChange={e => setFormData({ ...formData, category: e.target.value })}
+                          onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
                           className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none appearance-none"
                         >
                           <option>Men</option>
@@ -709,7 +709,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         <textarea
                           rows={3}
                           value={formData.return_policy || ''}
-                          onChange={e => setFormData({ ...formData, return_policy: e.target.value })}
+                          onChange={e => setFormData(prev => ({ ...prev, return_policy: e.target.value }))}
                           placeholder="e.g. Can be returned within 5 days"
                           className="w-full bg-white border border-[#1c1c18]/10 p-4 focus:border-[#a3851a] outline-none resize-none text-sm font-body"
                         />

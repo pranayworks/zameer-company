@@ -31,6 +31,7 @@ export function ProductCard({
   const { addToCart } = useCart()
   const router = useRouter()
   const productPath = `/product/${id || slugify(title)}`
+  const displayImage = image ? image.split(',')[0].trim() || '/placeholder.jpg' : '/placeholder.jpg'
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -40,7 +41,7 @@ export function ProductCard({
       id: id || title,
       name: title,
       price: price,
-      image: image,
+      image: displayImage,
       quantity: 1
     })
     // Navigate to shipping address page for address confirmation
@@ -59,7 +60,7 @@ export function ProductCard({
         {/* Product Image */}
         <div className="relative aspect-[3/4] overflow-hidden bg-white group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-shadow duration-700 mb-6">
           <Image
-            src={image || '/placeholder.jpg'}
+            src={displayImage}
             alt={title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"

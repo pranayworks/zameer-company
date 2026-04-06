@@ -289,12 +289,13 @@ function AccountContent() {
 
     const { error } = await supabase
       .from('profiles')
-      .update({
+      .upsert([{
+        id: user.id,
         name: editData.name,
         phone: editData.phone,
-        address: editData.address
-      })
-      .eq('id', user.id);
+        address: editData.address,
+        email: user.email
+      }], { onConflict: 'id' });
 
     if (!error) {
        setUserProfile(prev => ({ ...prev, fullName: editData.name, phone: editData.phone, address: editData.address }));

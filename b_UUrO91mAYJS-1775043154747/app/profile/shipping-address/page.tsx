@@ -152,14 +152,19 @@ export default function ShippingAddressPage() {
 
     const { user } = await getSessionUser();
     if (user) {
-      await supabase
+      const { error } = await supabase
         .from('profiles')
-        .update({
-          name: form.fullName || undefined,
+        .upsert([{
+          id: user.id,
+          name: form.fullName || user.user_metadata?.full_name || user.email?.split('@')[0],
           phone: form.phone || undefined,
           address: fullAddress,
-        })
-        .eq('id', user.id);
+          email: user.email,
+        }], { onConflict: 'id' });
+        
+      if (error) {
+        console.error('Failed to save address:', error);
+      }
     }
 
     setSaving(false);

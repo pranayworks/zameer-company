@@ -5,7 +5,6 @@ import { HeroSection } from '@/components/hero-section'
 import { CategoriesGrid } from '@/components/categories-grid'
 import { FeaturedProducts } from '@/components/featured-products'
 import { AboutSection } from '@/components/about-section'
-import { CareersSection } from '@/components/careers-section'
 import { WhyChooseUs } from '@/components/why-choose-us'
 import { Footer } from '@/components/footer'
 
@@ -17,7 +16,6 @@ export default function Home() {
       <FeaturedProducts />
       <AboutSection />
       <CategoriesGrid />
-      <CareersSection />
       <WhyChooseUs />
       <Footer />
     </main>

@@ -175,12 +175,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const sFee = shippingMatch ? shippingMatch[2] : '0'
     const cleanAddress = orderData.address ? orderData.address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : (orderData.address || 'N/A')
 
+    const shippingText = sMethod.toLowerCase() === 'standard' 
+      ? `FREE SHIPPING (Standard Delivery 5-7 Days)` 
+      : `EXPRESS DELIVERY (2-3 Days, ₹${sFee})`;
+
     const message = `<b>🚨 NEU ATELIER ACQUISITION 🚨</b>\n\n` +
       `<b>Masterpiece:</b> ${orderData.product_name}\n` +
       `<b>Size:</b> ${orderData.size}\n` +
       `<b>Tone:</b> ${orderData.color}\n` +
       `<b>Valuation:</b> ₹${orderData.price.toLocaleString('en-IN')}\n` +
-      `<b>Shipping:</b> ${sMethod.toUpperCase()} (₹${sFee})\n` +
+      `<b>Shipping:</b> ${shippingText}\n` +
       `<b>Client:</b> ${orderData.customer_name}\n` +
       `<b>Dispatch At:</b> <i>${cleanAddress}</i>\n` +
       `<b>ID:</b> <code>${orderData.order_id}</code>\n\n` +

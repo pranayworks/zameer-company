@@ -8,7 +8,7 @@ import { Newsletter } from './newsletter'
 const footerSections = [
   {
     title: 'Shop',
-    links: ['Men', 'Women', 'Sarees', 'Jewellery', 'Accessories'],
+    links: ['Men', 'Women', 'Sarees', 'Jewellery'],
   },
   {
     title: 'Company',
@@ -16,7 +16,7 @@ const footerSections = [
   },
   {
     title: 'Support',
-    links: ['Contact', 'FAQ', 'Shipping', 'Returns', 'Size Guide'],
+    links: ['Contact', 'FAQ', 'Shipping', 'Returns'],
   },
   {
     title: 'Legal',
@@ -97,6 +97,7 @@ export function Footer() {
                       'Shipping': '/legal/shipping-policy',
                       'Privacy Policy': '/legal/privacy-policy',
                       'Terms of Service': '/legal/terms-of-service',
+                      'Cookie Policy': '/legal/cookie-policy',
                     }
                   const href = hrefMap[link] || '#'
                   

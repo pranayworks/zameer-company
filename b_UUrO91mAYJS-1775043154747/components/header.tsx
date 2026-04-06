@@ -46,6 +46,15 @@ export function Header() {
     else setActiveNav('Home')
   }, [pathname])
 
+  // Redirect to home on refresh
+  useEffect(() => {
+    if (window.performance && window.performance.navigation.type === 1) {
+      if (pathname !== '/') {
+        window.location.href = '/'
+      }
+    }
+  }, [pathname])
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-[100] glass-header">
@@ -67,18 +76,18 @@ export function Header() {
           >
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="relative w-12 h-12 md:w-16 md:h-16 shrink-0"
+              className="relative w-16 h-16 md:w-24 md:h-24 shrink-0"
             >
               <Image src="/logo.png" alt="Friends of 4 Logo" fill className="object-contain" />
             </motion.div>
             <motion.div
                whileHover={{ x: 2 }}
-               className="flex flex-col max-w-[120px] sm:max-w-none"
+               className="flex flex-col max-w-[150px] sm:max-w-none"
             >
-              <span className="text-sm sm:text-xl md:text-2xl font-headline tracking-tight text-[#1c1b1b] leading-tight mb-0.5 truncate sm:overflow-visible">
+              <span className="text-lg sm:text-2xl md:text-3xl font-headline tracking-tight text-[#1c1b1b] leading-tight mb-0.5 truncate sm:overflow-visible">
                 Style Of Tradition
               </span>
-              <span className="text-[8px] md:text-xs font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none">
+              <span className="text-[10px] md:text-sm font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none">
                 Friends of 4
               </span>
             </motion.div>

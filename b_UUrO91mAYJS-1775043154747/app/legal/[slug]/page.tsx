@@ -9,11 +9,11 @@ import { use } from 'react'
 const policies: Record<string, { title: string, subtitle: string, lastUpdated: string, content: string[] }> = {
   'refund-policy': {
     title: 'Refund & Cancellation Policy',
-    subtitle: '7-Day Atelier Grace Period',
-    lastUpdated: 'April 4, 2026',
+    subtitle: '5-Day Atelier Grace Period',
+    lastUpdated: 'April 6, 2026',
     content: [
       "At Friends of 4, we cherish the craftsmanship of our hand-loomed heritage. As every piece is a unique creation, our refund policy is designed to protect both the artisan and the patron.",
-      "7-Day Return Window: You may initiate a return or cancellation within 7 days of delivery. For cancellations before dispatch, refunds are processed immediately.",
+      "5-Day Return Window: You may initiate a return or cancellation within 5 days of delivery. For cancellations before dispatch, refunds are processed immediately.",
       "Refund Processing: Once a cancellation is approved (or a returned item is received at our vault), the refund will be initiated via your original payment method (Razorpay) within 5-7 business days.",
       "Condition of Return: Items must be in their original atelier condition, unworn, and with all heritage tags intact. Items showing signs of wear or damage will not be eligible for a refund.",
       "Manual Archive Orders: For offline/manual orders, please contact our support desk directly via the Voice Channel or Electronic Post for bespoke refund processing."
@@ -53,6 +53,18 @@ const policies: Record<string, { title: string, subtitle: string, lastUpdated: s
       "Estimated Delivery: Once dispatched, domestic orders typically reach our patrons within 5-7 business days. International shipping times vary based on the destination.",
       "Tracking the Journey: A unique Archive Tracking Number will be emailed to you and available in your Account Dashboard (Live Tracking tab) once your piece is dispatched.",
       "Damaged Shipments: If your atelier package arrives compromised, please document the damage with photographs and notify our Electronic Post within 24 hours of receipt."
+    ]
+  },
+  'cookie-policy': {
+    title: 'Cookie Policy',
+    subtitle: 'Enhancing Your Digital Journey',
+    lastUpdated: 'April 6, 2026',
+    content: [
+      "Friends of 4 uses digital cookies to ensure your experience in our atelier is seamless and personalized.",
+      "Session Cookies: These are essential for maintaining your login and cart state as you navigate between different collections.",
+      "Performance Analytics: We use cookies to understand which pieces are most admired by our patrons, allowing us to curate better collections.",
+      "Preference Storage: We remember your choice of currency, tone preferences, and shipping details to expedite your future acquisitions.",
+      "Managing Cookies: You can manage or disable cookies through your browser settings, though some features of our boutique may be limited as a result."
     ]
   }
 }

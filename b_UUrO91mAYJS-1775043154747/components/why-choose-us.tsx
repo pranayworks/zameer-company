@@ -17,7 +17,7 @@ const features = [
   {
     icon: 'published_with_changes',
     title: 'Easy Returns',
-    description: 'Concierge-led return service within 15 days of your purchase.',
+    description: 'Concierge-led return service within 5 days of your purchase.',
   },
   {
     icon: 'local_shipping',

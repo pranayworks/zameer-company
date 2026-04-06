@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     apple: '/images/logo.png',
   },
   verification: {
-    google: 'H8W4h5u-I9f6Xv4Vv4v4v4v4v4v4v4v4v4v4v4v4v4', // Placeholder - please replace with actual Search Console tag
+    google: 'Jdmo9CX_bOymXD9CbObmq_1TTNS0c5f37TDdti_LXJI',
   },
 }
 

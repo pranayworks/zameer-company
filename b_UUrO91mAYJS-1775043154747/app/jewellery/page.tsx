@@ -62,7 +62,7 @@ export default function JewelleryPage() {
                 Explore Collection
               </motion.button>
               <div className="w-px h-12 bg-white/40 hidden md:block" />
-              <button className="text-white font-body uppercase tracking-widest text-[9px] hover:text-[#a3851a] transition-all drop-shadow-md">Book A Presentation →</button>
+
             </div>
           </motion.div>
         </div>

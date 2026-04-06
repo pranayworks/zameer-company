@@ -95,9 +95,11 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <h3 className="font-headline text-lg mb-1 leading-tight">{item.name}</h3>
-                        {item.selectedSize && (
+                        {(item.selectedSize || item.selectedColor) && (
                           <span className="font-body text-[10px] uppercase tracking-widest text-[#747878] block mt-1">
-                            Size: {item.selectedSize} {item.selectedColor && `• Color: ${item.selectedColor}`}
+                            {item.selectedSize && `Size: ${item.selectedSize}`} 
+                            {item.selectedSize && item.selectedColor && ` • `}
+                            {item.selectedColor && `Tone: ${item.selectedColor}`}
                           </span>
                         )}
                         <div className="flex items-center gap-4 mt-2">

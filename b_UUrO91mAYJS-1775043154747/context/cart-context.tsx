@@ -177,11 +177,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const message = `<b>🚨 NEU ATELIER ACQUISITION 🚨</b>\n\n` +
       `<b>Masterpiece:</b> ${orderData.product_name}\n` +
+      `<b>Size:</b> ${orderData.size}\n` +
+      `<b>Tone:</b> ${orderData.color}\n` +
       `<b>Valuation:</b> ₹${orderData.price.toLocaleString('en-IN')}\n` +
       `<b>Shipping:</b> ${sMethod.toUpperCase()} (₹${sFee})\n` +
       `<b>Client:</b> ${orderData.customer_name}\n` +
       `<b>Dispatch At:</b> <i>${cleanAddress}</i>\n` +
       `<b>ID:</b> <code>${orderData.order_id}</code>\n\n` +
+      `<a href="${orderData.image_url}">🖼️ View Archive Masterpiece</a>\n\n` +
       `<i>Tradition, Secured.</i>`;
 
     try {
@@ -226,6 +229,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           phone: profile?.phone || 'No Phone provided',
           address: fullAddress,
           product_name: item.name,
+          image_url: item.image,
           size: item.selectedSize || 'Standard',
           color: item.selectedColor || 'Default',
           price: price,

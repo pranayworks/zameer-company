@@ -524,9 +524,16 @@ export default function CheckoutPage() {
                               ? parseFloat(item.price.replace('₹', '').replace(',', '').replace('$', ''))
                               : item.price
                             return (
-                              <div key={`${item.id}-${item.selectedSize}`} className="flex justify-between text-xs font-body text-[#747878]">
-                                <span>{item.name} × {item.quantity}</span>
-                                <span>₹{(price * item.quantity).toLocaleString('en-IN')}</span>
+                              <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex justify-between items-start text-xs font-body text-[#747878] pb-2 border-b border-[#1c1c18]/5 mb-2 last:border-0 last:mb-0">
+                                <div>
+                                  <span className="block text-[#1c1c18] font-bold">{item.name} × {item.quantity}</span>
+                                  <span className="text-[9px] uppercase tracking-widest block mt-0.5">
+                                    {item.selectedSize && `Size: ${item.selectedSize}`} 
+                                    {item.selectedSize && item.selectedColor && ` • `}
+                                    {item.selectedColor && `Tone: ${item.selectedColor}`}
+                                  </span>
+                                </div>
+                                <span className="font-bold text-[#1c1c18]">₹{(price * item.quantity).toLocaleString('en-IN')}</span>
                               </div>
                             )
                           })}

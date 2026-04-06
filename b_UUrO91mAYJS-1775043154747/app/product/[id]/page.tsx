@@ -202,7 +202,13 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       }
     }
     
-    // Color is optional - no validation needed
+    // Color validation for Jewellery with options
+    if (product.category === 'Jewellery' && product.colors && product.colors.length > 0) {
+      if (!selectedColor) {
+        showToast('Please curate your preferred material tone', 'error', 'palette')
+        return
+      }
+    }
 
     if (!product) return;
 
@@ -468,7 +474,9 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               {/* Color Selector - Optional */}
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-12">
-                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Tone (Optional): {selectedColor || 'None'}</span>
+                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">
+                    {product.category === 'Jewellery' ? 'Choose Your Material / Tone (Required):' : 'Select Tone (Optional):'} {selectedColor || 'None'}
+                  </span>
                   <div className="flex flex-wrap gap-4">
                     {product.colors.map((color) => (
                       <button

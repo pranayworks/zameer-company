@@ -595,7 +595,7 @@ function AccountContent() {
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                       {wishlist.map(w=>(
                         <div key={w.product_id} className="bg-white border border-[#1c1c18]/5 group">
-                           <Link href={`/product/${w.product_id}`} className="block relative aspect-[3/4] overflow-hidden"><Image src={w.image || '/placeholder.svg'} fill alt="Piece" className="object-cover group-hover:scale-105 transition-transform duration-700" /></Link>
+                           <Link href={`/product/${w.product_id}`} className="block relative aspect-[3/4] overflow-hidden"><Image src={w.image ? w.image.split(',')[0].trim() : '/placeholder.svg'} fill alt="Piece" className="object-cover group-hover:scale-105 transition-transform duration-700" /></Link>
                            <div className="p-6">
                               <h4 className="font-headline text-xl mb-1 truncate">{w.title}</h4>
                               <p className="font-body text-xs text-[#747878] mb-6">₹{w.price?.toLocaleString()}</p>

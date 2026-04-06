@@ -1,0 +1,122 @@
+[
+  {
+    "id": "clone",
+    "title": "white dotted saree",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775303228/a81f6797-86f0-4d77-8516-fcc509d8e9e0_ty9rkn.jpg"
+  },
+  {
+    "id": "ruddravaibhavam",
+    "title": "Rudraksham Border Retta Petta Cotton Saree ",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775319822/PHOTO-2026-04-03-23-27-14_2_bw9g0o.jpg"
+  },
+  {
+    "id": "triple-tone-pastel-mulmul-cotton-saree",
+    "title": "Triple-Tone Pastel Mulmul Cotton Saree",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775321171/WhatsApp_Image_2026-04-03_at_11.27.53_PM_t97sve.jpg"
+  },
+  {
+    "id": "kanikonna-tissue-set-saree",
+    "title": "Golden Tissue Kanikonna Kerala Set Saree",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775322663/e48ff7c8-ba1d-4dd3-b17f-8ef70a8ac7ab_haikyy.jpg"
+  },
+  {
+    "id": "kanikonna-flower-printed-cotten-setmundu",
+    "title": "Kanikonna Hand-Printed Kerala Cotton Set-Mundu",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775322134/dde1ebb9-cc13-4e0d-b664-caaa48facf37_ahvutx.jpg"
+  },
+  {
+    "id": "red-polka-saree",
+    "title": "Soft cotton silk Red Polka Saree",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/v1775318722/IMG_6378_ibdjae.png"
+  },
+  {
+    "id": "premium-poomaram-cotton-saree",
+    "title": "Premium Poomaram Cotton Saree",
+    "image": "https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775493747859_0.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775493750423_2.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775493781140_0.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775493782368_1.jpeg"
+  },
+  {
+    "id": "black-temple-border-premium-cotton-saree",
+    "title": "Black Temple Border Premium Cotton Saree",
+    "image": "https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775494351545_0.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775494354209_3.jpeg"
+  },
+  {
+    "id": "ola-kalipattam-saree",
+    "title": "Ola kalipattam Saree",
+    "image": "https://res.cloudinary.com/dec4vnmzg/image/upload/v1775406568/pjh8pts5hadxsqurabpb.jpg"
+  },
+  {
+    "id": "pure-viscose-georgette-saree-with-elegant-self-embroidered-borders-chandana-akka",
+    "title": "Pure Viscose Georgette Saree with Elegant Self-Embroidered Borders",
+    "image": "https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775480949527_0.jpeg"
+  },
+  {
+    "id": "premium-quality-tissue-saree",
+    "title": "Premium Quality Tissue Saree",
+    "image": "https://res.cloudinary.com/dec4vnmzg/image/upload/v1775407773/qhetwuibuemfhc4uvd0l.jpg"
+  },
+  {
+    "id": "pochampally-border-kerala-saree",
+    "title": "Pochampally border Kerala saree ",
+    "image": "https://res.cloudinary.com/dec4vnmzg/image/upload/v1775409010/mzuft1t4fvg9nw3eubok.jpg"
+  },
+  {
+    "id": "pink-mul-saree",
+    "title": "Mul-mul cotton Pink Saree",
+    "image": "https://cdn.phototourl.com/free/2026-04-04-39061e00-5268-42bb-a186-edc787b1128e.jpg"
+  },
+  {
+    "id": "double-colour-mul-cotton-saree",
+    "title": "Double colour mul cotton Saree.",
+    "image": "https://cdn.phototourl.com/free/2026-04-04-bc90cdcf-bdd6-48a1-965c-0fd774dde563.jpg"
+  },
+  {
+    "id": "gold-saree",
+    "title": "Cotton Gold Saree with Tussels",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775307936/f08cb5bf-b158-4bc1-9c29-4c7f0bb55da6_oubhql.jpg"
+  },
+  {
+    "id": "luminous-viscose-tissue-saree-with-elegant-border-and-designer-blouse-options-chandhana-akka",
+    "title": "Luminous Viscose Tissue Saree with Elegant Border & Designer Blouse Options",
+    "image": "https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775482187418_0.png,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775482397753_2.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775482398239_3.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775482398817_4.jpeg"
+  },
+  {
+    "id": "premium-pure-space-silk-saree-with-designer-stitched-blouse-chandhana-akka",
+    "title": "Premium Pure Space Silk Saree with Designer Stitched Blouse",
+    "image": "https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775483997419_0.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775484000253_3.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775484000886_4.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775484001643_5.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775484002573_6.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775484003309_7.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775484004020_8.jpeg,https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775484004539_9.jpeg"
+  },
+  {
+    "id": "vibrant-pure-viscose-georgette-saree-with-diamond-patterned-embroidery-chandana-akka",
+    "title": "Vibrant Pure Viscose Georgette Saree with Diamond-Patterned Embroidery",
+    "image": "https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775481539705_0.jpeg"
+  },
+  {
+    "id": "pastel-plus",
+    "title": "#3 Shade Pastel cotten saree ",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775321105/WhatsApp_Image_2026-04-03_at_11.27.54_PM_nmkb35.jpg"
+  },
+  {
+    "id": "cotton-double-colour-set-mundu-with-tussels",
+    "title": "cotton double colour set mundu with tussels",
+    "image": "https://cdn.phototourl.com/free/2026-04-04-9fafae24-1072-4d39-8778-83934d567ed0.jpg"
+  },
+  {
+    "id": "rudravabhavam",
+    "title": "Rudraksham Border Retta Petta Cotton Saree",
+    "image": "https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775319796/PHOTO-2026-04-03-23-27-14_ryrpyw.jpg"
+  },
+  {
+    "id": "premium-magenta-khadi-cotton-saree",
+    "title": "Premium Magenta Khadi Cotton Saree with Floral Printed Blouse",
+    "image": "https://res.cloudinary.com/dec4vnmzg/image/upload/v1775405363/qgijggsn1dqfmuookv9g.png"
+  },
+  {
+    "id": "design-set-mundu",
+    "title": "Black and yellow temple design Set mundu",
+    "image": "https://res.cloudinary.com/dec4vnmzg/image/upload/v1775340723/huhglpsu38pau9sdbg5s.jpg"
+  },
+  {
+    "id": "pure-viscose-georgette-saree-with-intricate-self-embroidered-borders-chandana-akka",
+    "title": "Pure Viscose Georgette Saree with Intricate Self-Embroidered Borders",
+    "image": "https://ziuqzoqwkbtpjbleoibj.supabase.co/storage/v1/object/public/product-images/products/1775480543873_0.jpeg"
+  }
+]

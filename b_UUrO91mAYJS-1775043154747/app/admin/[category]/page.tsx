@@ -342,7 +342,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
               >
                 <div className="relative w-full aspect-[3/4] bg-[#fdf9f2] overflow-hidden">
                   <Image
-                    src={product.image || '/placeholder.png'}
+                    src={product.image ? product.image.split(',')[0].trim() : '/placeholder.png'}
                     alt={product.title}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-700"

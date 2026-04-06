@@ -311,8 +311,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
             <p className="font-headline text-4xl mt-2 text-red-500">{products.filter(p => p.stock === 0).length}</p>
           </div>
           <div className="bg-white p-6 border border-[#1c1c18]/5 shadow-sm">
-            <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">Low Stock ({"<"}10)</span>
-            <p className="font-headline text-4xl mt-2 text-amber-500">{products.filter(p => p.stock > 0 && p.stock < 10).length}</p>
+            <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">Low Stock ({"<"}3)</span>
+            <p className="font-headline text-4xl mt-2 text-amber-500">{products.filter(p => p.stock > 0 && p.stock < 3).length}</p>
           </div>
         </div>
 
@@ -352,7 +352,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                       Out of Stock
                     </div>
                   )}
-                  {product.stock > 0 && product.stock < 10 && (
+                  {product.stock > 0 && product.stock < 3 && (
                     <div className="absolute top-4 left-4 bg-amber-500 text-white px-3 py-1 text-[9px] uppercase tracking-widest font-bold">
                       Low Stock: {product.stock}
                     </div>
@@ -363,7 +363,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                   <p className="font-body text-[11px] text-[#747878] line-clamp-2 mb-4 flex-1">{product.description}</p>
                   <div className="flex justify-between items-center mb-6">
                     <span className="font-headline text-lg text-[#a3851a]">₹{product.price?.toLocaleString()}</span>
-                    <span className={`font-body text-[10px] font-bold ${product.stock < 10 ? 'text-red-500' : 'text-[#747878]'}`}>
+                    <span className={`font-body text-[10px] font-bold ${product.stock < 3 ? 'text-red-500' : 'text-[#747878]'}`}>
                       Stock: {product.stock}
                     </span>
                   </div>

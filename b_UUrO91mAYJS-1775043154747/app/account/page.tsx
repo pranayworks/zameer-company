@@ -258,6 +258,15 @@ function AccountContent() {
         // Automatically create/sync profile on first visit
         const newName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Client';
         const newPhone = user.user_metadata?.phone || '';
+        
+        // Ensure user row exists before profile to satisfy foreign key constraint
+        await supabase.from('users').upsert([{
+          id: user.id,
+          name: newName,
+          email: user.email,
+          phone: newPhone
+        }], { onConflict: 'id' });
+
         await supabase.from('profiles').upsert([{
           id: user.id,
           name: newName,
@@ -310,6 +319,14 @@ function AccountContent() {
     const { user } = await getSessionUser();
     if (!user) return;
 
+    // Must upsert to users table first to prevent foreign key errors for Google OAuth users
+    await supabase.from('users').upsert([{
+      id: user.id,
+      name: editData.name,
+      email: user.email,
+      phone: editData.phone
+    }], { onConflict: 'id' });
+
     const { error } = await supabase
       .from('profiles')
       .upsert([{
@@ -323,6 +340,9 @@ function AccountContent() {
     if (!error) {
        setUserProfile(prev => ({ ...prev, fullName: editData.name, phone: editData.phone, address: editData.address }));
        setIsEditingProfile(false);
+    } else {
+       console.error("Profile update error", error);
+       alert("Failed to update profile details. Please try again.");
     }
   }
 

@@ -152,6 +152,14 @@ export default function ShippingAddressPage() {
 
     const { user } = await getSessionUser();
     if (user) {
+      // Must upsert to users table first to prevent foreign key errors for Google OAuth users
+      await supabase.from('users').upsert([{
+        id: user.id,
+        name: form.fullName || user.user_metadata?.full_name || user.email?.split('@')[0],
+        email: user.email,
+        phone: form.phone || '',
+      }], { onConflict: 'id' });
+
       const { error } = await supabase
         .from('profiles')
         .upsert([{
@@ -164,6 +172,7 @@ export default function ShippingAddressPage() {
         
       if (error) {
         console.error('Failed to save address:', error);
+        alert('Failed to save details: ' + error.message);
       }
     }
 

@@ -1,0 +1,1 @@
+null value in column "email" of relation "profiles" violates not-null constraint

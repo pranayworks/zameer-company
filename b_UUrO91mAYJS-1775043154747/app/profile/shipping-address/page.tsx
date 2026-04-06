@@ -157,7 +157,7 @@ export default function ShippingAddressPage() {
         .upsert([{
           id: user.id,
           name: form.fullName || user.user_metadata?.full_name || user.email?.split('@')[0],
-          phone: form.phone || undefined,
+          phone: form.phone || '',
           address: fullAddress,
           email: user.email,
         }], { onConflict: 'id' });

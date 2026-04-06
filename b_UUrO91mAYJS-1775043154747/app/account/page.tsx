@@ -254,6 +254,29 @@ function AccountContent() {
           phone: profileData.phone || '',
           address: profileData.address || ''
         });
+      } else {
+        // Automatically create/sync profile on first visit
+        const newName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Valued Client';
+        const newPhone = user.user_metadata?.phone || '';
+        await supabase.from('profiles').upsert([{
+          id: user.id,
+          name: newName,
+          email: user.email,
+          phone: newPhone
+        }], { onConflict: 'id' });
+        
+        setUserProfile({
+          fullName: newName,
+          email: user.email,
+          phone: newPhone,
+          address: '',
+          tier: 'Gold Tier Member'
+        });
+        setEditData({
+          name: newName,
+          phone: newPhone,
+          address: ''
+        });
       }
 
       const { data: orders } = await supabase

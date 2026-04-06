@@ -87,7 +87,7 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-[100] glass-header">
-      <nav className="flex justify-between items-center w-full px-4 md:px-12 py-3 md:py-6 max-w-[1920px] mx-auto">
+      <nav className="flex justify-between items-center w-full px-4 md:px-12 py-1.5 md:py-2.5 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-4 md:gap-12">
           {/* Mobile Hamburger Button */}
           <button 
@@ -101,22 +101,22 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
 
           <Link 
             href="/" 
-            className="flex items-center gap-3 transition-colors group cursor-pointer"
+            className="flex items-center gap-2 md:gap-4 transition-colors group cursor-pointer"
           >
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="relative w-24 h-24 md:w-40 md:h-40 shrink-0"
+              className="relative w-12 h-12 md:w-20 md:h-20 shrink-0"
             >
               <Image src="/logo.png" alt="Friends of 4 Logo" fill className="object-contain" />
             </motion.div>
             <motion.div
                whileHover={{ x: 2 }}
-               className="flex flex-col max-w-[180px] sm:max-w-none"
+               className="flex flex-col max-w-[150px] sm:max-w-none"
             >
-              <span className="text-xl sm:text-3xl md:text-4xl font-headline tracking-tighter text-[#1c1b1b] leading-tight mb-1 truncate sm:overflow-visible">
+              <span className="text-lg sm:text-xl md:text-2xl font-headline tracking-tighter text-[#1c1b1b] leading-tight mb-0.5 truncate sm:overflow-visible">
                 Style Of Tradition
               </span>
-              <span className="text-xs md:text-base font-body font-black tracking-[0.3em] uppercase text-[#a3851a] leading-none">
+              <span className="text-[8px] md:text-[10px] font-body font-black tracking-[0.2em] md:tracking-[0.3em] uppercase text-[#a3851a] leading-none">
                 Friends of 4
               </span>
             </motion.div>

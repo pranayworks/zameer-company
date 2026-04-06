@@ -689,7 +689,7 @@ export default function CheckoutPage() {
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
-                    onClick={() => window.open('https://wa.me/917569145624', '_blank')}
+                    onClick={() => window.open(`https://wa.me/917569145624?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20my%20order%3A%20${orderId}`, '_blank')}
                     className="flex-1 bg-green-600 text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3"
                   >
                     <span className="material-symbols-outlined text-sm">chat</span>

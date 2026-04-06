@@ -85,23 +85,31 @@ const downloadInvoicePDF = async (order: any) => {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
   doc.setTextColor(...dark)
-  doc.text(order.product_name || 'Product', 28, 128)
+  const itemName = order.product_name || 'Product'
+  const itemTitleLines = doc.splitTextToSize(itemName, 65)
+  doc.text(itemTitleLines, 28, 125)
+  
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(...grey)
   const details = [order.size && `Size: ${order.size}`, order.color && `Color: ${order.color}`].filter(Boolean).join('   •   ')
-  if (details) doc.text(details, 28, 136)
+  // Adjust Y based on how many lines the title took
+  const detailsY = 125 + (itemTitleLines.length * 6)
+  if (details) doc.text(details, 28, detailsY)
+
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(...gold)
   doc.text(`Rs. ${(order.price || 0).toLocaleString('en-IN')}`, W - 28, 130, { align: 'right' })
+  
   doc.setFillColor(34, 197, 94)
-  doc.roundedRect(28, 140, 28, 7, 2, 2, 'F')
+  doc.roundedRect(28, detailsY + 6, 28, 7, 2, 2, 'F')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(6)
   doc.setTextColor(255, 255, 255)
-  doc.text('PAYMENT VERIFIED', 28 + 14, 144.5, { align: 'center' })
-  const shippingMatch = order.address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+  doc.text('PAYMENT VERIFIED', 28 + 14, detailsY + 10.5, { align: 'center' })
+
+  const shippingMatch = order.address?.match(/\[(.*) Delivery: (?:Rs\.|₹)\s*(\d+)\]/)
   const sMethod = shippingMatch ? shippingMatch[1] : null
   const sFee = shippingMatch ? parseInt(shippingMatch[2]) : 0
   const boxY = 162

@@ -76,7 +76,7 @@ export async function sendOrderConfirmationEmail({ email, name, orderId, items, 
           </div>
 
           <div style="text-align: center; margin-top: 40px;">
-            <a href="https://wa.me/917569145624" style="background-color: #25d366; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">WhatsApp Support</a>
+            <a href="https://wa.me/917569145624?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20my%20order%3A%20${orderId}" style="background-color: #25d366; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">WhatsApp Support</a>
           </div>
         </div>
 
@@ -132,7 +132,7 @@ export async function sendTrackingEmail({ email, name, orderId, trackingNumber }
 
           <div style="text-align: center; margin-top: 40px; display: flex; flex-direction: column; gap: 15px;">
             <a href="https://www.delhivery.com/track/package/${trackingNumber}" style="background-color: #1c1c18; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: block; margin-bottom: 15px;">Track Your Order</a>
-            <a href="https://wa.me/917569145624" style="background-color: #25d366; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: block;">WhatsApp Support</a>
+            <a href="https://wa.me/917569145624?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20my%20order%3A%20${orderId}" style="background-color: #25d366; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: block;">WhatsApp Support</a>
           </div>
         </div>
 

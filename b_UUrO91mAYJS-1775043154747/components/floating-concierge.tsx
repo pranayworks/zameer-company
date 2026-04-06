@@ -18,7 +18,7 @@ export function FloatingConcierge() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const whatsappUrl = "https://wa.me/919550447883?text=Greetings%20Friends%20of%204%20Atelier%2C%20I%20am%20browsing%20the%20collection%20and%20would%20love%20some%20assistance."
+  const whatsappUrl = "https://wa.me/919550447883?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20an%20order%20or%20product."
 
   return (
     <div className="fixed bottom-8 right-8 z-[150] flex flex-col gap-4 pointer-events-none">

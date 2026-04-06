@@ -26,7 +26,7 @@ const footerSections = [
 
 const socialLinks = [
   { icon: 'brand_instagram', label: 'Instagram', href: 'https://www.instagram.com/friendsof4.in?igsh=MW9ybHV4aGY5OHExMw%3D%3D&utm_source=qr' },
-  { icon: 'chat', label: 'WhatsApp', href: 'https://wa.me/919550447883?text=Greetings%20Friends%20of%204%20Atelier%2C%20I%20am%20interested%20in%20your%20latest%20collections%20and%20bespoke%20services.' },
+  { icon: 'chat', label: 'WhatsApp', href: 'https://wa.me/919550447883?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20an%20order%20or%20product.' },
 ]
 
 export function Footer() {

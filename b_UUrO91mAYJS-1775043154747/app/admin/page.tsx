@@ -219,11 +219,13 @@ export default function AdminDashboard() {
           <h2 className="font-headline text-3xl tracking-tight mb-8">Operations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Active Orders Card */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-              <Link
-                href="/admin/orders"
-                className="block bg-white border border-[#1c1c18]/5 p-8 shadow-sm hover:shadow-xl hover:border-[#a3851a]/30 transition-all group relative overflow-hidden"
-              >
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.5 }}
+              onClick={() => router.push('/admin/orders')}
+              className="block bg-white border border-[#1c1c18]/5 p-8 shadow-sm hover:shadow-xl hover:border-[#a3851a]/30 transition-all group relative overflow-hidden cursor-pointer"
+            >
                 <span className="material-symbols-outlined text-[120px] absolute -bottom-4 -right-4 text-[#1c1c18]/[0.03] group-hover:text-[#a3851a]/[0.08] transition-colors">local_shipping</span>
                 <div className="relative z-10">
                   <div className="w-12 h-12 bg-[#a3851a] flex items-center justify-center mb-6">
@@ -252,15 +254,16 @@ export default function AdminDashboard() {
                     <span className="material-symbols-outlined text-sm text-[#a3851a] group-hover:translate-x-1 transition-transform">arrow_forward</span>
                   </div>
                 </div>
-              </Link>
             </motion.div>
 
             {/* Shipment Log Card */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-              <Link
-                href="/admin/archive"
-                className="block bg-white border border-[#1c1c18]/5 p-8 shadow-sm hover:shadow-xl hover:border-[#a3851a]/30 transition-all group relative overflow-hidden"
-              >
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.6 }}
+              onClick={() => router.push('/admin/archive')}
+              className="block bg-white border border-[#1c1c18]/5 p-8 shadow-sm hover:shadow-xl hover:border-[#a3851a]/30 transition-all group relative overflow-hidden cursor-pointer"
+            >
                 <span className="material-symbols-outlined text-[120px] absolute -bottom-4 -right-4 text-[#1c1c18]/[0.03] group-hover:text-[#a3851a]/[0.08] transition-colors">inventory</span>
                 <div className="relative z-10">
                   <div className="w-12 h-12 bg-[#1c1c18] flex items-center justify-center mb-6">
@@ -289,7 +292,6 @@ export default function AdminDashboard() {
                     <span className="material-symbols-outlined text-sm text-[#a3851a] group-hover:translate-x-1 transition-transform">arrow_forward</span>
                   </div>
                 </div>
-              </Link>
             </motion.div>
           </div>
         </div>

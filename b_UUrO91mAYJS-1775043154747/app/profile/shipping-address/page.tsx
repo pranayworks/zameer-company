@@ -21,6 +21,7 @@ export default function ShippingAddressPage() {
     country: 'India',
     phone: '',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -28,19 +29,27 @@ export default function ShippingAddressPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
-  // Reverse-geocode with OpenStreetMap Nominatim (free, no API key)
+  // ... (useCurrentLocation logic remains same, but I'll make sure it clears errors)
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser');
       return;
     }
     setLocating(true);
+    setErrors({}); // Clear any previous manual errors
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        console.log('Got coordinates:', latitude, longitude);
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
@@ -52,7 +61,6 @@ export default function ShippingAddressPage() {
             }
           );
           const data = await res.json();
-          console.log('Nominatim response:', data);
           if (data && data.address) {
             const a = data.address;
             setForm(prev => ({
@@ -67,7 +75,6 @@ export default function ShippingAddressPage() {
               country: a.country || 'India',
             }));
           } else if (data && data.display_name) {
-            // Fallback: parse display_name
             const parts = data.display_name.split(',').map((s: string) => s.trim());
             setForm(prev => ({
               ...prev,
@@ -90,7 +97,6 @@ export default function ShippingAddressPage() {
       (err) => {
         setLocating(false);
         alert('Unable to retrieve your location. Please allow location access and try again.');
-        console.error(err);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -99,27 +105,40 @@ export default function ShippingAddressPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate all required fields
-    const requiredFields = [
-      { value: form.fullName, label: 'Full Name' },
-      { value: form.address1, label: 'House / Flat / Building No.' },
-      { value: form.street, label: 'Street / Road' },
-      { value: form.locality, label: 'Locality / Area' },
-      { value: form.city, label: 'City' },
-      { value: form.state, label: 'State' },
-      { value: form.zip, label: 'ZIP / Postal Code' },
-      { value: form.country, label: 'Country' },
-      { value: form.phone, label: 'Phone Number' },
+    // Custom Validation
+    const newErrors: Record<string, string> = {};
+    const required = [
+      { key: 'fullName', label: 'Full Name' },
+      { key: 'address1', label: 'House / Flat / Building No.' },
+      { key: 'street', label: 'Street / Road' },
+      { key: 'locality', label: 'Locality / Area' },
+      { key: 'city', label: 'City' },
+      { key: 'state', label: 'State' },
+      { key: 'zip', label: 'ZIP / Postal Code' },
+      { key: 'country', label: 'Country' },
+      { key: 'phone', label: 'Phone Number' },
     ];
-    const emptyFields = requiredFields.filter(f => !f.value.trim());
-    if (emptyFields.length > 0) {
-      alert(`Please fill all the details:\n\n${emptyFields.map(f => '• ' + f.label).join('\n')}`);
+
+    required.forEach(field => {
+      if (!form[field.key as keyof typeof form]?.trim()) {
+        newErrors[field.key] = `${field.label} is required`;
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      // Scroll to the first error
+      const firstErrorKey = Object.keys(newErrors)[0];
+      const element = document.getElementById(firstErrorKey);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus();
+      }
       return;
     }
 
     setSaving(true);
 
-    // Build full address string
     const fullAddress = [
       form.address1,
       form.street,
@@ -131,7 +150,6 @@ export default function ShippingAddressPage() {
       form.country,
     ].filter(Boolean).join(', ');
 
-    // Save to Supabase profile
     const { user } = await getSessionUser();
     if (user) {
       await supabase
@@ -147,7 +165,6 @@ export default function ShippingAddressPage() {
     setSaving(false);
     setSaved(true);
 
-    // Redirect to checkout after short delay
     setTimeout(() => {
       router.push('/checkout');
     }, 1500);
@@ -175,11 +192,10 @@ export default function ShippingAddressPage() {
             className="mb-6 p-4 bg-green-50 border border-green-200 flex items-center gap-3"
           >
             <span className="material-symbols-outlined text-green-600 text-sm">check_circle</span>
-            <p className="text-xs text-green-700 font-body">Address saved! Redirecting to checkout...</p>
+            <p className="text-xs text-green-700 font-body">Address saved! Proceeding to Payment...</p>
           </motion.div>
         )}
 
-        {/* Use Current Location Button */}
         <motion.button
           type="button"
           onClick={useCurrentLocation}
@@ -192,33 +208,37 @@ export default function ShippingAddressPage() {
           {locating ? 'Detecting Your Location...' : 'Use My Current Location'}
         </motion.button>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-8">
           {/* Full Name */}
           <div>
             <label htmlFor="fullName" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">Full Name</label>
-            <input id="fullName" name="fullName" type="text" placeholder="Your full name" value={form.fullName} onChange={handleChange} required
-              className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+            <input id="fullName" name="fullName" type="text" placeholder="Your full name" value={form.fullName} onChange={handleChange}
+              className={`w-full bg-white border ${errors.fullName ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+            {errors.fullName && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
           </div>
 
           {/* Address Line 1 */}
           <div>
             <label htmlFor="address1" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">House / Flat / Building No.</label>
-            <input id="address1" name="address1" type="text" placeholder="e.g. H.No 12-3-456, Flat 201" value={form.address1} onChange={handleChange} required
-              className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+            <input id="address1" name="address1" type="text" placeholder="e.g. H.No 12-3-456, Flat 201" value={form.address1} onChange={handleChange}
+              className={`w-full bg-white border ${errors.address1 ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+            {errors.address1 && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
           </div>
 
           {/* Street */}
           <div>
             <label htmlFor="street" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">Street / Road</label>
             <input id="street" name="street" type="text" placeholder="e.g. MG Road, Main Street" value={form.street} onChange={handleChange}
-              className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+              className={`w-full bg-white border ${errors.street ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+            {errors.street && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
           </div>
 
           {/* Locality */}
           <div>
             <label htmlFor="locality" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">Locality / Area / Neighbourhood</label>
             <input id="locality" name="locality" type="text" placeholder="e.g. Banjara Hills, Jubilee Hills" value={form.locality} onChange={handleChange}
-              className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+              className={`w-full bg-white border ${errors.locality ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+            {errors.locality && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
           </div>
 
           {/* Landmark (Address Line 2) */}
@@ -232,13 +252,15 @@ export default function ShippingAddressPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="city" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">City</label>
-              <input id="city" name="city" type="text" placeholder="City / Town" value={form.city} onChange={handleChange} required
-                className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+              <input id="city" name="city" type="text" placeholder="City / Town" value={form.city} onChange={handleChange}
+                className={`w-full bg-white border ${errors.city ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+              {errors.city && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
             </div>
             <div>
               <label htmlFor="state" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">State / Province</label>
-              <input id="state" name="state" type="text" placeholder="State" value={form.state} onChange={handleChange} required
-                className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+              <input id="state" name="state" type="text" placeholder="State" value={form.state} onChange={handleChange}
+                className={`w-full bg-white border ${errors.state ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+              {errors.state && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
             </div>
           </div>
 
@@ -246,21 +268,24 @@ export default function ShippingAddressPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="zip" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">ZIP / Postal Code</label>
-              <input id="zip" name="zip" type="text" placeholder="123456" value={form.zip} onChange={handleChange} required
-                className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+              <input id="zip" name="zip" type="text" placeholder="123456" value={form.zip} onChange={handleChange}
+                className={`w-full bg-white border ${errors.zip ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+              {errors.zip && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
             </div>
             <div>
               <label htmlFor="country" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">Country</label>
-              <input id="country" name="country" type="text" placeholder="India" value={form.country} onChange={handleChange} required
-                className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+              <input id="country" name="country" type="text" placeholder="India" value={form.country} onChange={handleChange}
+                className={`w-full bg-white border ${errors.country ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+              {errors.country && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
             </div>
           </div>
 
           {/* Phone */}
           <div>
             <label htmlFor="phone" className="block text-[10px] uppercase tracking-widest text-[#747878] mb-2 font-body font-bold">Phone Number</label>
-            <input id="phone" name="phone" type="tel" placeholder="+91 98765 43210" value={form.phone} onChange={handleChange} required
-              className="w-full bg-white border border-[#1c1c18]/10 p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors" />
+            <input id="phone" name="phone" type="tel" placeholder="+91 98765 43210" value={form.phone} onChange={handleChange}
+              className={`w-full bg-white border ${errors.phone ? 'border-red-500' : 'border-[#1c1c18]/10'} p-4 font-body text-sm outline-none focus:border-[#a3851a] transition-colors`} />
+            {errors.phone && <p className="text-red-500 text-[10px] mt-1 font-body uppercase tracking-tighter">This field is required</p>}
           </div>
 
           {/* Submit */}
@@ -271,8 +296,8 @@ export default function ShippingAddressPage() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <span className="material-symbols-outlined text-sm">{saving ? 'sync' : 'check'}</span>
-            {saving ? 'Saving...' : 'Save Address & Continue to Checkout'}
+            <span className="material-symbols-outlined text-sm">{saving ? 'sync' : 'shopping_cart_checkout'}</span>
+            {saving ? 'Saving...' : 'Save Address & Proceed to Payment'}
           </motion.button>
         </form>
       </main>

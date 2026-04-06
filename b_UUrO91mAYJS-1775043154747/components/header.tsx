@@ -19,7 +19,7 @@ const navItems = [
   { label: 'Jewellery', href: '/jewellery' }
 ]
 
-export function Header() {
+export function Header({ activeCategory }: { activeCategory?: string }) {
   const [activeNav, setActiveNav] = useState('')
   const { isCartOpen, setIsCartOpen, totalItems } = useCart()
   const { wishlist } = useWishlist()
@@ -38,13 +38,21 @@ export function Header() {
     }
   }, [isMobileMenuOpen])
 
-  // Sync active navigation with current route
+  // Sync active navigation with current route or forced category
   const pathname = usePathname()
   useEffect(() => {
+    if (activeCategory) {
+      const match = navItems.find(item => item.label.toLowerCase() === activeCategory.toLowerCase())
+      if (match) {
+        setActiveNav(match.label)
+        return
+      }
+    }
+    
     const current = navItems.find(item => item.href === pathname)
     if (current) setActiveNav(current.label)
     else setActiveNav('Home')
-  }, [pathname])
+  }, [pathname, activeCategory])
 
   // Redirect to home on refresh - only happens once per session!
   useEffect(() => {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -10,7 +11,17 @@ export function AboutSection() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
   }
 
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   const visionaries = [
+    // ... rest of the component
     { name: 'Pattan Zameer', role: 'FOUNDER', desc: 'Pattan Zameer is the Founder of the company and the driving force behind its creation. He defines the vision, business model, and long-term goals. With strong knowledge of business and Indian stock markets, he focuses on strategic planning, investment decisions, and identifying profitable opportunities. He guides the leadership team and ensures the company grows in the right direction.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775091849/WhatsApp_Image_2026-04-02_at_6.32.32_AM_zommec.jpg' },
     { name: 'M. Pranay Kumar', role: 'CEO', desc: 'M. Pranay Kumar is responsible for executing the vision set by the founder. As CEO, he manages the overall business activities, leads the team, and ensures daily operations align with company goals. He focuses on growth, sales performance, and building the brand in the e-commerce market.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775438058/WhatsApp_Image_2026-04-06_at_6.38.31_AM_sxtmuk.jpg' },
     { name: 'R. Sarvajeeth Singh', role: 'COO', desc: 'R. Sarvajeeth Singh handles the core operations of the business. He manages inventory, supplier relationships, order processing, packaging, and delivery. His role ensures smooth and efficient day-to-day functioning of the company.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775438066/WhatsApp_Image_2026-04-06_at_4.23.13_AM_azztsh.jpg' },
@@ -97,7 +108,7 @@ export function AboutSection() {
                     variants={{
                       hoverState: { filter: "grayscale(0)", scale: 1.05 }
                     }}
-                    initial={{ filter: "grayscale(1)", scale: 1 }}
+                    initial={{ filter: isMobile ? "grayscale(0)" : "grayscale(1)", scale: 1 }}
                     transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <Image

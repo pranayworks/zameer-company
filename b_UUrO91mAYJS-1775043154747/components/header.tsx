@@ -46,12 +46,29 @@ export function Header() {
     else setActiveNav('Home')
   }, [pathname])
 
-  // Redirect to home on refresh
+  // Redirect to home on refresh - only happens once per session!
   useEffect(() => {
-    if (window.performance && window.performance.navigation.type === 1) {
-      if (pathname !== '/') {
-        window.location.href = '/'
+    if (typeof window === 'undefined') return;
+    
+    // Check if we already did our 'first-time' session redirect
+    const hasRefreshedThisSession = sessionStorage.getItem('atelier_session_init');
+    
+    if (!hasRefreshedThisSession) {
+      // Modern way to check for reload/refresh
+      const navEntries = window.performance?.getEntriesByType('navigation');
+      const isReload = navEntries && navEntries[0] && (navEntries[0] as any).type === 'reload';
+      
+      // Fallback for older browsers
+      const isTypeReload = window.performance?.navigation?.type === 1;
+
+      if ((isReload || isTypeReload) && pathname !== '/') {
+        sessionStorage.setItem('atelier_session_init', 'true');
+        window.location.href = '/';
+        return;
       }
+      
+      // If they are on home or it wasn't a reload, mark session as initialized anyway!
+      sessionStorage.setItem('atelier_session_init', 'true');
     }
   }, [pathname])
 

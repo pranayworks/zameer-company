@@ -21,9 +21,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    if (!acceptedTerms) {
+      alert("Please review and accept our Terms of Service & Privacy Policy to enter the Atelier.");
+      return;
+    }
     if (!email || !password) {
        setErrorMsg("Please fill all the details — Email and Password are required.");
        alert("Please fill all the details — Email and Password are required.");
@@ -96,6 +101,10 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (!acceptedTerms) {
+      alert("Please review and accept our Terms of Service & Privacy Policy before continuing with Google.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -225,7 +234,6 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   className="w-full bg-transparent border-b border-[#e2dfd9] py-3 text-sm placeholder:text-[#cccac0] text-[#1c1c18] focus:outline-none focus:border-[#1c1c18] transition-colors pr-8"
                 />
-                {/* The user requested an eye image to view password for signup, I'll add it to login too as it makes sense */}
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -236,21 +244,23 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me Checkbox */}
-            <div className="flex items-center gap-3 pt-2">
+            {/* Terms and Conditions Checkbox */}
+            <div className="flex items-start gap-4 pt-4 border-t border-[#e2dfd9]">
               <input 
                 type="checkbox" 
-                id="remember"
-                className="w-4 h-4 rounded-none border border-[#e2dfd9] appearance-none checked:bg-[#1c1c18] checked:border-[#1c1c18] cursor-pointer"
+                id="terms"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="w-5 h-5 mt-0.5 rounded-none border border-[#e2dfd9] accent-[#1c1c18] cursor-pointer"
               />
-              <label htmlFor="remember" className="text-xs text-[#88857d] font-light cursor-pointer">
-                Remember me for 30 days
+              <label htmlFor="terms" className="text-[10px] text-[#5c5b55] leading-relaxed cursor-pointer select-none">
+                I have reviewed and agree to the <Link href="/legal/terms-of-service" className="text-[#1c1c18] font-bold underline underline-offset-4 hover:text-[#CBAC3A] transition-colors">Terms of Service</Link> and <Link href="/legal/privacy-policy" className="text-[#1c1c18] font-bold underline underline-offset-4 hover:text-[#CBAC3A] transition-colors">Privacy Policy</Link> of the Friends of 4 Atelier.
               </label>
             </div>
 
             {/* Error Message */}
             {errorMsg && (
-              <p className="text-red-500 text-xs font-body">{errorMsg}</p>
+              <p className="text-red-500 text-xs font-body border-l-2 border-red-500 pl-3">{errorMsg}</p>
             )}
 
             {/* Submit Button */}
@@ -258,10 +268,10 @@ export default function LoginPage() {
               type="button" 
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full mt-2 bg-[#CBAC3A] text-white uppercase tracking-widest text-xs py-4 hover:bg-[#b09431] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full mt-2 bg-[#CBAC3A] text-white uppercase tracking-widest text-[10px] font-bold py-4 hover:bg-[#1c1c18] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
             >
               {loading && <span className="material-symbols-outlined animate-spin text-[14px]">refresh</span>}
-              Sign In
+              Unlock Atelier Access
             </button>
           </form>
 

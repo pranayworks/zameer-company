@@ -26,10 +26,15 @@ export default function SignupPage() {
     email: "",
     password: "",
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    if (!acceptedTerms) {
+      alert("To join the Atelier, you must first review and accept our Terms & Conditions and Privacy Policy.");
+      return;
+    }
     if (!formData.fullName || !formData.phone || !formData.email || !formData.password) {
       setErrorMsg("Please fill all the details — Name, Phone, Email and Password are required.");
       alert("Please fill all the details — Name, Phone, Email and Password are required.");
@@ -105,6 +110,10 @@ export default function SignupPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (!acceptedTerms) {
+      alert("Please review and accept our Terms of Service & Privacy Policy before continuing with Google.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -174,7 +183,7 @@ export default function SignupPage() {
             Experience a curated journey into the world of heritage craft and contemporary design.
           </p>
 
-          {/* Added Social Auth as requested - Moved to top for visibility */}
+          {/* Social Auth */}
           <div className="mb-10 flex flex-col gap-3">
             <button 
               type="button" 
@@ -301,14 +310,16 @@ export default function SignupPage() {
             </div>
 
             {/* Terms Checkbox */}
-            <div className="flex items-start gap-3 pt-4">
+            <div className="flex items-start gap-4 pt-4 border-t border-[#e2dfd9]">
               <input 
                 type="checkbox" 
                 id="terms"
-                className="mt-1 w-4 h-4 rounded-none border border-[#e2dfd9] appearance-none checked:bg-[#1c1c18] checked:border-[#1c1c18] relative cursor-pointer"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="w-5 h-5 mt-0.5 rounded-none border border-[#e2dfd9] accent-[#1c1c18] cursor-pointer"
               />
-              <label htmlFor="terms" className="text-xs text-[#5c5b55] font-light mt-1">
-                I agree to the <Link href="#" className="underline decoration-[#e2dfd9] underline-offset-4 hover:text-[#1c1c18] transition">Terms & Conditions</Link> and <Link href="#" className="underline decoration-[#e2dfd9] underline-offset-4 hover:text-[#1c1c18] transition">Privacy Policy</Link>.
+              <label htmlFor="terms" className="text-[10px] text-[#5c5b55] leading-relaxed cursor-pointer select-none">
+                I agree to the <Link href="/legal/terms-of-service" className="text-[#1c1c18] font-bold underline underline-offset-4 hover:text-[#CBAC3A] transition-colors">Terms & Conditions</Link> and <Link href="/legal/privacy-policy" className="text-[#1c1c18] font-bold underline underline-offset-4 hover:text-[#CBAC3A] transition-colors">Privacy Policy</Link> of the Friends of 4 Atelier.
               </label>
             </div>
 

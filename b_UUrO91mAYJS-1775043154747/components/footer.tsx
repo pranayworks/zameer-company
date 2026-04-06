@@ -12,7 +12,7 @@ const footerSections = [
   },
   {
     title: 'Company',
-    links: ['About Us', 'Careers', 'Press', 'Blog', 'Sustainability'],
+    links: ['About Us'],
   },
   {
     title: 'Support',

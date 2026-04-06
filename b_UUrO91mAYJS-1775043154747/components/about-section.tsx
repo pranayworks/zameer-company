@@ -91,11 +91,11 @@ export function AboutSection() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
               >
-                <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-[#1c1c18]/5">
+                <div className="relative aspect-[2/3] mb-6 overflow-hidden bg-[#1c1c18]/5">
                   <motion.div
                     className="w-full h-full"
                     variants={{
-                      hoverState: { filter: "grayscale(0)", scale: 1.1 }
+                      hoverState: { filter: "grayscale(0)", scale: 1.05 }
                     }}
                     initial={{ filter: "grayscale(1)", scale: 1 }}
                     transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
@@ -104,7 +104,7 @@ export function AboutSection() {
                       src={person.img}
                       alt={person.name}
                       fill
-                      className="object-cover"
+                      className="object-cover object-top"
                     />
                   </motion.div>
                 </div>

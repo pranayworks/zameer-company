@@ -1,0 +1,17 @@
+[
+  "id",
+  "created_at",
+  "customer_name",
+  "email",
+  "phone",
+  "address",
+  "product_name",
+  "price",
+  "payment_status",
+  "shipment_id",
+  "order_id",
+  "order_status",
+  "user_id",
+  "size",
+  "color"
+]

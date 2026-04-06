@@ -566,6 +566,17 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
+                      {/* Order Timeline Notice */}
+                      <div className="bg-amber-50 border border-amber-100 p-5 mb-6 rounded-sm flex items-start gap-4 shadow-sm">
+                        <span className="material-symbols-outlined text-amber-500 text-xl shrink-0">info</span>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest text-amber-900 font-bold leading-relaxed">
+                            ✅ Order confirmation will be sent immediately to your email.<br/>
+                            🚚 Tracking details will be shared within 48-72 hours after order confirmation.
+                          </p>
+                        </div>
+                      </div>
+
                       <button
                         onClick={handlePay}
                         className="w-full gold-satin text-white py-6 font-body uppercase tracking-[0.3em] text-[11px] font-bold shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4"
@@ -584,7 +595,7 @@ export default function CheckoutPage() {
             </motion.div>
           )}
 
-          {/* ── STEP 3: PAYING (Loading while Razorpay is open) ── */}
+          {/* ── STEP 3: PAYING ── */}
           {step === 'paying' && (
             <motion.div
               key="paying"
@@ -611,7 +622,7 @@ export default function CheckoutPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-20 text-center max-w-lg mx-auto"
             >
-              {/* Success animation */}
+              {/* Green checkmark at top */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -625,118 +636,80 @@ export default function CheckoutPage() {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                <span className="text-[9px] uppercase tracking-[0.4em] text-[#a3851a] block mb-3">Payment Successful</span>
-                <h2 className="font-headline text-5xl lg:text-6xl text-[#1c1c18] mb-4">Order Confirmed!</h2>
-                <p className="font-body text-sm text-[#747878] leading-relaxed mb-3">
-                  Your masterpiece is now with the atelier. A confirmation has been sent to <strong>{profile?.email}</strong>.
-                </p>
-                {orderId && (
-                  <p className="font-body text-xs text-[#747878] mb-10">
-                    Payment ID: <code className="bg-[#1c1c18]/5 px-2 py-1 text-[#1c1c18]">{orderId}</code>
+                <span className="text-[9px] uppercase tracking-[0.4em] text-[#a3851a] block mb-3 font-bold">Payment Successful</span>
+                <h2 className="font-headline text-5xl lg:text-6xl text-[#1c1c18] mb-4">Thank You for Your Order!</h2>
+                <div className="space-y-2 mb-10">
+                  <p className="font-body text-sm text-[#747878]">
+                    Order ID: <span className="font-bold text-[#1c1c18] font-mono">{orderId}</span>
                   </p>
-                )}
+                  <p className="font-body text-sm text-[#747878]">
+                    Amount Paid: <span className="font-bold text-[#a3851a]">₹{(subtotal + shippingFee).toLocaleString('en-IN')}</span>
+                  </p>
+                </div>
               </motion.div>
 
-              {/* Delivery info */}
+              {/* Vertical timeline */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="w-full bg-white border border-[#1c1c18]/5 p-8 mb-10 text-left shadow-sm"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+                className="w-full text-left mb-12 space-y-0"
               >
-                <p className="text-[9px] uppercase tracking-widest text-[#747878] mb-4">Estimated Delivery</p>
-                <div className="flex items-center gap-4">
-                  <span className="material-symbols-outlined text-2xl text-[#a3851a]">local_shipping</span>
-                  <div>
-                    <p className="font-headline text-xl text-[#1c1c18]">
-                      {shippingMethod === 'Express' ? '2-3 Business Days (Express)' : '5-7 Business Days (Standard)'}
-                    </p>
-                    <p className="font-body text-xs text-[#747878]">{profile?.address}</p>
+                <h4 className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#a3851a] mb-6">Delivery Timeline</h4>
+                {[
+                  { label: "Order Confirmed", time: "completed", status: "done", icon: "check_circle" },
+                  { label: "Order Processing", time: "24 to 48 hours", status: "waiting", icon: "hourglass_empty" },
+                  { label: "Order Shipped", time: "Tracking sent to email", status: "pending", icon: "local_shipping" },
+                  { label: "Out for Delivery", time: "Arriving Soon", status: "pending", icon: "home" },
+                  { label: "Delivered", time: "Final Destination", status: "pending", icon: "task_alt" }
+                ].map((s, idx, arr) => (
+                  <div key={idx} className="relative pl-10 pb-8 last:pb-0">
+                    {/* Line */}
+                    {idx < arr.length - 1 && (
+                      <div className={`absolute left-[11px] top-7 w-[1px] h-full ${s.status === 'done' ? 'bg-green-500' : 'bg-[#1c1c18]/10'}`} />
+                    )}
+                    {/* Dot */}
+                    <div className={`absolute left-0 top-1 w-6 h-6 rounded-full flex items-center justify-center z-10 ${s.status === 'done' ? 'bg-green-100 text-green-600' : s.status === 'waiting' ? 'bg-amber-100 text-amber-600' : 'bg-[#1c1c18]/5 text-[#747878]/30'}`}>
+                      <span className="material-symbols-outlined text-sm">{s.icon}</span>
+                    </div>
+                    {/* Content */}
+                    <div>
+                      <p className={`text-xs font-bold uppercase tracking-widest ${s.status === 'done' ? 'text-green-600' : s.status === 'waiting' ? 'text-amber-600' : 'text-[#747878]'}`}>{s.label}</p>
+                      <p className="text-[10px] text-[#747878] uppercase opacity-60 tracking-wider mt-1">{s.time}</p>
+                    </div>
                   </div>
-                </div>
+                ))}
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.9 }}
-                className="flex flex-col sm:flex-row gap-4 w-full"
+                className="flex flex-col gap-4 w-full"
               >
-                <button
-                  onClick={async () => {
-                    if (typeof window === 'undefined') return;
-                    // Dynamically import jspdf UMD version to prevent SSR issues
-                    // @ts-ignore
-                    const { default: jsPDF } = await import('jspdf/dist/jspdf.umd.min.js')
-                    // @ts-ignore
-                    const { default: html2canvas } = await import('html2canvas')
-                    
-                    const doc = new jsPDF()
-                    
-                    doc.setFont("times", "normal")
-                    doc.setFontSize(22)
-                    doc.text("FRIENDS OF 4", 105, 20, { align: 'center' })
-                    doc.setFontSize(10)
-                    doc.text("STYLE OF TRADITION", 105, 28, { align: 'center' })
-                    
-                    doc.setDrawColor(163, 133, 26) // Gold color
-                    doc.line(20, 35, 190, 35)
-                    
-                    doc.setFontSize(14)
-                    doc.text("DIGITAL ACQUISITION RECEIPT", 20, 50)
-                    
-                    doc.setFontSize(10)
-                    doc.text(`Order ID: ${orderId}`, 20, 60)
-                    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 65)
-                    doc.text(`Customer: ${profile?.name}`, 20, 70)
-                    doc.text(`Email: ${profile?.email}`, 20, 75)
-                    doc.text(`Address: ${profile?.address}`, 20, 80)
-                    
-                    let y = 100
-                    doc.setFontSize(12)
-                    doc.text("Item Details", 20, y)
-                    y += 10
-                    doc.line(20, y, 190, y)
-                    y += 10
-                    
-                    doc.setFontSize(10)
-                    cart.forEach(item => {
-                      doc.text(`${item.name} (${item.quantity})`, 20, y)
-                      const price = typeof item.price === 'string' ? item.price : `₹${item.price.toLocaleString()}`
-                      doc.text(price, 170, y, { align: 'right' })
-                      y += 10
-                    })
-                    
-                    y += 10
-                    doc.line(20, y, 190, y)
-                    y += 10
-                    doc.setFontSize(14)
-                    doc.text("TOTAL PAYABLE", 20, y)
-                    doc.text(`₹${(subtotal + shippingFee).toLocaleString('en-IN')}`, 170, y, { align: 'right' })
-                    
-                    doc.setFontSize(8)
-                    doc.setTextColor(150, 150, 150)
-                    doc.text("Thank you for choosing Friends of 4. This is a computer-generated digital receipt.", 105, 280, { align: 'center' })
-                    
-                    doc.save(`FriendsOf4_Receipt_${orderId || 'ORD'}.pdf`)
-                  }}
-                  className="flex-1 gold-satin text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-                >
-                  <span className="material-symbols-outlined text-sm">download</span>
-                  Download Digital Receipt
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => window.open('https://wa.me/917569145624', '_blank')}
+                    className="flex-1 bg-green-600 text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3"
+                  >
+                    <span className="material-symbols-outlined text-sm">chat</span>
+                    WhatsApp Support
+                  </button>
+                  <button
+                    onClick={() => router.push('/')}
+                    className="flex-1 bg-[#1c1c18] text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:bg-[#a3851a] transition-all flex items-center justify-center gap-3"
+                  >
+                    <span className="material-symbols-outlined text-sm">shopping_bag</span>
+                    Continue Shopping
+                  </button>
+                </div>
+                
                 <button
                   onClick={() => router.push('/account?tab=orders')}
-                  className="flex-1 border border-[#1c1c18]/20 text-[#1c1c18] py-5 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#1c1c18]/5 transition-all flex items-center justify-center gap-3"
+                  className="w-full border border-[#1c1c18]/10 text-[#1c1c18] py-5 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#1c1c18]/5 transition-all flex items-center justify-center gap-3"
                 >
                   <span className="material-symbols-outlined text-sm">history</span>
-                  View My Orders
-                </button>
-                <button
-                  onClick={() => router.push('/')}
-                  className="flex-1 border border-[#1c1c18]/20 text-[#1c1c18] py-5 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#1c1c18]/5 transition-all"
-                >
-                  Continue Shopping
+                  View Order Status in Account
                 </button>
               </motion.div>
             </motion.div>

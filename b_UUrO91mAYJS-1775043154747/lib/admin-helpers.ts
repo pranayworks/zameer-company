@@ -35,6 +35,7 @@ export interface Order {
   price: number
   order_status: string
   created_at: string
+  shipment_id?: string
 }
 
 export const ADMIN_EMAILS = [

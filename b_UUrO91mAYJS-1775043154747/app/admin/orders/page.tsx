@@ -20,6 +20,8 @@ export default function AdminOrdersPage() {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [trackingNums, setTrackingNums] = useState<Record<string, string>>({})
+  const [sendingEmail, setSendingEmail] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const init = async () => {
@@ -218,9 +220,65 @@ export default function AdminOrdersPage() {
                       </select>
                     </div>
                     <div className="flex flex-col gap-3 w-full">
+                      {/* Tracking Number Section */}
+                      <div className="space-y-4 pt-4 border-t border-[#1c1c18]/5 w-full">
+                        <div className="flex flex-col gap-2">
+                          <span className="font-body text-[8px] uppercase tracking-widest text-[#747878] block">Logistics Management</span>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Tracking Number"
+                              value={trackingNums[order.id] || order.shipment_id || ''}
+                              onChange={(e) => setTrackingNums(prev => ({ ...prev, [order.id]: e.target.value }))}
+                              className="flex-1 bg-[#1c1c18]/5 border border-[#1c1c18]/10 text-[10px] uppercase font-bold tracking-widest px-4 py-3 focus:border-[#a3851a] outline-none transition-all"
+                            />
+                            <button
+                              disabled={sendingEmail[order.id]}
+                              onClick={async () => {
+                                const tNum = trackingNums[order.id] || order.shipment_id;
+                                if (!tNum) return alert('Enter tracking number first');
+                                setSendingEmail(prev => ({ ...prev, [order.id]: true }));
+                                try {
+                                  const res = await fetch('/api/send-tracking-email', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      email: order.email,
+                                      name: order.customer_name,
+                                      orderId: order.order_id,
+                                      trackingNumber: tNum,
+                                      internalId: order.id
+                                    })
+                                  });
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    alert('✓ Tracking details sent to customer!');
+                                    await loadOrders();
+                                  } else {
+                                    alert(`Failed: ${data.error}`);
+                                  }
+                                } catch (err) {
+                                  alert('Connection error');
+                                } finally {
+                                  setSendingEmail(prev => ({ ...prev, [order.id]: false }));
+                                }
+                              }}
+                              className={`px-4 py-3 text-[9px] uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 ${sendingEmail[order.id] ? 'bg-[#1c1c18]/20 cursor-not-allowed text-[#1c1c18]/40' : 'bg-[#a3851a] text-white hover:bg-[#1c1c18]'}`}
+                            >
+                              {sendingEmail[order.id] ? (
+                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              ) : (
+                                <span className="material-symbols-outlined text-[14px]">send</span>
+                              )}
+                              Send
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
                       <button
                         onClick={() => downloadInvoicePDF(order)}
-                        className="text-[9px] uppercase tracking-[0.2em] font-bold border border-[#1c1c18]/10 px-6 py-3 hover:bg-[#1c1c18] hover:text-white transition-all flex items-center gap-2 w-full justify-center"
+                        className="text-[9px] uppercase tracking-[0.2em] font-bold border border-[#1c1c18]/10 px-6 py-3 hover:bg-[#1c1c18] hover:text-white transition-all flex items-center gap-2 w-full justify-center mt-4"
                       >
                         <span className="material-symbols-outlined text-[14px]">download</span>
                         Print Invoice

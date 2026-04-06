@@ -10,13 +10,13 @@ const categories = [
     label: 'Sarees',
     subtitle: 'Traditional Craftsmanship',
     span: 'md:col-span-2 md:row-span-2',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDrZ_vZ2EWvLQ30EzU5kxdWv85wHETSZZsAKYsCAj3nVQNR4gZNTxT004ThJs8bqSyAhIPrva1Mzcb4PwSFKPqOCGGrN4Ke0_JRJHv6jWlFuoc65Cay593Hde1etCnM-O4fwdtJhyLmEjj7skp4RIZxzbAIjdWBGDPVTH25HLhRPrr1yWa_LxowivtmA6_3SB-E4UAzR4gX8xo3G5Ci-aaT3JVjPgYnKlnOq3642InwWDuvBxVD9MipvChWLbBFmtXPXK2QTgbZq7bv',
+    image: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775435769/WhatsApp_Image_2026-04-06_at_5.29.54_AM_zwgfzd.jpg',
     href: '/sarees'
   },
   {
     label: 'Men',
     span: 'md:col-span-1',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB3VHjVKWCfk9as7nxNYjWhxFv_na75o1yekj7fbBQUV8GJe25y0GAdkeOtEYns0p_jUhusFNCT73rmtpFEXiHWsvBMtp1GYeQIZgT6Z_btaYDxqMXzJtm5R79hvjDQhgA8Ss1O3FaWSqCOvtr-FKnx95qupE1bgzK_FAhNJtJpPvq2lUO9KeR7pdv3b0mLiIfxtaevaU2khH735LD7QAfGLGyrL2exDYJ5Zn4t4yLumdX4Gw4TlyRncicq47FhAvqJCiyzoOuGgvjX',
+    image: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775435764/WhatsApp_Image_2026-04-05_at_11.59.05_PM_do85la.jpg',
     href: '/men'
   },
   {
@@ -29,7 +29,7 @@ const categories = [
   {
     label: 'Jewellery',
     span: 'md:col-span-2',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCtgIC8pYV-OUpeDPghZwBwfeW2kuFq05PU-44pYH7C9mk_1QtDI8WOSesm1ltnpTYyer7BKD1SVpTeMGrg2PtgmgzVyI13sJqvYJo7HaXVCDae8LpAlg6sMd-codOxEg4D4ZPp4ah3_8Bw93GQlwBD6rS98ArrTJ-L1BnFM4C6golmESE7yiQa2JuRbe98Yc9H2AtTgoO4DgA_6p4sdc_EyoX5YpuMMgEXiI2GCDudOmjhLqJL6cff-ELjBaGIVsLo8mLamOBf-lFz',
+    image: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775435771/WhatsApp_Image_2026-04-05_at_9.50.14_PM_dg9fjw.jpg',
     href: '/jewellery'
   },
 ]

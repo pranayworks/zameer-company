@@ -27,9 +27,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const init = async () => {
-      const { authorized } = await checkAdminAuth()
+      const { authorized, email: userEmail } = await checkAdminAuth()
       if (!authorized) {
-        alert("Atelier Access Denied: This account is not in the curated admin list.")
+        alert(`Atelier Access Denied: \n\nAccount [${userEmail || 'Unknown'}] is not in the curated admin list. \n\nPlease use a registered administrator account to access the command center.`)
         router.push('/')
         return
       }

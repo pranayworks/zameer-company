@@ -61,12 +61,23 @@ export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 }
 
 export async function checkAdminAuth(): Promise<{ authorized: boolean; email?: string }> {
-  const { user } = await getSessionUser()
-  if (!user) return { authorized: false }
-  if (ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
-    return { authorized: true, email: user.email || '' }
+  try {
+    const { user } = await getSessionUser()
+    if (!user) return { authorized: false }
+    
+    const userEmail = (user.email || '').toLowerCase().trim()
+    const isAuthorized = ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase().trim() === userEmail)
+    
+    if (isAuthorized) {
+      return { authorized: true, email: userEmail }
+    }
+    
+    console.warn(`Admin access denied for: ${userEmail}`)
+    return { authorized: false, email: userEmail }
+  } catch (err) {
+    console.error("Critical Auth Herald Failure:", err)
+    return { authorized: false }
   }
-  return { authorized: false }
 }
 
 export async function fetchAllProducts(): Promise<Product[]> {

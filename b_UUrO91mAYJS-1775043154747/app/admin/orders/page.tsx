@@ -23,8 +23,11 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { authorized } = await checkAdminAuth()
-      if (!authorized) { router.push('/'); return }
+      const { authorized, email: userEmail } = await checkAdminAuth()
+      if (!authorized) { 
+        alert(`Atelier Access Denied: \n\nAccount [${userEmail || 'Unknown'}] is not authorized.`)
+        router.push('/'); return 
+      }
       setIsAuthorized(true)
       loadOrders()
     }

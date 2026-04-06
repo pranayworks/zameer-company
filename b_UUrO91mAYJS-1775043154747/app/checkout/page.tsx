@@ -36,8 +36,8 @@ export default function CheckoutPage() {
   const [addressConfirmed, setAddressConfirmed] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [orderId, setOrderId] = useState('')
-  const [shippingMethod] = useState<'Express'>('Express')
-  const [shippingFee] = useState(100)
+  const [shippingMethod, setShippingMethod] = useState<'Standard' | 'Express'>('Standard')
+  const shippingFee = shippingMethod === 'Express' ? 150 : 0
 
   // Load Razorpay script
   useEffect(() => {
@@ -323,18 +323,40 @@ export default function CheckoutPage() {
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex flex-col gap-4 py-4 border-y border-[#1c1c18]/5">
-                      <span className="text-[10px] uppercase tracking-widest font-bold text-[#1c1c18]">Shipping</span>
-                      <div className="flex items-center justify-between p-5 border border-[#a3851a] bg-[#a3851a]/5 shadow-inner">
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-[#1c1c18]">Shipping Method</span>
+                      
+                      {/* Standard Option */}
+                      <div 
+                        className={`flex items-center justify-between p-5 border cursor-pointer transition-all ${shippingMethod === 'Standard' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#a3851a]/50'}`}
+                        onClick={() => setShippingMethod('Standard')}
+                      >
                         <div className="flex items-center gap-4">
-                          <div className="w-4 h-4 rounded-full border-2 border-[#a3851a] flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-[#a3851a]" />
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Standard' ? 'border-[#a3851a]' : 'border-[#1c1c18]/30'}`}>
+                            {shippingMethod === 'Standard' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Standard Delivery</span>
+                            <span className={`text-[9px] uppercase font-bold ${shippingMethod === 'Standard' ? 'text-[#a3851a]' : 'text-[#747878]'}`}>Delivery takes 5–7 Days</span>
+                          </div>
+                        </div>
+                        <span className="font-headline text-xl text-[#1c1c18]">Free</span>
+                      </div>
+
+                      {/* Express Option */}
+                      <div 
+                        className={`flex items-center justify-between p-5 border cursor-pointer transition-all ${shippingMethod === 'Express' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#a3851a]/50'}`}
+                        onClick={() => setShippingMethod('Express')}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Express' ? 'border-[#a3851a]' : 'border-[#1c1c18]/30'}`}>
+                            {shippingMethod === 'Express' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
                           </div>
                           <div className="flex flex-col">
                             <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Express Delivery</span>
-                            <span className="text-[9px] text-[#a3851a] uppercase font-bold">Delivery takes 3–5 Days</span>
+                            <span className={`text-[9px] uppercase font-bold ${shippingMethod === 'Express' ? 'text-[#a3851a]' : 'text-[#747878]'}`}>Delivery takes  2–3 Days</span>
                           </div>
                         </div>
-                        <span className="font-headline text-xl text-[#1c1c18]">₹100</span>
+                        <span className="font-headline text-xl text-[#1c1c18]">₹150</span>
                       </div>
                     </div>
                     <div className="flex justify-between text-xs font-body pt-4">
@@ -626,7 +648,9 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-4">
                   <span className="material-symbols-outlined text-2xl text-[#a3851a]">local_shipping</span>
                   <div>
-                    <p className="font-headline text-xl text-[#1c1c18]">3–5 Business Days (Express)</p>
+                    <p className="font-headline text-xl text-[#1c1c18]">
+                      {shippingMethod === 'Express' ? '2-3 Business Days (Express)' : '5-7 Business Days (Standard)'}
+                    </p>
                     <p className="font-body text-xs text-[#747878]">{profile?.address}</p>
                   </div>
                 </div>

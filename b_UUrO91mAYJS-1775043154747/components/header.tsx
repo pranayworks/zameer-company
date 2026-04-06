@@ -76,18 +76,18 @@ export function Header() {
           >
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="relative w-16 h-16 md:w-24 md:h-24 shrink-0"
+              className="relative w-24 h-24 md:w-40 md:h-40 shrink-0"
             >
               <Image src="/logo.png" alt="Friends of 4 Logo" fill className="object-contain" />
             </motion.div>
             <motion.div
                whileHover={{ x: 2 }}
-               className="flex flex-col max-w-[150px] sm:max-w-none"
+               className="flex flex-col max-w-[180px] sm:max-w-none"
             >
-              <span className="text-lg sm:text-2xl md:text-3xl font-headline tracking-tight text-[#1c1b1b] leading-tight mb-0.5 truncate sm:overflow-visible">
+              <span className="text-xl sm:text-3xl md:text-4xl font-headline tracking-tighter text-[#1c1b1b] leading-tight mb-1 truncate sm:overflow-visible">
                 Style Of Tradition
               </span>
-              <span className="text-[10px] md:text-sm font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none">
+              <span className="text-xs md:text-base font-body font-black tracking-[0.3em] uppercase text-[#a3851a] leading-none">
                 Friends of 4
               </span>
             </motion.div>

@@ -110,7 +110,7 @@ export function AboutSection() {
                 </div>
                 <div className="flex justify-between items-end mb-3 border-b border-[#1c1c18]/10 pb-2">
                   <h4 className="font-headline text-2xl text-[#1c1c18]">{person.name}</h4>
-                  <span className="font-body uppercase tracking-[0.2em] text-[8px] text-[#747878]">{person.role}</span>
+                  <span className="font-body uppercase tracking-[0.2em] text-[10px] text-[#a3851a] font-black">{person.role}</span>
                 </div>
                 <p className="font-body text-[#747878] text-xs leading-relaxed">{person.desc}</p>
               </motion.div>

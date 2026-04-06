@@ -70,6 +70,14 @@ export default function AdminOrdersPage() {
     !o.order_status.includes('Refund')
   )
 
+  const parseAddress = (address: string) => {
+    const shippingMatch = address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+    const method = shippingMatch ? shippingMatch[1] : 'Standard'
+    const fee = shippingMatch ? shippingMatch[2] : '0'
+    const cleanAddr = address ? address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : 'No Address Set'
+    return { method, fee, cleanAddr }
+  }
+
   if (isAuthorized === null) {
     return (
       <div className="min-h-screen bg-[#fdf9f2] flex items-center justify-center">
@@ -167,7 +175,15 @@ export default function AdminOrdersPage() {
                       </div>
                       <div>
                         <span className="font-body text-[9px] uppercase tracking-widest text-[#747878] block mb-1">Shipping Address</span>
-                        <p className="text-xs leading-relaxed italic max-w-xs">{order.address}</p>
+                        <p className="text-xs leading-relaxed italic max-w-xs">{parseAddress(order.address).cleanAddr}</p>
+                        <div className="mt-3 flex gap-2">
+                          <span className={`text-[8px] uppercase tracking-widest font-bold px-2 py-1 ${parseAddress(order.address).method === 'Express' ? 'bg-[#a3851a] text-white' : 'bg-[#1c1c18]/10 text-[#747878]'}`}>
+                            {parseAddress(order.address).method} Delivery
+                          </span>
+                          <span className="text-[8px] uppercase tracking-widest font-bold px-2 py-1 border border-[#1c1c18]/10 text-[#747878]">
+                            Fee: ₹{parseAddress(order.address).fee}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

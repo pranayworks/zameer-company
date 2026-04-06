@@ -106,6 +106,14 @@ export default function AdminArchivePage() {
     o.order_status !== 'TRASHED'
   )
 
+  const parseAddress = (address: string) => {
+    const shippingMatch = address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
+    const method = shippingMatch ? shippingMatch[1] : 'Standard'
+    const fee = shippingMatch ? shippingMatch[2] : '0'
+    const cleanAddr = address ? address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : 'No Address Set'
+    return { method, fee, cleanAddr }
+  }
+
   if (isAuthorized === null) {
     return (
       <div className="min-h-screen bg-[#fdf9f2] flex items-center justify-center">
@@ -212,7 +220,8 @@ export default function AdminArchivePage() {
                       <div className="text-[8px] text-[#747878] uppercase mt-0.5">{order.size} • {order.color}</div>
                     </td>
                     <td className="p-6">
-                      <div className="text-[10px] line-clamp-1 max-w-[200px] text-[#747878]">{order.address}</div>
+                      <div className="text-[10px] line-clamp-1 max-w-[200px] text-[#1c1c18] font-bold">{parseAddress(order.address).method} Delivery</div>
+                      <div className="text-[9px] line-clamp-1 max-w-[200px] text-[#747878] italic">{parseAddress(order.address).cleanAddr}</div>
                     </td>
                     <td className="p-6 text-right">
                       <div className="text-xs font-headline text-[#a3851a]">₹{order.price?.toLocaleString()}</div>

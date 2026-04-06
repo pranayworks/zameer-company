@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
@@ -10,8 +10,9 @@ import { supabase } from '@/lib/supabase'
 
 export default function SareesPage() {
   const [sareeProducts, setSareeProducts] = useState<any[]>([])
-  const productsRef = useRef<HTMLDivElement>(null)
   const [sortBy, setSortBy] = useState('newest')
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
+  const productsRef = useRef<HTMLDivElement>(null)
 
   const scrollToProducts = () => {
     productsRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -96,7 +97,7 @@ export default function SareesPage() {
       </section>
 
       {/* Masterpiece Series */}
-      <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-32">
+      <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-16 md:py-32">
         <div className="flex flex-col md:flex-row justify-between items-end mb-16">
           <div>
             <span className="font-body uppercase tracking-[0.4em] text-[10px] text-[#a3851a] mb-6 block"> Masterpiece Series </span>
@@ -107,7 +108,7 @@ export default function SareesPage() {
                  <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">{sareeProducts.length} Pieces Found</span>
               </div>
               <div className="flex items-center gap-4">
-                 <span className="font-body text-[10px] uppercase tracking-widest text-[#1c1c18] font-bold">Curate By:</span>
+                 <span className="font-body text-[10px] uppercase tracking-widest text-[#1c1c18] font-bold">Sort:</span>
                  <select 
                    value={sortBy}
                    onChange={(e) => setSortBy(e.target.value)}
@@ -121,7 +122,7 @@ export default function SareesPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-black">
           {sareeProducts.map((product, index) => (
             <ProductCard
               key={product.id}
@@ -139,15 +140,39 @@ export default function SareesPage() {
       </section>
 
       {/* Mastering The Nivi Section */}
-      <section className="bg-white py-24 md:py-32 overflow-hidden border-y border-[#1c1c18]/5">
+      <section className="bg-white py-24 md:py-40 overflow-hidden border-y border-[#1c1c18]/5">
         <div className="max-w-[1920px] mx-auto px-6 md:px-12 flex flex-col-reverse lg:flex-row items-center gap-16 lg:gap-24">
           <motion.div
-            className="w-full lg:w-1/2 aspect-video bg-black relative flex items-center justify-center group"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            className="w-full lg:w-1/2 aspect-video bg-black relative shadow-2xl overflow-hidden group cursor-pointer"
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1 }}
+            onClick={() => setIsVideoModalOpen(true)}
           >
-            <span className="material-symbols-outlined text-white text-6xl opacity-30 group-hover:opacity-100 transition-opacity cursor-pointer">play_circle</span>
+            <div className="absolute inset-0 z-0">
+               <Image 
+                 src="https://images.unsplash.com/photo-1583391733956-6c78276477e2?q=80&w=2600&auto=format&fit=crop" 
+                 alt="Saree Masterclass Placeholder" 
+                 fill 
+                 className="object-cover opacity-60 group-hover:scale-110 transition-transform duration-[3s]"
+               />
+               <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+            </div>
+            
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+               <motion.div 
+                 className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/40 mb-6 group-hover:bg-[#a3851a] group-hover:scale-110 transition-all duration-500"
+                 whileHover={{ scale: 1.1 }}
+               >
+                 <span className="material-symbols-outlined text-white text-4xl">play_arrow</span>
+               </motion.div>
+               <h4 className="font-body text-[10px] uppercase tracking-[0.4em] text-white font-bold opacity-80 group-hover:opacity-100 transition-opacity">Watch Masterclass</h4>
+            </div>
+            
+            <div className="absolute bottom-6 right-6 z-10 px-4 py-2 bg-black/40 backdrop-blur-sm border border-white/10 flex items-center gap-3">
+               <span className="material-symbols-outlined text-white text-xs">zoom_in</span>
+               <span className="font-body text-[8px] uppercase tracking-widest text-white">Full Screen Insight</span>
+            </div>
           </motion.div>
 
           <div className="w-full lg:w-1/2 text-center lg:text-left">
@@ -158,7 +183,7 @@ export default function SareesPage() {
             </p>
             <div className="space-y-6 flex flex-col items-center lg:items-start">
               {['1. THE PERFECT FOUNDATION TUCK', '2. PRECISION PLEATING TECHNIQUE', '3. THE PALLU: FLOW & STRENGTH'].map((step, i) => (
-                <div key={i} className="flex items-center gap-6 group cursor-pointer">
+                <div key={i} className="flex items-center gap-6 group cursor-pointer" onClick={() => setIsVideoModalOpen(true)}>
                   <span className="font-headline text-xl text-[#a3851a]">{String(i + 1).padStart(2, '0')}.</span>
                   <span className="font-body uppercase tracking-widest text-[9px] group-hover:text-[#a3851a] transition-all font-bold">{step}</span>
                 </div>
@@ -167,6 +192,44 @@ export default function SareesPage() {
           </div>
         </div>
       </section>
+
+      {/* Video Modal / Zoom Experience */}
+      <AnimatePresence>
+        {isVideoModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 md:p-12"
+          >
+            <button 
+              onClick={() => setIsVideoModalOpen(false)}
+               className="absolute top-8 right-8 text-white/60 hover:text-white transition-colors"
+            >
+               <span className="material-symbols-outlined text-4xl">close</span>
+            </button>
+            
+            <motion.div 
+              className="w-full max-w-[1400px] aspect-video bg-black shadow-2xl relative"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+               <iframe 
+                src="https://www.youtube.com/embed/9jNSaRCvK2I?autoplay=1&modestbranding=1&rel=0" 
+                title="Saree Masterclass"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowFullScreen
+              />
+              <div className="absolute -bottom-16 left-0 right-0 flex justify-between items-center px-4">
+                 <p className="text-white font-headline text-2xl tracking-widest">Mastering the Nivi Drape | 01</p>
+                 <span className="text-[#a3851a] font-body text-[10px] uppercase tracking-widest font-black">Atelier Archive: Step-by-Step Excellence</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* The Soul of The Weaver */}
       <section className="py-40 bg-[#1c1c18] text-center px-12 relative overflow-hidden">
@@ -185,7 +248,6 @@ export default function SareesPage() {
             <span className="font-body uppercase tracking-[0.5em] text-[9px] text-[#fdf9f2]/40">Atisan Hours Per Collection</span>
           </div>
         </motion.div>
-        {/* Subtle bg texture/image placeholder */}
         <div className="absolute inset-0 z-0 opacity-10 bg-[radial-gradient(circle_at_center,_white_0.5px,_transparent_1px)] bg-[size:24px_24px]" />
       </section>
 

@@ -150,7 +150,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
 
   if (!product) return (
     <div className="min-h-screen bg-[#fdf9f2]">
-      <Header activeCategory={product?.category} />
+      <Header />
       <div className="pt-32 pb-24 px-8 md:px-24 max-w-[1920px] mx-auto animate-pulse">
         <div className="h-4 w-48 bg-[#1c1c18]/5 mb-12" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24">

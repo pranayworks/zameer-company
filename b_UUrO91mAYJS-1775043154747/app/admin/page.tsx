@@ -93,8 +93,9 @@ export default function AdminDashboard() {
     return filtered.reduce((sum, p) => sum + p.stock, 0)
   }
 
-  const activeOrders = orders.filter(o => o.order_status !== 'Delivered' && o.order_status !== 'Cancelled' && !o.order_status.includes('Refund'))
-  const archivedOrders = orders.filter(o => o.order_status === 'Delivered' || o.order_status.includes('Cancelled') || o.order_status.includes('Refund'))
+  const visibleOrders = orders.filter(o => o.order_status !== 'TRASHED')
+  const activeOrders = visibleOrders.filter(o => o.order_status !== 'Delivered' && o.order_status !== 'Cancelled' && !o.order_status.includes('Refund'))
+  const archivedOrders = visibleOrders.filter(o => o.order_status === 'Delivered' || o.order_status.includes('Cancelled') || o.order_status.includes('Refund'))
 
   if (isAuthorized === null) {
     return (

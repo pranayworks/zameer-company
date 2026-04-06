@@ -12,6 +12,7 @@ import {
   fetchAllOrders,
   updateOrderStatus as updateStatus,
   downloadInvoicePDF,
+  deleteOrder,
 } from '@/lib/admin-helpers'
 
 export default function AdminOrdersPage() {
@@ -45,7 +46,26 @@ export default function AdminOrdersPage() {
     await loadOrders()
   }
 
-  const activeOrders = orders.filter(o => o.order_status !== 'Delivered' && o.order_status !== 'Cancelled' && !o.order_status.includes('Refund'))
+  const handleDeleteOrder = async (order: Order) => {
+    if (!confirm(`Are you sure you want to permanently remove order ORD-${order.order_id}? This will bypass security and remove it from view.`)) return
+    
+    setLoading(true)
+    const result = await deleteOrder(order.id, order.order_id)
+    
+    if (!result.success) {
+      // Soft delete bypass
+      await updateStatus(order.id, 'TRASHED', orders)
+    }
+    await loadOrders()
+    setLoading(false)
+  }
+
+  const visibleOrders = orders.filter(o => o.order_status !== 'TRASHED')
+  const activeOrders = visibleOrders.filter(o => 
+    o.order_status !== 'Delivered' && 
+    o.order_status !== 'Cancelled' && 
+    !o.order_status.includes('Refund')
+  )
 
   if (isAuthorized === null) {
     return (
@@ -94,15 +114,15 @@ export default function AdminOrdersPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           <div className="bg-white p-6 border border-[#1c1c18]/5 shadow-sm">
             <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">Preparing</span>
-            <p className="font-headline text-4xl mt-2">{orders.filter(o => o.order_status === 'Preparing').length}</p>
+            <p className="font-headline text-4xl mt-2">{visibleOrders.filter(o => o.order_status === 'Preparing').length}</p>
           </div>
           <div className="bg-white p-6 border border-[#1c1c18]/5 shadow-sm">
             <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">Dispatched</span>
-            <p className="font-headline text-4xl mt-2 text-blue-500">{orders.filter(o => o.order_status === 'Dispatched').length}</p>
+            <p className="font-headline text-4xl mt-2 text-blue-500">{visibleOrders.filter(o => o.order_status === 'Dispatched').length}</p>
           </div>
           <div className="bg-white p-6 border border-[#1c1c18]/5 shadow-sm">
             <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">Out for Delivery</span>
-            <p className="font-headline text-4xl mt-2 text-amber-500">{orders.filter(o => o.order_status === 'Out for Delivery').length}</p>
+            <p className="font-headline text-4xl mt-2 text-amber-500">{visibleOrders.filter(o => o.order_status === 'Out for Delivery').length}</p>
           </div>
           <div className="bg-white p-6 border border-[#1c1c18]/5 shadow-sm">
             <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">Total Revenue</span>
@@ -178,13 +198,22 @@ export default function AdminOrdersPage() {
                         <option>Refunded</option>
                       </select>
                     </div>
-                    <button
-                      onClick={() => downloadInvoicePDF(order)}
-                      className="text-[9px] uppercase tracking-[0.2em] font-bold border border-[#1c1c18]/10 px-6 py-3 hover:bg-[#1c1c18] hover:text-white transition-all flex items-center gap-2 w-full justify-center"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">download</span>
-                      Print Invoice
-                    </button>
+                    <div className="flex flex-col gap-3 w-full">
+                      <button
+                        onClick={() => downloadInvoicePDF(order)}
+                        className="text-[9px] uppercase tracking-[0.2em] font-bold border border-[#1c1c18]/10 px-6 py-3 hover:bg-[#1c1c18] hover:text-white transition-all flex items-center gap-2 w-full justify-center"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">download</span>
+                        Print Invoice
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOrder(order)}
+                        className="text-[9px] uppercase tracking-[0.2em] font-bold border border-red-500/20 text-red-600 px-6 py-3 hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 w-full justify-center"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">delete</span>
+                        Remove Masterpiece
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>

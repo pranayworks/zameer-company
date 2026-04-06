@@ -55,11 +55,31 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState('')
   const [isSubmittingNotify, setIsSubmittingNotify] = useState(false)
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProductAndRelated()
+    trackRecentlyViewed(id)
+    loadRecentlyViewed()
   }, [id])
+
+  const trackRecentlyViewed = (productId: string) => {
+    if (typeof window === 'undefined') return
+    const stored = JSON.parse(localStorage.getItem('atk_recent_viewed') || '[]') as string[]
+    const updated = [productId, ...stored.filter(i => i !== productId)].slice(0, 4)
+    localStorage.setItem('atk_recent_viewed', JSON.stringify(updated))
+  }
+
+  const loadRecentlyViewed = async () => {
+    if (typeof window === 'undefined') return
+    const stored = JSON.parse(localStorage.getItem('atk_recent_viewed') || '[]') as string[]
+    const otherIds = stored.filter(i => i !== id)
+    if (otherIds.length === 0) return
+
+    const { data } = await supabase.from('products').select('*').in('id', otherIds).limit(4)
+    if (data) setRecentlyViewed(data)
+  }
 
   async function fetchProductAndRelated() {
     setError(null)
@@ -129,8 +149,23 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   }
 
   if (!product) return (
-    <div className="min-h-screen bg-[#fdf9f2] flex flex-col items-center justify-center font-headline text-2xl tracking-widest opacity-40 animate-pulse">
-      Searching the Archives...
+    <div className="min-h-screen bg-[#fdf9f2]">
+      <Header />
+      <div className="pt-32 pb-24 px-8 md:px-24 max-w-[1920px] mx-auto animate-pulse">
+        <div className="h-4 w-48 bg-[#1c1c18]/5 mb-12" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24">
+          <div className="aspect-[3/4] bg-[#1c1c18]/5" />
+          <div className="space-y-8">
+            <div className="h-20 w-3/4 bg-[#1c1c18]/5" />
+            <div className="h-8 w-1/4 bg-[#1c1c18]/5" />
+            <div className="h-32 w-full bg-[#1c1c18]/5" />
+            <div className="grid grid-cols-4 gap-4 pt-12">
+               {[1,2,3,4].map(i => <div key={i} className="h-12 bg-[#1c1c18]/5" />)}
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
     </div>
   )
 
@@ -777,6 +812,38 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
              </div>
           </div>
         </section>
+        {/* Recently Viewed Pieces */}
+        {recentlyViewed.length > 0 && (
+          <section className="mt-48 pb-24 border-t border-[#1c1c18]/10 pt-32">
+            <div className="flex justify-between items-end mb-16">
+               <div>
+                  <span className="font-body text-[10px] uppercase tracking-[0.3em] text-[#a3851a] mb-2 block">Your Personal Archive</span>
+                  <h2 className="font-headline text-4xl">Recently Viewed</h2>
+               </div>
+               <button 
+                 onClick={() => { localStorage.removeItem('atk_recent_viewed'); setRecentlyViewed([]) }}
+                 className="text-[9px] uppercase tracking-widest font-bold text-[#747878] hover:text-red-500 transition-colors"
+               >
+                 Clear History
+               </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+               {recentlyViewed.map((item, i) => (
+                  <ProductCard 
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    price={typeof item.price === 'number' ? `₹${item.price.toLocaleString()}` : item.price}
+                    image={item.image}
+                    rating={item.rating || 5}
+                    reviews={item.reviews || 0}
+                    stock={item.stock}
+                    index={i} 
+                  />
+               ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />

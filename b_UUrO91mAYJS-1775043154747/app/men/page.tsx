@@ -14,13 +14,21 @@ import { supabase } from '@/lib/supabase'
 export default function MenPage() {
   const [menProducts, setMenProducts] = useState<any[]>([])
 
+  const [sortBy, setSortBy] = useState('newest')
+
   useEffect(() => {
     async function fetchMenProducts() {
-      const { data } = await supabase.from('products').select('*').eq('category', 'Men')
+      let query = supabase.from('products').select('*').eq('category', 'Men')
+      
+      if (sortBy === 'price-low') query = query.order('price', { ascending: true })
+      else if (sortBy === 'price-high') query = query.order('price', { ascending: false })
+      else query = query.order('created_at', { ascending: false })
+
+      const { data } = await query
       if (data) setMenProducts(data)
     }
     fetchMenProducts()
-  }, [])
+  }, [sortBy])
   const heroRef = useRef(null)
   const productsRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
@@ -84,6 +92,23 @@ export default function MenPage() {
 
       {/* Product Grid */}
       <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-24">
+        {/* Filter/Sort Header */}
+        <div className="flex justify-between items-center mb-16 border-b border-[#1c1c18]/10 pb-8">
+           <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">{menProducts.length} Masterpieces Found</span>
+           <div className="flex items-center gap-6">
+              <span className="font-body text-[10px] uppercase tracking-widest text-[#1c1c18] font-bold">Curate By:</span>
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-transparent border-none font-body text-[10px] uppercase tracking-widest text-[#a3851a] focus:ring-0 cursor-pointer outline-none font-black"
+              >
+                <option value="newest" className="text-[#1c1c18]">New Arrivals</option>
+                <option value="price-low" className="text-[#1c1c18]">Price: Low to High</option>
+                <option value="price-high" className="text-[#1c1c18]">Price: High to Low</option>
+              </select>
+           </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20">
           {menProducts.map((product, index) => (
             <ProductCard

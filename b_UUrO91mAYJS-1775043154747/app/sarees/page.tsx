@@ -5,13 +5,13 @@ import Image from 'next/image'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
-
 import { useRef, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function SareesPage() {
   const [sareeProducts, setSareeProducts] = useState<any[]>([])
   const productsRef = useRef<HTMLDivElement>(null)
+  const [sortBy, setSortBy] = useState('newest')
 
   const scrollToProducts = () => {
     productsRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -19,11 +19,17 @@ export default function SareesPage() {
 
   useEffect(() => {
     async function fetchSareeProducts() {
-      const { data } = await supabase.from('products').select('*').eq('category', 'Sarees')
+      let query = supabase.from('products').select('*').eq('category', 'Sarees')
+      if (sortBy === 'price-low') query = query.order('price', { ascending: true })
+      else if (sortBy === 'price-high') query = query.order('price', { ascending: false })
+      else query = query.order('created_at', { ascending: false })
+
+      const { data } = await query
       if (data) setSareeProducts(data)
     }
     fetchSareeProducts()
-  }, [])
+  }, [sortBy])
+
   return (
     <main className="w-full bg-[#fdf9f2]">
       <Header />
@@ -91,12 +97,28 @@ export default function SareesPage() {
 
       {/* Masterpiece Series */}
       <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-32">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-24">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16">
           <div>
             <span className="font-body uppercase tracking-[0.4em] text-[10px] text-[#a3851a] mb-6 block"> Masterpiece Series </span>
             <h2 className="font-headline text-5xl text-[#1c1c18] tracking-tighter">Showcasing Curated Weaves</h2>
           </div>
-          <button className="font-body uppercase tracking-widest text-[9px] text-[#747878] hover:text-[#a3851a] border-b border-[#1c1c18]/10 pb-1 transition-all">View All Masterpieces →</button>
+          <div className="flex items-center gap-10 border-b border-[#1c1c18]/10 pb-2">
+              <div className="flex items-center gap-4">
+                 <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">{sareeProducts.length} Pieces Found</span>
+              </div>
+              <div className="flex items-center gap-4">
+                 <span className="font-body text-[10px] uppercase tracking-widest text-[#1c1c18] font-bold">Curate By:</span>
+                 <select 
+                   value={sortBy}
+                   onChange={(e) => setSortBy(e.target.value)}
+                   className="bg-transparent border-none font-body text-[10px] uppercase tracking-widest text-[#a3851a] focus:ring-0 cursor-pointer outline-none font-black"
+                 >
+                   <option value="newest" className="text-[#1c1c18]">New Arrivals</option>
+                   <option value="price-low" className="text-[#1c1c18]">Price: Low to High</option>
+                   <option value="price-high" className="text-[#1c1c18]">Price: High to Low</option>
+                 </select>
+              </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">

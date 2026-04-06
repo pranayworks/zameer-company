@@ -55,14 +55,33 @@ export function ProductCard({
       transition={{ duration: 0.6, delay: index * 0.1 }}
       viewport={{ once: true, margin: '0px 0px -100px 0px' }}
     >
-      <Link href={productPath} className="block relative">
-        <div className="aspect-[3/4] overflow-hidden bg-[#f1ede6] relative mb-6">
+      <Link href={productPath} className="block">
+        {/* Product Image */}
+        <div className="relative aspect-[3/4] overflow-hidden bg-white group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-shadow duration-700 mb-6">
           <Image
-            src={image ? image.split(',')[0] : '/placeholder.jpg'}
-            alt={title || 'Product Image'}
+            src={image || '/placeholder.jpg'}
+            alt={title}
             fill
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
           />
+          
+          {/* URGENCE & EXCLUSIVITY RIBBONS */}
+          {stock !== undefined && stock > 0 && stock <= 5 && stock !== 1 && (
+            <div className="absolute top-4 left-4 z-10 px-3 py-1.5 bg-[#a3851a] shadow-lg">
+               <span className="text-white text-[8px] uppercase tracking-[0.2em] font-black italic">Selling Fast</span>
+            </div>
+          )}
+          {stock === 1 && (
+             <div className="absolute top-4 left-4 z-10 px-3 py-1.5 bg-[#1c1c18] shadow-lg">
+                <span className="text-white text-[8px] uppercase tracking-[0.2em] font-black italic">Last Archive Piece</span>
+             </div>
+          )}
+          {stock === 0 && (
+             <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center z-10">
+                <span className="bg-[#1c1c18] text-white px-6 py-2 text-[9px] uppercase tracking-[0.3em] font-bold">In Restoration</span>
+             </div>
+          )}
+
           <motion.div
             onClick={stock === 0 ? (e) => e.preventDefault() : handleAddToCart}
             className={`absolute bottom-4 left-4 right-4 py-4 font-body uppercase tracking-widest text-[10px] font-semibold opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl text-center z-10 ${stock === 0 ? 'bg-[#1c1c18]/40 text-white cursor-not-allowed hidden md:block' : 'gold-satin text-white cursor-pointer'}`}

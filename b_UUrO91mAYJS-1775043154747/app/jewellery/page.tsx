@@ -5,12 +5,12 @@ import Image from 'next/image'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
-
 import { useRef, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function JewelleryPage() {
   const [jewelleryProducts, setJewelleryProducts] = useState<any[]>([])
+  const [sortBy, setSortBy] = useState('newest')
   const productsRef = useRef<HTMLDivElement>(null)
 
   const scrollToProducts = () => {
@@ -19,11 +19,17 @@ export default function JewelleryPage() {
 
   useEffect(() => {
     async function fetchJewelleryProducts() {
-      const { data } = await supabase.from('products').select('*').eq('category', 'Jewellery')
+      let query = supabase.from('products').select('*').eq('category', 'Jewellery')
+      if (sortBy === 'price-low') query = query.order('price', { ascending: true })
+      else if (sortBy === 'price-high') query = query.order('price', { ascending: false })
+      else query = query.order('created_at', { ascending: false })
+
+      const { data } = await query
       if (data) setJewelleryProducts(data)
     }
     fetchJewelleryProducts()
-  }, [])
+  }, [sortBy])
+
   return (
     <main className="w-full bg-[#fdf9f2]">
       <Header />
@@ -74,10 +80,22 @@ export default function JewelleryPage() {
             <h2 className="font-headline text-3xl mb-4">Curated Selections</h2>
             <p className="font-body text-[#747878] text-[11px] leading-relaxed italic">Each piece is meticulously restored or handcrafted, a timeless narrative of craftsmanship. Curated for the contemporary silhouette.</p>
           </div>
-          <div className="flex flex-wrap justify-center gap-6 md:gap-12 font-body uppercase tracking-[0.2em] text-[9px] text-[#747878]">
-            {['Necklaces', 'Earrings', 'Bracelets', 'Rings'].map((cat) => (
-              <button key={cat} className="hover:text-[#a3851a] transition-colors">{cat}</button>
-            ))}
+          <div className="flex items-center gap-10">
+              <div className="flex items-center gap-4">
+                 <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">{jewelleryProducts.length} Pieces Found</span>
+              </div>
+              <div className="flex items-center gap-4">
+                 <span className="font-body text-[10px] uppercase tracking-widest text-[#1c1c18] font-bold">Sort:</span>
+                 <select 
+                   value={sortBy}
+                   onChange={(e) => setSortBy(e.target.value)}
+                   className="bg-transparent border-none font-body text-[10px] uppercase tracking-widest text-[#a3851a] focus:ring-0 cursor-pointer outline-none font-black"
+                 >
+                   <option value="newest" className="text-[#1c1c18]">New Arrivals</option>
+                   <option value="price-low" className="text-[#1c1c18]">Price: Low to High</option>
+                   <option value="price-high" className="text-[#1c1c18]">Price: High to Low</option>
+                 </select>
+              </div>
           </div>
         </div>
       </div>

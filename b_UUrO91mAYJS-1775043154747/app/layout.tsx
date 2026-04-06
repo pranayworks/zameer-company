@@ -70,6 +70,7 @@ export const metadata: Metadata = {
 import { CartProvider } from '@/context/cart-context'
 import { WishlistProvider } from '@/context/wishlist-context'
 import { ToastProvider } from '@/context/toast-context'
+import { FloatingConcierge } from '@/components/floating-concierge'
 
 export default function RootLayout({
   children,
@@ -90,6 +91,7 @@ export default function RootLayout({
             <WishlistProvider>
               <LoadingScreen />
               {children}
+              <FloatingConcierge />
               <Analytics />
             </WishlistProvider>
           </CartProvider>

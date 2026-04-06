@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "PGRST204",
+    "details": null,
+    "hint": null,
+    "message": "Could not find the 'image_url' column of 'orders' in the schema cache"
+  }
+}

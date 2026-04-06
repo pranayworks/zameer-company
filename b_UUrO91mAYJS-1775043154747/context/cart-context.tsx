@@ -233,7 +233,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           phone: profile?.phone || 'No Phone provided',
           address: fullAddress,
           product_name: item.name,
-          image_url: item.image,
           size: item.selectedSize || 'Standard',
           color: item.selectedColor || 'Default',
           price: price,
@@ -253,7 +252,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
            }
 
            // Send Instant Mobile Alert to Admin
-           await sendAdminNotification(orderEntry);
+           await sendAdminNotification({ ...orderEntry, image_url: item.image });
+        } else {
+           console.error("Order Insert Error:", error)
         }
       }
 

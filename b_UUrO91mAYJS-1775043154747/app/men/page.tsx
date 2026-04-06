@@ -43,7 +43,7 @@ export default function MenPage() {
       <section ref={heroRef} className="relative h-[95vh] w-full overflow-hidden flex items-end justify-start pb-32 pt-20">
         <motion.div style={{ y }} className="absolute inset-0 z-0">
           <Image
-            src="/men_hero_suit_1775057251070.png"
+            src="https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775435764/WhatsApp_Image_2026-04-05_at_11.59.05_PM_do85la.jpg"
             alt="The Modern Gentleman"
             fill
             className="object-cover object-top"
@@ -70,7 +70,7 @@ export default function MenPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.8 }}
           >
-            <button 
+            <button
               onClick={scrollToProducts}
               className="bg-white text-black px-12 py-5 font-body uppercase tracking-widest text-[10px] hover:bg-[#a3851a] hover:text-white transition-all shadow-2xl"
             >

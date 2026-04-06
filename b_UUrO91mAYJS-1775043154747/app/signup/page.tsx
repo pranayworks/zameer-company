@@ -30,8 +30,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!formData.fullName || !formData.email || !formData.password) {
-      setErrorMsg("Please fill out all required fields.");
+    if (!formData.fullName || !formData.phone || !formData.email || !formData.password) {
+      setErrorMsg("Please fill all the details — Name, Phone, Email and Password are required.");
+      alert("Please fill all the details — Name, Phone, Email and Password are required.");
       return;
     }
     

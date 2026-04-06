@@ -57,7 +57,7 @@ export function CategoriesGrid() {
   }
 
   return (
-    <section ref={ref} className="py-16 md:py-24 px-6 md:px-12 max-w-[1920px] mx-auto bg-[#f7f3ec]">
+    <section id="categories" ref={ref} className="py-16 md:py-24 px-6 md:px-12 max-w-[1920px] mx-auto bg-[#f7f3ec]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}

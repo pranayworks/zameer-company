@@ -54,35 +54,66 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const user = session?.user
       if (user) {
         setUserId(user.id)
-        // If local cart is empty, fetch from Supabase
-        if (!savedCart || savedCart === '[]') {
-          const { data: cartData } = await supabase
-            .from('cart')
-            .select('*, products(*)')
-            .eq('user_id', user.id)
-          
-          if (cartData && cartData.length > 0) {
-            const syncedCart: CartItem[] = cartData.map(c => ({
-              id: c.product_id,
-              name: c.products?.name || 'Unknown Product',
-              price: c.products?.price || 0,
-              quantity: c.quantity,
-              image: c.products?.image_url || '/placeholder.svg',
-              selectedSize: c.size
-            }))
-            setCart(syncedCart)
-            localStorage.setItem('atelier-cart', JSON.stringify(syncedCart))
+
+        // Always try to load cloud cart for logged-in users (cross-device sync)
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('cart_data')
+            .eq('id', user.id)
+            .single()
+
+          if (profileData?.cart_data && Array.isArray(profileData.cart_data) && profileData.cart_data.length > 0) {
+            const cloudCart = profileData.cart_data as CartItem[]
+            // Merge: if local cart has items, merge them with cloud; otherwise use cloud
+            const localCart = savedCart ? JSON.parse(savedCart) : []
+            if (localCart.length === 0) {
+              // No local cart — use cloud cart
+              setCart(cloudCart)
+              localStorage.setItem('atelier-cart', JSON.stringify(cloudCart))
+            } else {
+              // Both exist — merge (add cloud items not in local)
+              const merged = [...localCart]
+              for (const cloudItem of cloudCart) {
+                const exists = merged.find((m: CartItem) => 
+                  m.id === cloudItem.id && m.selectedSize === cloudItem.selectedSize && m.selectedColor === cloudItem.selectedColor
+                )
+                if (!exists) {
+                  merged.push(cloudItem)
+                }
+              }
+              setCart(merged)
+              localStorage.setItem('atelier-cart', JSON.stringify(merged))
+              // Update cloud with merged cart
+              await supabase.from('profiles').update({ cart_data: merged }).eq('id', user.id)
+            }
+          } else if (savedCart && savedCart !== '[]') {
+            // Local cart exists but cloud is empty — push local to cloud
+            await supabase.from('profiles').update({ cart_data: JSON.parse(savedCart) }).eq('id', user.id)
           }
+        } catch (e) {
+          console.error("Cloud cart sync failed, using local cart", e)
         }
       }
     }
     initCart()
   }, [])
 
-  // Persist to localStorage on change
+  // Persist to localStorage AND Supabase on change
   useEffect(() => {
     localStorage.setItem('atelier-cart', JSON.stringify(cart))
-  }, [cart])
+    // Also sync to cloud for cross-device access
+    if (userId && cart.length >= 0) {
+      const syncToCloud = async () => {
+        try {
+          await supabase.from('profiles').update({ cart_data: cart }).eq('id', userId)
+        } catch (e) {
+          console.error('Cloud cart save failed', e)
+        }
+      }
+      syncToCloud()
+    }
+  }, [cart, userId])
 
   const addToCart = async (newItem: CartItem) => {
     setCart((prevCart) => {

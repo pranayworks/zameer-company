@@ -684,7 +684,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         </div>
                       </div>
 
-                      {/* Sizes */}
+                      {/* Sizes - Only for Men and Women */}
+                      {(category === 'Men' || category === 'Women') && (
                       <div>
                         <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Available Sizes</label>
                         <div className="flex flex-wrap gap-2 mb-4">
@@ -702,6 +703,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           className="w-full bg-white border-b border-[#1c1c18]/20 p-4 text-sm outline-none focus:border-[#a3851a]"
                         />
                       </div>
+                      )}
 
                       {/* Additional Data / Return Policy */}
                       <div className="space-y-4 pt-6 mt-4 border-t border-[#1c1c18]/10">

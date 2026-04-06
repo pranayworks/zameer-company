@@ -57,7 +57,7 @@ export function HeroSection() {
           </motion.p>
 
           <Link 
-            href="/men" 
+            href="#categories" 
             className="bg-[#e2bb53] text-[#1c1c18] px-12 py-5 font-body uppercase tracking-[0.2em] text-[10px] font-bold hover:bg-white transition-all shadow-[0_0_30px_rgba(226,187,83,0.15)] hover:shadow-[0_0_40px_rgba(226,187,83,0.3)] hover:-translate-y-1 block md:inline-block"
           >
             <motion.span variants={itemVariants}>

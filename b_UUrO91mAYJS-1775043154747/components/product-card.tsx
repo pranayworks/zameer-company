@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/cart-context'
 import { slugify } from '@/lib/utils'
 
@@ -28,6 +29,7 @@ export function ProductCard({
   stock,
 }: ProductCardProps) {
   const { addToCart } = useCart()
+  const router = useRouter()
   const productPath = `/product/${id || slugify(title)}`
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -41,6 +43,8 @@ export function ProductCard({
       image: image,
       quantity: 1
     })
+    // Navigate to shipping address page for address confirmation
+    router.push('/profile/shipping-address')
   }
 
   return (

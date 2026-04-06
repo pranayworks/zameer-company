@@ -25,7 +25,8 @@ export default function LoginPage() {
 
   const handleSubmit = async () => {
     if (!email || !password) {
-       setErrorMsg("Please enter both email and password.");
+       setErrorMsg("Please fill all the details — Email and Password are required.");
+       alert("Please fill all the details — Email and Password are required.");
        return;
     }
     

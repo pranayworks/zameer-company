@@ -36,8 +36,8 @@ export default function CheckoutPage() {
   const [addressConfirmed, setAddressConfirmed] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [orderId, setOrderId] = useState('')
-  const [shippingMethod, setShippingMethod] = useState<'Normal' | 'Express'>('Normal')
-  const [shippingFee, setShippingFee] = useState(100)
+  const [shippingMethod] = useState<'Express'>('Express')
+  const [shippingFee] = useState(100)
 
   // Load Razorpay script
   useEffect(() => {
@@ -86,10 +86,7 @@ export default function CheckoutPage() {
     setStep('address')
   }
 
-  const handleShippingChange = (method: 'Normal' | 'Express') => {
-    setShippingMethod(method)
-    setShippingFee(method === 'Normal' ? 100 : 200)
-  }
+  // Express delivery only — no shipping method toggle needed
 
   const handlePay = async () => {
     if (!profile) return
@@ -326,39 +323,18 @@ export default function CheckoutPage() {
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex flex-col gap-4 py-4 border-y border-[#1c1c18]/5">
-                      <span className="text-[10px] uppercase tracking-widest font-bold text-[#1c1c18]">Shipping Selection</span>
-                      <div className="space-y-3">
-                        <label 
-                          onClick={() => handleShippingChange('Normal')}
-                          className={`flex items-center justify-between p-5 border cursor-pointer transition-all duration-300 ${shippingMethod === 'Normal' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]/30'}`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Normal' ? 'border-[#a3851a]' : 'border-[#1c1c18]/20'}`}>
-                              {shippingMethod === 'Normal' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Normal Delivery</span>
-                              <span className="text-[9px] text-[#747878] uppercase">Expected: 5-7 Business Days</span>
-                            </div>
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-[#1c1c18]">Shipping</span>
+                      <div className="flex items-center justify-between p-5 border border-[#a3851a] bg-[#a3851a]/5 shadow-inner">
+                        <div className="flex items-center gap-4">
+                          <div className="w-4 h-4 rounded-full border-2 border-[#a3851a] flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-[#a3851a]" />
                           </div>
-                          <span className="font-headline text-xl text-[#1c1c18]">₹100</span>
-                        </label>
-
-                        <label 
-                          onClick={() => handleShippingChange('Express')}
-                          className={`flex items-center justify-between p-5 border cursor-pointer transition-all duration-300 ${shippingMethod === 'Express' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]/30'}`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Express' ? 'border-[#a3851a]' : 'border-[#1c1c18]/20'}`}>
-                              {shippingMethod === 'Express' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Express Delivery</span>
-                              <span className="text-[9px] text-[#747878] uppercase font-bold text-[#a3851a]">Priority: 1-3 Business Days</span>
-                            </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Express Delivery</span>
+                            <span className="text-[9px] text-[#a3851a] uppercase font-bold">Delivery takes 3–5 Days</span>
                           </div>
-                          <span className="font-headline text-xl text-[#1c1c18]">₹200</span>
-                        </label>
+                        </div>
+                        <span className="font-headline text-xl text-[#1c1c18]">₹100</span>
                       </div>
                     </div>
                     <div className="flex justify-between text-xs font-body pt-4">
@@ -447,11 +423,11 @@ export default function CheckoutPage() {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
-                      href="/account"
+                      href="/profile/shipping-address"
                       className="inline-flex items-center gap-2 bg-[#1c1c18] text-white py-4 px-8 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#a3851a] transition-all"
                     >
                       <span className="material-symbols-outlined text-sm">person</span>
-                      Go to Account & Add Address
+                      Go to Add Address
                     </Link>
                     <button
                       onClick={async () => {
@@ -509,7 +485,7 @@ export default function CheckoutPage() {
                           Yes, This Is Correct
                         </button>
                         <Link
-                          href="/account"
+                          href="/profile/shipping-address"
                           className="flex-1 border border-[#1c1c18]/20 text-[#1c1c18] py-5 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#1c1c18]/5 transition-all flex items-center justify-center gap-3"
                         >
                           <span className="material-symbols-outlined text-sm">edit</span>
@@ -643,7 +619,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-4">
                   <span className="material-symbols-outlined text-2xl text-[#a3851a]">local_shipping</span>
                   <div>
-                    <p className="font-headline text-xl text-[#1c1c18]">5–7 Business Days</p>
+                    <p className="font-headline text-xl text-[#1c1c18]">3–5 Business Days (Express)</p>
                     <p className="font-body text-xs text-[#747878]">{profile?.address}</p>
                   </div>
                 </div>

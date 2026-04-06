@@ -167,10 +167,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       }
     }
     
-    if (product.colors && product.category !== 'Jewellery' && !selectedColor) {
-      alert('Please select a color')
-      return
-    }
+    // Color is optional - no validation needed
 
     if (!product) return;
 
@@ -183,7 +180,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       selectedSize: (isOneSizeCategory 
         ? (product.category === 'Jewellery' ? 'One Size' : 'Standard 6-Yard Drape') 
         : selectedSize) as string,
-      selectedColor: (product.category === 'Jewellery' || !product.colors) ? undefined : (selectedColor || undefined)
+      selectedColor: selectedColor || undefined
     })
 
     showToast(`Masterpiece added to your archive.`, 'success', 'shopping_bag')
@@ -433,10 +430,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
               )}
 
-              {/* Color Selector - Hidden for Jewellery */}
-              {product.colors && product.category !== 'Jewellery' && (
+              {/* Color Selector - Optional */}
+              {product.colors && product.colors.length > 0 && product.category !== 'Jewellery' && (
                 <div className="mb-12">
-                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Tone: {selectedColor || 'None Selected'}</span>
+                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Tone (Optional): {selectedColor || 'None'}</span>
                   <div className="flex flex-wrap gap-4">
                     {product.colors.map((color) => (
                       <button

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 
 import { useCart } from '@/context/cart-context'
 import { useWishlist } from '@/context/wishlist-context'
@@ -19,7 +20,7 @@ const navItems = [
 ]
 
 export function Header() {
-  const [activeNav, setActiveNav] = useState('Home')
+  const [activeNav, setActiveNav] = useState('')
   const { isCartOpen, setIsCartOpen, totalItems } = useCart()
   const { wishlist } = useWishlist()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -36,6 +37,14 @@ export function Header() {
       document.body.style.overflow = 'unset'
     }
   }, [isMobileMenuOpen])
+
+  // Sync active navigation with current route
+  const pathname = usePathname()
+  useEffect(() => {
+    const current = navItems.find(item => item.href === pathname)
+    if (current) setActiveNav(current.label)
+    else setActiveNav('Home')
+  }, [pathname])
 
   return (
     <>
@@ -67,7 +76,7 @@ export function Header() {
                className="flex flex-col max-w-[120px] sm:max-w-none"
             >
               <span className="text-sm sm:text-xl md:text-2xl font-headline tracking-tight text-[#1c1b1b] leading-tight mb-0.5 truncate sm:overflow-visible">
-                Style Of Traditionals
+                Style Of Tradition
               </span>
               <span className="text-[8px] md:text-xs font-body font-bold tracking-[0.2em] uppercase text-[#747878] group-hover:text-[#a3851a] transition-colors leading-none">
                 Friends of 4

@@ -26,7 +26,7 @@ const footerSections = [
 
 const socialLinks = [
   { icon: 'brand_instagram', label: 'Instagram', href: 'INSTAGRAM_LINK_HERE' },
-  { icon: 'chat', label: 'WhatsApp', href: 'https://wa.me/YOUR_NUMBER?text=Greetings%20Friends%20of%204%20Atelier%2C%20I%20would%20like%20to%20inquire%20about%20your%20latest%20curations.' },
+  { icon: 'chat', label: 'WhatsApp', href: 'https://wa.me/919550447883?text=Greetings%20Friends%20of%204%20Atelier%2C%20I%20am%20interested%20in%20your%20latest%20collections%20and%20bespoke%20services.' },
 ]
 
 export function Footer() {

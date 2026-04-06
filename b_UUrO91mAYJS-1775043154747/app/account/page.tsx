@@ -214,6 +214,7 @@ function AccountContent() {
     fullName: 'The Collector',
     tier: 'Gold Tier Member'
   })
+  const [isAdmin, setIsAdmin] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [editData, setEditData] = useState({ name: '', phone: '', address: '' })
   const [dbOrders, setDbOrders] = useState<any[]>([])
@@ -264,6 +265,10 @@ function AccountContent() {
       if (orders) {
         setDbOrders(orders);
       }
+
+      // Check for Admin status for high-visibility links
+      const { authorized } = await import('@/lib/admin-helpers').then(m => m.checkAdminAuth());
+      setIsAdmin(authorized);
     };
     
     fetchUser();
@@ -369,6 +374,13 @@ function AccountContent() {
                 <span className="text-[10px] uppercase tracking-widest">{tab.label}</span>
               </button>
             ))}
+
+            {isAdmin && (
+              <Link href="/admin" className="w-full flex items-center gap-4 text-left px-4 py-3 text-[#a3851a] hover:text-[#1c1c18] border-l-[3px] border-transparent mt-4 bg-[#a3851a]/5">
+                <span className="material-symbols-outlined text-[18px] text-[#a3851a]">admin_panel_settings</span>
+                <span className="text-[10px] uppercase tracking-widest font-black">Atelier Command Center</span>
+              </Link>
+            )}
           </nav>
 
           <div className="pt-8 border-t border-[#1c1c18]/10 px-4">

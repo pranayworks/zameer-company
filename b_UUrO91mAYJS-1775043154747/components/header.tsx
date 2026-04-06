@@ -61,10 +61,14 @@ export function Header() {
       // Fallback for older browsers
       const isTypeReload = window.performance?.navigation?.type === 1;
 
-      if ((isReload || isTypeReload) && pathname !== '/') {
-        sessionStorage.setItem('atelier_session_init', 'true');
-        window.location.href = '/';
-        return;
+      const isHome = pathname === '/'
+      const isAdminPath = pathname.startsWith('/admin')
+      const isAccountPath = pathname.startsWith('/account')
+
+      if ((isReload || isTypeReload) && !isHome && !isAdminPath && !isAccountPath) {
+        sessionStorage.setItem('atelier_session_init', 'true')
+        window.location.href = '/'
+        return
       }
       
       // If they are on home or it wasn't a reload, mark session as initialized anyway!

@@ -219,7 +219,8 @@ export async function updateOrderStatus(orderId: string, status: string, orders:
         body: JSON.stringify({
           message: `<b>📦 STATUS UPDATED 📦</b>\n\n` +
             `Order: ORD-${order.order_id}\n` +
-            `Customer: ${order.customer_name}\n\n` +
+            `Customer: ${order.customer_name}\n` +
+            `Contact: ${order.phone}\n\n` +
             `<b>New Status: ${status.toUpperCase()}</b>\n` +
             `<i>Live Tracking has been updated for the client.</i>`
         })

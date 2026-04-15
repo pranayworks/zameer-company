@@ -186,6 +186,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       `<b>Valuation:</b> ₹${orderData.price.toLocaleString('en-IN')}\n` +
       `<b>Shipping:</b> ${shippingText}\n` +
       `<b>Client:</b> ${orderData.customer_name}\n` +
+      `<b>Contact:</b> ${orderData.phone}\n` +
       `<b>Dispatch At:</b> <i>${cleanAddress}</i>\n` +
       `<b>ID:</b> <code>${orderData.order_id}</code>\n\n` +
       `<a href="${orderData.image_url}">🖼️ View Archive Masterpiece</a>\n\n` +

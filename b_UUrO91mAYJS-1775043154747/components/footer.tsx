@@ -8,7 +8,7 @@ import { Newsletter } from './newsletter'
 const footerSections = [
   {
     title: 'Shop',
-    links: ['Men', 'Women', 'Sarees', 'Jewellery'],
+    links: ['Men', 'Women', 'Sarees', 'Jewellery', 'Others'],
   },
   {
     title: 'Company',
@@ -89,6 +89,7 @@ export function Footer() {
                       'Women': '/women',
                       'Sarees': '/sarees',
                       'Jewellery': '/jewellery',
+                      'Others': '/others',
                       'Contact': '/contact',
                       'About Us': '/visionaries',
                       'Returns': '/legal/refund-policy',

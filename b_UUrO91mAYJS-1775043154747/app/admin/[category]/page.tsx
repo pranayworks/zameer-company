@@ -61,7 +61,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
 
   const handleOpenAdd = () => {
     const defaultReturnPolicy = category !== 'Jewellery' ? 'Can be returned within 5 days' : 'Non-returnable'
-    setFormData({ ...DEFAULT_FORM_DATA, category: category === 'Others' ? 'Kids' : category, return_policy: defaultReturnPolicy })
+    setFormData({ ...DEFAULT_FORM_DATA, category: category, return_policy: defaultReturnPolicy })
     setIsAdding(true)
     setEditingId(null)
   }
@@ -118,34 +118,18 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
       setUploadProgress('Preparing files...')
 
       const filesToUpload = files.slice(0, 10)
-      const urls: string[] = []
+      const formData = new FormData()
+      filesToUpload.forEach(file => formData.append('files', file))
 
-      for (let i = 0; i < filesToUpload.length; i++) {
-        setUploadProgress(`Syncing image ${i + 1} of ${filesToUpload.length} with Atelier Cloud...`)
-        const file = filesToUpload[i]
-        
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const fileName = `${Date.now()}_${i}.${fileExt}`
-        const filePath = `products/${fileName}`
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      })
 
-        const { data, error } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(filePath, file, {
-            contentType: file.type,
-            upsert: false
-          })
+      const uploadData = await res.json()
+      if (!res.ok) throw new Error(uploadData.error || 'Atelier Sky-Sync failed')
 
-        if (error) {
-           console.error('Storage error:', error)
-           throw new Error(error.message || `Failed to sync image ${i + 1}`)
-        }
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(filePath)
-        
-        urls.push(publicUrl)
-      }
+      const urls = uploadData.urls
       
       const allNewUrls = [...urls]
       
@@ -189,25 +173,18 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
       setUploading(true)
       setUploadProgress('Syncing cinematic reel...')
 
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp4'
-      const fileName = `${Date.now()}_video.${fileExt}`
-      const filePath = `products/${fileName}`
+      const formData = new FormData()
+      formData.append('files', file)
 
-      const { data, error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, file, {
-          contentType: file.type,
-          upsert: false
-        })
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      })
 
-      if (error) {
-        console.error('Video Sync Error:', error)
-        throw new Error(error.message || 'Direct sync to Atelier Storage failed')
-      }
+      const uploadData = await res.json()
+      if (!res.ok) throw new Error(uploadData.error || 'Atelier Cinematic-Sync failed')
 
-      const { data: { publicUrl } } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath)
+      const publicUrl = uploadData.urls[0]
 
       setFormData(prev => ({ ...prev, video_url: publicUrl }))
       setUploadProgress('')
@@ -594,6 +571,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           <option>Women</option>
                           <option>Sarees</option>
                           <option>Jewellery</option>
+                          <option>Others</option>
                           <option>Kids</option>
                         </select>
                       </div>

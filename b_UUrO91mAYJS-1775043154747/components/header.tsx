@@ -16,7 +16,8 @@ const navItems = [
   { label: 'Men', href: '/men' },
   { label: 'Women', href: '/women' },
   { label: 'Sarees', href: '/sarees' },
-  { label: 'Jewellery', href: '/jewellery' }
+  { label: 'Jewellery', href: '/jewellery' },
+  { label: 'Others', href: '/others' }
 ]
 
 export function Header({ activeCategory }: { activeCategory?: string }) {

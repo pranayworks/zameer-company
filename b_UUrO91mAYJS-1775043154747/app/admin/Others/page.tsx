@@ -138,16 +138,27 @@ export default function OthersAdminPage() {
       const file = files[0] as File
 
       setUploading(true)
-      setUploadProgress('Syncing cinematic reel...')
+      setUploadProgress('Signing cinematic reel access...')
 
-      const formData = new FormData()
-      formData.append('files', file)
+      const signRes = await fetch('/api/get-upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileType: file.type })
+      })
+      const signData = await signRes.json()
+      if (!signRes.ok) throw new Error(signData.error || 'Signature failed')
 
-      const res = await fetch('/api/upload-image', { method: 'POST', body: formData })
-      const uploadData = await res.json()
-      if (!res.ok) throw new Error(uploadData.error || 'Atelier Cinematic-Sync failed')
+      setUploadProgress('Uploading to Archive Storage...')
 
-      setFormData(prev => ({ ...prev, video_url: uploadData.urls[0] }))
+      const uploadRes = await fetch(signData.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      })
+
+      if (!uploadRes.ok) throw new Error('Direct library sync failed.')
+
+      setFormData(prev => ({ ...prev, video_url: signData.publicUrl }))
       setUploadProgress('')
     } catch (error: any) {
       setUploadProgress('')

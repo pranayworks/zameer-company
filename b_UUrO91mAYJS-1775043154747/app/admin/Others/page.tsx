@@ -265,10 +265,10 @@ export default function OthersAdminPage() {
                         <input type="text" placeholder="Item ID" required disabled={!!editingId} value={formData.id} onChange={e => setFormData({...formData, id: e.target.value})} className="w-full bg-white border-b p-4 outline-none" />
                         <input type="text" placeholder="Display Title" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-white border-b p-4 outline-none" />
                         <div className="grid grid-cols-2 gap-4">
-                          <input type="number" placeholder="Price (₹)" required value={formData.price} onChange={e => setFormData({...prev, price: Number(e.target.value)})} className="w-full bg-white border-b p-4 outline-none" />
-                          <input type="number" placeholder="Stock" required value={formData.stock} onChange={e => setFormData({...prev, stock: Number(e.target.value)})} className="w-full bg-white border-b p-4 outline-none" />
+                          <input type="number" placeholder="Price (₹)" required value={formData.price} onChange={e => setFormData(p => ({...p, price: Number(e.target.value)}))} className="w-full bg-white border-b p-4 outline-none" />
+                          <input type="number" placeholder="Stock" required value={formData.stock} onChange={e => setFormData(p => ({...p, stock: Number(e.target.value)}))} className="w-full bg-white border-b p-4 outline-none" />
                         </div>
-                        <textarea placeholder="Archive Description" rows={4} required value={formData.description} onChange={e => setFormData({...prev, description: e.target.value})} className="w-full bg-white border-b p-4 outline-none resize-none" />
+                        <textarea placeholder="Archive Description" rows={4} required value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} className="w-full bg-white border-b p-4 outline-none resize-none" />
                         
                         {/* Image Upload Area */}
                         <div className="border-2 border-dashed border-[#a3851a]/20 p-8 text-center bg-white">
@@ -284,7 +284,7 @@ export default function OthersAdminPage() {
                        {/* Categories: In this page, we might want to allow sub-categories or just confirm 'Others' */}
                        <div>
                           <label className="text-[10px] uppercase text-[#747878] mb-2 block">Archive Category</label>
-                          <select value={formData.category} onChange={e => setFormData({...prev, category: e.target.value})} className="w-full bg-white border-b p-4 outline-none">
+                          <select value={formData.category} onChange={e => setFormData(p => ({...p, category: e.target.value}))} className="w-full bg-white border-b p-4 outline-none">
                             <option>Others</option>
                             <option>Kids</option>
                             <option>Accessories</option>
@@ -300,7 +300,7 @@ export default function OthersAdminPage() {
                           </div>
                        </div>
 
-                       <textarea placeholder="Return Policy / Specialist Note" rows={2} value={formData.return_policy} onChange={e => setFormData({...prev, return_policy: e.target.value})} className="w-full bg-white border-b p-4 text-xs outline-none resize-none" />
+                       <textarea placeholder="Return Policy / Specialist Note" rows={2} value={formData.return_policy} onChange={e => setFormData(p => ({...p, return_policy: e.target.value}))} className="w-full bg-white border-b p-4 text-xs outline-none resize-none" />
                      </div>
 
                      <button type="submit" disabled={loading} className="md:col-span-2 gold-satin text-white py-6 text-[10px] uppercase font-bold tracking-widest shadow-2xl">

@@ -303,6 +303,90 @@ export default function OthersAdminPage() {
                           </select>
                        </div>
 
+                       {/* Fabric & Composition */}
+                       <div className="space-y-4">
+                         <div className="flex items-center justify-between">
+                           <label className="text-[10px] uppercase text-[#a3851a] font-bold">Fabric & Composition</label>
+                           <label className="flex items-center gap-2 cursor-pointer group">
+                             <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.fabric && formData.fabric.length > 0 ? 'Active' : 'Enable'}</span>
+                             <div 
+                               onClick={() => setFormData(prev => ({ ...prev, fabric: prev.fabric && prev.fabric.length > 0 ? [] : ['Standard'] }))}
+                               className={`w-8 h-4 rounded-full transition-all relative ${formData.fabric && formData.fabric.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                             >
+                               <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.fabric && formData.fabric.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
+                             </div>
+                           </label>
+                         </div>
+                         {formData.fabric && formData.fabric.length > 0 && (
+                           <div className="animate-in fade-in slide-in-from-top-1">
+                             <input type="text" placeholder="Add Fabric/Material and press Enter" onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('fabric', e.currentTarget.value); e.currentTarget.value=''}}} className="w-full bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" />
+                             <div className="flex flex-wrap gap-2 mt-2">
+                               {formData.fabric?.map((s,i) => (
+                                 <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1 text-[9px] font-bold uppercase flex items-center gap-2">
+                                   {s} <button type="button" onClick={()=>removeFromArray('fabric', i)} className="material-symbols-outlined text-[12px]">close</button>
+                                 </span>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+                       </div>
+
+                       {/* Care Instructions */}
+                       <div className="space-y-4">
+                         <div className="flex items-center justify-between">
+                           <label className="text-[10px] uppercase text-[#a3851a] font-bold">Care Instructions</label>
+                           <label className="flex items-center gap-2 cursor-pointer group">
+                             <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.care && formData.care.length > 0 ? 'Active' : 'Enable'}</span>
+                             <div 
+                               onClick={() => setFormData(prev => ({ ...prev, care: prev.care && prev.care.length > 0 ? [] : ['Standard Care'] }))}
+                               className={`w-8 h-4 rounded-full transition-all relative ${formData.care && formData.care.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                             >
+                               <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.care && formData.care.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
+                             </div>
+                           </label>
+                         </div>
+                         {formData.care && formData.care.length > 0 && (
+                           <div className="animate-in fade-in slide-in-from-top-1">
+                             <input type="text" placeholder="Add Care Instruction and press Enter" onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('care', e.currentTarget.value); e.currentTarget.value=''}}} className="w-full bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" />
+                             <div className="flex flex-wrap gap-2 mt-2">
+                               {formData.care?.map((s,i) => (
+                                 <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1 text-[9px] font-bold uppercase flex items-center gap-2">
+                                   {s} <button type="button" onClick={()=>removeFromArray('care', i)} className="material-symbols-outlined text-[12px]">close</button>
+                                 </span>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+                       </div>
+
+                       {/* Fit & Measurements */}
+                       <div className="space-y-4">
+                         <div className="flex items-center justify-between">
+                           <label className="text-[10px] uppercase text-[#a3851a] font-bold">Fit & Measurements</label>
+                           <label className="flex items-center gap-2 cursor-pointer group">
+                             <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.fit && formData.fit.length > 0 ? 'Active' : 'Enable'}</span>
+                             <div 
+                               onClick={() => setFormData(prev => ({ ...prev, fit: prev.fit && prev.fit.length > 0 ? [] : ['Standard Fit'] }))}
+                               className={`w-8 h-4 rounded-full transition-all relative ${formData.fit && formData.fit.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                             >
+                               <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.fit && formData.fit.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
+                             </div>
+                           </label>
+                         </div>
+                         {formData.fit && formData.fit.length > 0 && (
+                           <div className="animate-in fade-in slide-in-from-top-1">
+                             <input type="text" placeholder="Add Fit/Measurement and press Enter" onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('fit', e.currentTarget.value); e.currentTarget.value=''}}} className="w-full bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" />
+                             <div className="flex flex-wrap gap-2 mt-2">
+                               {formData.fit?.map((s,i) => (
+                                 <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1 text-[9px] font-bold uppercase flex items-center gap-2">
+                                   {s} <button type="button" onClick={()=>removeFromArray('fit', i)} className="material-symbols-outlined text-[12px]">close</button>
+                                 </span>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+                       </div>
+
                        <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <label className="text-[10px] uppercase text-[#a3851a] font-bold">Size Management</label>

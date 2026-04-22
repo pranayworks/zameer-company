@@ -304,11 +304,38 @@ export default function OthersAdminPage() {
                        </div>
 
                        <div className="space-y-4">
-                          <label className="text-[10px] uppercase text-[#a3851a] font-bold">Eclectic Specifications</label>
-                          <input type="text" placeholder="Add Size/Spec and press Enter" onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('sizes', e.currentTarget.value); e.currentTarget.value=''}}} className="w-full bg-white border-b p-4 text-xs outline-none" />
-                          <div className="flex flex-wrap gap-2">
-                             {formData.sizes?.map((s,i) => <span key={i} className="bg-white border px-2 py-1 text-[8px] font-bold">{s} <button type="button" onClick={()=>removeFromArray('sizes', i)}>×</button></span>)}
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] uppercase text-[#a3851a] font-bold">Size Management</label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                              <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.sizes && formData.sizes.length > 0 ? 'Sizes Enabled' : 'Enable Sizes'}</span>
+                              <div 
+                                onClick={() => setFormData(prev => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : ['Standard'] }))}
+                                className={`w-8 h-4 rounded-full transition-all relative ${formData.sizes && formData.sizes.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                              >
+                                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.sizes && formData.sizes.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
+                              </div>
+                            </label>
                           </div>
+                          
+                          {formData.sizes && formData.sizes.length > 0 && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                              <input 
+                                type="text" 
+                                placeholder="Add Size/Variant (e.g. Small, 500ml) and press Enter" 
+                                onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('sizes', e.currentTarget.value); e.currentTarget.value=''}}} 
+                                className="w-full bg-white border-b p-4 text-xs outline-none focus:border-[#a3851a]" 
+                              />
+                              <div className="flex flex-wrap gap-2">
+                                 {formData.sizes?.map((s,i) => (
+                                   <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                                     {s} 
+                                     <button type="button" onClick={()=>removeFromArray('sizes', i)} className="material-symbols-outlined text-[14px] hover:text-red-500 transition-colors">close</button>
+                                   </span>
+                                 ))}
+                              </div>
+                              <p className="text-[8px] text-[#747878] italic">Note: If sizes are added, users will be required to select one before checkout.</p>
+                            </div>
+                          )}
                        </div>
 
                        <textarea placeholder="Return Policy / Specialist Note" rows={2} value={formData.return_policy} onChange={e => setFormData(p => ({...p, return_policy: e.target.value}))} className="w-full bg-white border-b p-4 text-xs outline-none resize-none" />

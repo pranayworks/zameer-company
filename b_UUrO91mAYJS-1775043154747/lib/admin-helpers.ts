@@ -43,13 +43,14 @@ export const ADMIN_EMAILS = [
   'friendsof4.support@gmail.com'
 ]
 
-export const CATEGORIES = ['Men', 'Women', 'Sarees', 'Jewellery', 'Others'] as const
+export const CATEGORIES = ['Men', 'Women', 'Sarees', 'Jewellery', 'Gift Hampers', 'Others'] as const
 
 export const CATEGORY_ICONS: Record<string, string> = {
   Men: 'person',
   Women: 'female',
   Sarees: 'styler',
   Jewellery: 'diamond',
+  'Gift Hampers': 'redeem',
   Others: 'category',
 }
 
@@ -58,6 +59,7 @@ export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   Women: 'Tunics, Dresses, Blouses & Curated Fits',
   Sarees: 'Hand-woven Silks, Banarasi & Designer Drapes',
   Jewellery: 'Heritage Chokers, Jhumkas & Statement Pieces',
+  'Gift Hampers': 'Curated Heritage Collections & Bespoke Giving',
   Others: 'Kids, Accessories & Special Collections',
 }
 

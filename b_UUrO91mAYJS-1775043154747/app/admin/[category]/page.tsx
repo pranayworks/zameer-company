@@ -669,26 +669,41 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         </div>
                       </div>
 
-                      {/* Sizes - Only for Men and Women */}
-                      {(category === 'Men' || category === 'Women') && (
-                      <div>
-                        <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Available Sizes</label>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {formData.sizes?.map((s, i) => (
-                            <div key={i} className="bg-white border px-3 py-2 flex items-center gap-2 shadow-sm">
-                              <span className="text-[10px] uppercase font-bold tracking-widest">{s}</span>
-                              <button type="button" onClick={() => removeFromArray('sizes', i)} className="material-symbols-outlined text-[12px] opacity-40 hover:opacity-100">close</button>
+                      {/* Sizes Management - Now Toggleable for All */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Available Sizes</label>
+                          <label className="flex items-center gap-2 cursor-pointer group">
+                            <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.sizes && formData.sizes.length > 0 ? 'Sizes Enabled' : 'Enable Sizes'}</span>
+                            <div 
+                              onClick={() => setFormData(prev => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : (category === 'Jewellery' ? ['One Size'] : ['Standard']) }))}
+                              className={`w-8 h-4 rounded-full transition-all relative ${formData.sizes && formData.sizes.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                            >
+                              <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.sizes && formData.sizes.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
                             </div>
-                          ))}
+                          </label>
                         </div>
-                        <input
-                          type="text"
-                          placeholder="Enter size and press Enter"
-                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addToArray('sizes', e.currentTarget.value); e.currentTarget.value = '' } }}
-                          className="w-full bg-white border-b border-[#1c1c18]/20 p-4 text-sm outline-none focus:border-[#a3851a]"
-                        />
+
+                        {formData.sizes && formData.sizes.length > 0 && (
+                          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {formData.sizes?.map((s, i) => (
+                                <div key={i} className="bg-white border px-3 py-2 flex items-center gap-2 shadow-sm">
+                                  <span className="text-[10px] uppercase font-bold tracking-widest">{s}</span>
+                                  <button type="button" onClick={() => removeFromArray('sizes', i)} className="material-symbols-outlined text-[12px] opacity-40 hover:opacity-100">close</button>
+                                </div>
+                              ))}
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Enter size (e.g. XL, 42) and press Enter"
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addToArray('sizes', e.currentTarget.value); e.currentTarget.value = '' } }}
+                              className="w-full bg-white border-b border-[#1c1c18]/20 p-4 text-sm outline-none focus:border-[#a3851a]"
+                            />
+                            <p className="text-[9px] text-[#747878] italic">Note: If sizes are added, users will be required to select one before checkout.</p>
+                          </div>
+                        )}
                       </div>
-                      )}
 
                       {/* Additional Data / Return Policy */}
                       <div className="space-y-4 pt-6 mt-4 border-t border-[#1c1c18]/10">

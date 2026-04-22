@@ -26,7 +26,7 @@ export default function OthersPage() {
 
       const { data } = await query
       if (data) {
-        const filtered = (data as any[]).filter(p => !['Men', 'Women', 'Sarees', 'Jewellery'].includes(p.category))
+        const filtered = (data as any[]).filter(p => !['Men', 'Women', 'Sarees', 'Jewellery', 'Gift Hampers'].includes(p.category))
         setOtherProducts(filtered)
       }
     }

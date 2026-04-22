@@ -157,17 +157,24 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   }
 
   const handleAddToCart = () => {
-    const isOneSizeCategory = product.category === 'Jewellery' || product.category === 'Sarees';
-    if (!isOneSizeCategory && !selectedSize) { alert('Please select a size'); return; }
+    const hasSizes = product.sizes && product.sizes.length > 0;
+    if (hasSizes && !selectedSize) { alert('Please select a size'); return; }
     if (product.category === 'Jewellery' && product.colors && product.colors.length > 0 && !selectedColor) { showToast('Please curate your preferred material tone', 'error', 'palette'); return; }
     
+    let cartSize = selectedSize;
+    if (!hasSizes) {
+      if (product.category === 'Jewellery') cartSize = 'One Size';
+      else if (product.category === 'Sarees') cartSize = 'Standard 6-Yard Drape';
+      else cartSize = 'Standard';
+    }
+
     addToCart({
       id: product.id,
       name: product.title,
       price: product.price,
       image: allImages[0] || '',
       quantity: quantity,
-      selectedSize: (isOneSizeCategory ? (product.category === 'Jewellery' ? 'One Size' : 'Standard 6-Yard Drape') : selectedSize) as string,
+      selectedSize: cartSize as string,
       selectedColor: selectedColor || undefined
     })
     showToast(`Masterpiece added to your archive.`, 'success', 'shopping_bag')
@@ -221,10 +228,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               <div className="w-full h-[1px] bg-[#1c1c18]/10 mb-8" />
               <p className="font-body text-[#747878] leading-relaxed mb-12 max-w-lg">{product.description}</p>
 
-              {product.category !== 'Jewellery' && product.category !== 'Sarees' && (
+              {product.sizes && product.sizes.length > 0 && (
                 <div className="mb-8">
                   <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Size</span>
-                  <div className="flex flex-wrap gap-4">{sizes.map((size) => <button key={size} onClick={() => setSelectedSize(size)} className={`h-12 px-6 border transition-all ${selectedSize === size ? 'border-[#a3851a] bg-[#a3851a] text-white font-bold' : 'border-[#1c1c18]/20 hover:border-[#1c1c18]'} font-body text-xs uppercase tracking-widest`}>{size}</button>)}</div>
+                  <div className="flex flex-wrap gap-4">{product.sizes.map((size) => <button key={size} onClick={() => setSelectedSize(size)} className={`h-12 px-6 border transition-all ${selectedSize === size ? 'border-[#a3851a] bg-[#a3851a] text-white font-bold' : 'border-[#1c1c18]/20 hover:border-[#1c1c18]'} font-body text-xs uppercase tracking-widest`}>{size}</button>)}</div>
                 </div>
               )}
 

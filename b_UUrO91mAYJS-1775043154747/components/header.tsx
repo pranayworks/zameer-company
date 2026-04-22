@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Women', href: '/women' },
   { label: 'Sarees', href: '/sarees' },
   { label: 'Jewellery', href: '/jewellery' },
+  { label: 'Gift Hampers', href: '/gift-hampers' },
   { label: 'Others', href: '/others' }
 ]
 
@@ -43,7 +44,7 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
   const pathname = usePathname()
   useEffect(() => {
     if (activeCategory) {
-      const match = navItems.find(item => item.label.toLowerCase() === activeCategory.toLowerCase())
+      const match = navItems.find(item => item.label.toLowerCase() === activeCategory.toLowerCase() || (activeCategory === 'Gift Hampers' && item.label === 'Gift Hampers'))
       if (match) {
         setActiveNav(match.label)
         return

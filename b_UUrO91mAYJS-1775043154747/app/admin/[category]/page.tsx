@@ -18,6 +18,7 @@ import {
   CATEGORIES,
   CATEGORY_ICONS,
   CATEGORY_DESCRIPTIONS,
+  addColorToProduct,
 } from '@/lib/admin-helpers'
 import { supabase } from '@/lib/supabase'
 
@@ -133,7 +134,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
       
       const allNewUrls = [...urls]
       
-      setFormData(prev => {
+      setFormData((prev: Partial<Product>) => {
         const existingData = [
           ...(prev.image?.split(',') || []),
           prev.image2,
@@ -193,7 +194,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
 
       if (!uploadRes.ok) throw new Error('Direct upload failed. Check network or storage permissions.')
 
-      setFormData(prev => ({ ...prev, video_url: signData.publicUrl }))
+      setFormData((prev: Partial<Product>) => ({ ...prev, video_url: signData.publicUrl }))
       setUploadProgress('')
       alert('✓ Cinematic reel synced successfully!')
     } catch (error: any) {
@@ -207,11 +208,11 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   // Google Drive Picker via OAuth popup
   const addToArray = (field: 'fabric' | 'care' | 'fit' | 'sizes', val: string) => {
     if (!val) return
-    setFormData(prev => ({ ...prev, [field]: [...((prev[field] as string[]) || []), val] }))
+    setFormData((prev: Partial<Product>) => ({ ...prev, [field]: [...((prev[field] as string[]) || []), val] }))
   }
 
   const removeFromArray = (field: 'fabric' | 'care' | 'fit' | 'sizes', index: number) => {
-    setFormData(prev => {
+    setFormData((prev: Partial<Product>) => {
       const arr = [...((prev[field] as string[]) || [])]
       arr.splice(index, 1)
       return { ...prev, [field]: arr }
@@ -219,8 +220,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
   }
 
   const addColor = (name: string, hex: string) => {
-    if (!name || !hex) return
-    setFormData(prev => ({ ...prev, colors: [...(prev.colors || []), { name, hex }] }))
+    setFormData((prev: Partial<Product>) => addColorToProduct(prev, name, hex))
   }
 
   if (isAuthorized === null) {
@@ -578,8 +578,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           <option>Women</option>
                           <option>Sarees</option>
                           <option>Jewellery</option>
+                          <option>Gift Hampers</option>
                           <option>Others</option>
-                          <option>Kids</option>
                         </select>
                       </div>
 
@@ -691,27 +691,43 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         )}
                       </div>
 
-                      {/* Colors */}
-                      <div>
-                        <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-3 block">Colors</label>
-                        <div className="flex flex-wrap gap-3 mb-4">
-                          {formData.colors?.map((c, i) => (
-                            <div key={i} className="flex items-center gap-2 bg-white border p-2 rounded-full shadow-sm">
-                              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: c.hex }} />
-                              <span className="text-[10px] font-bold">{c.name}</span>
-                              <button type="button" onClick={() => setFormData({ ...formData, colors: formData.colors?.filter((_, idx) => idx !== i) })} className="material-symbols-outlined text-[10px]">close</button>
+                      {/* Colors Section - Toggleable */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] font-bold">Colors & Tones</label>
+                          <label className="flex items-center gap-2 cursor-pointer group">
+                            <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.colors && formData.colors.length > 0 ? 'Active' : 'Enable'}</span>
+                            <div 
+                              onClick={() => setFormData(prev => ({ ...prev, colors: prev.colors && prev.colors.length > 0 ? [] : [{ name: 'Standard', hex: '#000000' }] }))}
+                              className={`w-8 h-4 rounded-full transition-all relative ${formData.colors && formData.colors.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                            >
+                              <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.colors && formData.colors.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
                             </div>
-                          ))}
+                          </label>
                         </div>
-                        <div className="flex gap-2">
-                          <input type="text" id="color_name_cat" className="w-1/2 p-2 border-b text-xs outline-none" placeholder="Color Name" />
-                          <input type="color" id="color_hex_cat" className="h-10 w-10 p-0 border-0" />
-                          <button type="button" onClick={() => {
-                            const name = (document.getElementById('color_name_cat') as HTMLInputElement).value
-                            const hex = (document.getElementById('color_hex_cat') as HTMLInputElement).value
-                            if (name && hex) { addColor(name, hex); (document.getElementById('color_name_cat') as HTMLInputElement).value = '' }
-                          }} className="text-xs font-bold uppercase tracking-widest border border-[#a3851a] text-[#a3851a] px-4">Add</button>
-                        </div>
+                        
+                        {formData.colors && formData.colors.length > 0 && (
+                          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="flex flex-wrap gap-3">
+                              {formData.colors?.map((c, i) => (
+                                <div key={i} className="flex items-center gap-2 bg-white border p-2 rounded-full shadow-sm">
+                                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: c.hex }} />
+                                  <span className="text-[10px] font-bold">{c.name}</span>
+                                  <button type="button" onClick={() => setFormData({ ...formData, colors: formData.colors?.filter((_, idx) => idx !== i) })} className="material-symbols-outlined text-[10px] hover:text-red-500">close</button>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <input type="text" id="color_name_cat" className="w-1/2 p-2 border-b text-xs outline-none focus:border-[#a3851a]" placeholder="Color/Tone Name" />
+                              <input type="color" id="color_hex_cat" className="h-10 w-10 p-0 border-0 cursor-pointer" />
+                              <button type="button" onClick={() => {
+                                const name = (document.getElementById('color_name_cat') as HTMLInputElement).value
+                                const hex = (document.getElementById('color_hex_cat') as HTMLInputElement).value
+                                if (name && hex) { addColor(name, hex); (document.getElementById('color_name_cat') as HTMLInputElement).value = '' }
+                              }} className="text-[10px] font-bold uppercase tracking-widest border border-[#a3851a] text-[#a3851a] px-4 hover:bg-[#a3851a] hover:text-white transition-all">Add</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Sizes Management - Now Toggleable for All */}
@@ -721,7 +737,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.sizes && formData.sizes.length > 0 ? 'Sizes Enabled' : 'Enable Sizes'}</span>
                             <div 
-                              onClick={() => setFormData(prev => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : (category === 'Jewellery' ? ['One Size'] : ['Standard']) }))}
+                              onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : (category === 'Jewellery' ? ['One Size'] : ['Standard']) }))}
                               className={`w-8 h-4 rounded-full transition-all relative ${formData.sizes && formData.sizes.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
                             >
                               <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.sizes && formData.sizes.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
@@ -756,7 +772,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                         <textarea
                           rows={3}
                           value={formData.return_policy || ''}
-                          onChange={e => setFormData(prev => ({ ...prev, return_policy: e.target.value }))}
+                          onChange={e => setFormData((prev: Partial<Product>) => ({ ...prev, return_policy: e.target.value }))}
                           placeholder="e.g. Can be returned within 5 days"
                           className="w-full bg-white border border-[#1c1c18]/10 p-4 focus:border-[#a3851a] outline-none resize-none text-sm font-body"
                         />

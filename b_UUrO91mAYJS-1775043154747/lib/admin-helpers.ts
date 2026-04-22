@@ -22,6 +22,13 @@ export interface Product {
   return_policy?: string
 }
 
+export function addColorToProduct(prev: Partial<Product>, name: string, hex: string): Partial<Product> {
+  return {
+    ...prev,
+    colors: [...(prev.colors || []), { name, hex }]
+  }
+}
+
 export interface Order {
   id: string
   order_id: string
@@ -91,7 +98,7 @@ export async function fetchAllProducts(): Promise<Product[]> {
 export async function fetchProductsByCategory(category: string): Promise<Product[]> {
   if (category === 'Others') {
     const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-    return ((data || []) as Product[]).filter(p => !['Men', 'Women', 'Sarees', 'Jewellery'].includes(p.category))
+    return ((data || []) as Product[]).filter(p => !['Men', 'Women', 'Sarees', 'Jewellery', 'Gift Hampers'].includes(p.category))
   }
   const { data } = await supabase.from('products').select('*').eq('category', category).order('created_at', { ascending: false })
   return (data || []) as Product[]

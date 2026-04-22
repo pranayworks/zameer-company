@@ -8,6 +8,7 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
 import { Newsletter } from '@/components/newsletter'
+import { Product } from '@/lib/admin-helpers'
 import { supabase } from '@/lib/supabase'
 
 export default function GiftHampersPage() {

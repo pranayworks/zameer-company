@@ -15,6 +15,7 @@ import {
   upsertProduct,
   DEFAULT_FORM_DATA,
   CATEGORY_ICONS,
+  addColorToProduct,
 } from '@/lib/admin-helpers'
 
 export default function GiftHampersAdminPage() {
@@ -105,7 +106,7 @@ export default function GiftHampersAdminPage() {
       if (!res.ok) throw new Error(uploadData.error || 'Atelier Sky-Sync failed')
 
       const urls = uploadData.urls
-      setFormData(prev => {
+      setFormData((prev: Partial<Product>) => {
         const existingData = [
           ...(prev.image?.split(',') || []),
           prev.image2,
@@ -128,13 +129,48 @@ export default function GiftHampersAdminPage() {
     }
   }
 
+  const handleVideoUpload = async (e: any) => {
+    try {
+      const files = Array.from((e.target?.files || e.dataTransfer?.files) || [])
+      if (files.length === 0) return
+      const file = files[0] as File
+      setUploading(true)
+      setUploadProgress('Signing cinematic reel access...')
+      const signRes = await fetch('/api/get-upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileType: file.type })
+      })
+      const signData = await signRes.json()
+      if (!signRes.ok) throw new Error(signData.error || 'Signature failed')
+      setUploadProgress('Uploading to Archive Storage...')
+      const uploadRes = await fetch(signData.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      })
+      if (!uploadRes.ok) throw new Error('Direct library sync failed.')
+      setFormData((prev: Partial<Product>) => ({ ...prev, video_url: signData.publicUrl }))
+      setUploadProgress('')
+    } catch (error: any) {
+      setUploadProgress('')
+      alert('Video logic error: ' + error.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const addColor = (name: string, hex: string) => {
+    setFormData((prev: Partial<Product>) => addColorToProduct(prev, name, hex))
+  }
+
   const addToArray = (field: 'fabric' | 'care' | 'fit' | 'sizes', val: string) => {
     if (!val) return
-    setFormData(prev => ({ ...prev, [field]: [...((prev[field] as string[]) || []), val] }))
+    setFormData((prev: Partial<Product>) => ({ ...prev, [field]: [...((prev[field] as string[]) || []), val] }))
   }
 
   const removeFromArray = (field: 'fabric' | 'care' | 'fit' | 'sizes', index: number) => {
-    setFormData(prev => {
+    setFormData((prev: Partial<Product>) => {
       const arr = [...((prev[field] as string[]) || [])]
       arr.splice(index, 1)
       return { ...prev, [field]: arr }
@@ -245,17 +281,17 @@ export default function GiftHampersAdminPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest font-bold text-[#747878]">Price (₹)</label>
-                          <input type="number" required value={formData.price} onChange={e => setFormData(p => ({...p, price: Number(e.target.value)}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 outline-none focus:border-[#a3851a] transition-all" />
+                          <input type="number" required value={formData.price} onChange={e => setFormData((p: Partial<Product>) => ({...p, price: Number(e.target.value)}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 outline-none focus:border-[#a3851a] transition-all" />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest font-bold text-[#747878]">Inventory</label>
-                          <input type="number" required value={formData.stock} onChange={e => setFormData(p => ({...p, stock: Number(e.target.value)}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 outline-none focus:border-[#a3851a] transition-all" />
+                          <input type="number" required value={formData.stock} onChange={e => setFormData((p: Partial<Product>) => ({...p, stock: Number(e.target.value)}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 outline-none focus:border-[#a3851a] transition-all" />
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <label className="text-[9px] uppercase tracking-widest font-bold text-[#747878]">Curation Story</label>
-                        <textarea rows={4} required value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 outline-none focus:border-[#a3851a] transition-all resize-none" placeholder="Describe the soul of this hamper..." />
+                        <textarea rows={4} required value={formData.description} onChange={e => setFormData((p: Partial<Product>) => ({...p, description: e.target.value}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 outline-none focus:border-[#a3851a] transition-all resize-none" placeholder="Describe the soul of this hamper..." />
                       </div>
                       
                       <div className="border-2 border-dashed border-[#a3851a]/20 p-8 text-center bg-white group hover:border-[#a3851a]/40 transition-all">
@@ -282,39 +318,107 @@ export default function GiftHampersAdminPage() {
                           
                           <div className="space-y-4">
                              <div>
-                                <label className="text-[9px] uppercase tracking-widest text-[#747878] mb-2 block">Components Included</label>
-                                <input 
-                                  type="text" 
-                                  placeholder="e.g. Silk Scarf, Artisanal Tea" 
-                                  onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('fabric', e.currentTarget.value); e.currentTarget.value=''}}} 
-                                  className="w-full bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" 
-                                />
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                   {formData.fabric?.map((s,i) => (
-                                     <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1 text-[9px] font-bold uppercase flex items-center gap-2">
-                                       {s} <button type="button" onClick={()=>removeFromArray('fabric', i)} className="material-symbols-outlined text-[12px]">close</button>
-                                     </span>
-                                   ))}
+                                <div className="flex items-center justify-between mb-2">
+                                   <label className="text-[9px] uppercase tracking-widest text-[#747878] font-bold">Components Included</label>
+                                   <label className="flex items-center gap-2 cursor-pointer group">
+                                     <span className="text-[8px] uppercase tracking-widest text-[#747878]">{formData.fabric && formData.fabric.length > 0 ? 'Active' : 'Enable'}</span>
+                                     <div 
+                                       onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, fabric: prev.fabric && prev.fabric.length > 0 ? [] : ['Handcrafted Piece'] }))}
+                                       className={`w-6 h-3 rounded-full transition-all relative ${formData.fabric && formData.fabric.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                                     >
+                                       <div className={`absolute top-0.5 w-2 h-2 rounded-full bg-white transition-all ${formData.fabric && formData.fabric.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
+                                     </div>
+                                   </label>
                                 </div>
+                                {formData.fabric && formData.fabric.length > 0 && (
+                                  <div className="animate-in fade-in slide-in-from-top-1">
+                                     <input 
+                                       type="text" 
+                                       placeholder="e.g. Silk Scarf, Artisanal Tea" 
+                                       onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('fabric', e.currentTarget.value); e.currentTarget.value=''}}} 
+                                       className="w-full bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" 
+                                     />
+                                     <div className="flex flex-wrap gap-2 mt-2">
+                                        {formData.fabric?.map((s,i) => (
+                                          <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1 text-[9px] font-bold uppercase flex items-center gap-2">
+                                            {s} <button type="button" onClick={()=>removeFromArray('fabric', i)} className="material-symbols-outlined text-[12px]">close</button>
+                                          </span>
+                                        ))}
+                                     </div>
+                                  </div>
+                                )}
                              </div>
 
                              <div>
-                                <label className="text-[9px] uppercase tracking-widest text-[#747878] mb-2 block">Packaging Details</label>
-                                <input 
-                                  type="text" 
-                                  placeholder="e.g. Handcrafted Wood Box" 
-                                  onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('fit', e.currentTarget.value); e.currentTarget.value=''}}} 
-                                  className="w-full bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" 
-                                />
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                   {formData.fit?.map((s,i) => (
-                                     <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1 text-[9px] font-bold uppercase flex items-center gap-2">
-                                       {s} <button type="button" onClick={()=>removeFromArray('fit', i)} className="material-symbols-outlined text-[12px]">close</button>
-                                     </span>
-                                   ))}
+                                <div className="flex items-center justify-between mb-2">
+                                   <label className="text-[9px] uppercase tracking-widest text-[#747878] font-bold">Packaging Details</label>
+                                   <label className="flex items-center gap-2 cursor-pointer group">
+                                     <span className="text-[8px] uppercase tracking-widest text-[#747878]">{formData.fit && formData.fit.length > 0 ? 'Active' : 'Enable'}</span>
+                                     <div 
+                                       onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, fit: prev.fit && prev.fit.length > 0 ? [] : ['Heritage Box'] }))}
+                                       className={`w-6 h-3 rounded-full transition-all relative ${formData.fit && formData.fit.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                                     >
+                                       <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.fit && formData.fit.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
+                                     </div>
+                                   </label>
                                 </div>
+                                {formData.fit && formData.fit.length > 0 && (
+                                  <div className="animate-in fade-in slide-in-from-top-1">
+                                     <input 
+                                       type="text" 
+                                       placeholder="e.g. Handcrafted Wood Box" 
+                                       onKeyDown={e => {if(e.key==='Enter'){e.preventDefault(); addToArray('fit', e.currentTarget.value); e.currentTarget.value=''}}} 
+                                       className="w-full bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" 
+                                     />
+                                     <div className="flex flex-wrap gap-2 mt-2">
+                                        {formData.fit?.map((s,i) => (
+                                          <span key={i} className="bg-white border border-[#1c1c18]/10 px-3 py-1 text-[9px] font-bold uppercase flex items-center gap-2">
+                                            {s} <button type="button" onClick={()=>removeFromArray('fit', i)} className="material-symbols-outlined text-[12px]">close</button>
+                                          </span>
+                                        ))}
+                                     </div>
+                                  </div>
+                                )}
                              </div>
                           </div>
+                       </div>
+
+                       <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] uppercase font-black text-[#a3851a]">Palette & Tones</label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                              <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.colors && formData.colors.length > 0 ? 'Active' : 'Enable'}</span>
+                              <div 
+                                onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, colors: prev.colors && prev.colors.length > 0 ? [] : [{ name: 'Heritage Gold', hex: '#a3851a' }] }))}
+                                className={`w-8 h-4 rounded-full transition-all relative ${formData.colors && formData.colors.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
+                              >
+                                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.colors && formData.colors.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
+                              </div>
+                            </label>
+                          </div>
+                          
+                          {formData.colors && formData.colors.length > 0 && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                              <div className="flex flex-wrap gap-2">
+                                {formData.colors?.map((c, i) => (
+                                  <div key={i} className="flex items-center gap-2 bg-white border p-2 rounded-full shadow-sm">
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.hex }} />
+                                    <span className="text-[9px] font-bold uppercase">{c.name}</span>
+                                    <button type="button" onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, colors: prev.colors?.filter((_, idx) => idx !== i) }))} className="material-symbols-outlined text-[10px] hover:text-red-500">close</button>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex gap-2">
+                                <input type="text" id="color_name_hmp" className="flex-1 bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" placeholder="Theme Name" />
+                                <input type="color" id="color_hex_hmp" className="h-10 w-10 p-0 border-0 cursor-pointer" />
+                                <button type="button" onClick={() => {
+                                  const name = (document.getElementById('color_name_hmp') as HTMLInputElement).value
+                                  const hex = (document.getElementById('color_hex_hmp') as HTMLInputElement).value
+                                  if (name && hex) { addColor(name, hex); (document.getElementById('color_name_hmp') as HTMLInputElement).value = '' }
+                                }} className="bg-[#1c1c18] text-white px-4 text-[9px] uppercase font-bold tracking-widest hover:bg-[#a3851a] transition-all">Add</button>
+                              </div>
+                            </div>
+                          )}
                        </div>
 
                        <div className="space-y-4">
@@ -323,7 +427,7 @@ export default function GiftHampersAdminPage() {
                             <label className="flex items-center gap-2 cursor-pointer group">
                               <span className="text-[9px] uppercase tracking-widest text-[#747878]">{formData.sizes && formData.sizes.length > 0 ? 'Active' : 'Add Variants'}</span>
                               <div 
-                                onClick={() => setFormData(prev => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : ['Gift Box'] }))}
+                                onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : ['Gift Box'] }))}
                                 className={`w-8 h-4 rounded-full transition-all relative ${formData.sizes && formData.sizes.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
                               >
                                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.sizes && formData.sizes.length > 0 ? 'right-0.5' : 'left-0.5'}`} />
@@ -351,8 +455,19 @@ export default function GiftHampersAdminPage() {
                        </div>
 
                        <div className="space-y-2">
+                          <label className="text-[9px] uppercase tracking-widest font-bold text-[#747878]">Cinematic Reel (Optional)</label>
+                          <div className="flex gap-3">
+                             <input type="text" placeholder="Video URL or Upload below" value={formData.video_url || ''} onChange={e => setFormData({...formData, video_url: e.target.value})} className="flex-1 bg-white border-b p-3 text-xs outline-none focus:border-[#a3851a]" />
+                             <label className="bg-[#1c1c18] text-white px-4 py-3 text-[9px] uppercase font-bold tracking-widest cursor-pointer hover:bg-[#a3851a]">
+                                Upload Reel
+                                <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />
+                             </label>
+                          </div>
+                       </div>
+
+                       <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest font-bold text-[#747878]">Atelier Concierge Note</label>
-                          <textarea rows={2} value={formData.return_policy} onChange={e => setFormData(p => ({...p, return_policy: e.target.value}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 text-xs outline-none focus:border-[#a3851a] transition-all resize-none italic" />
+                          <textarea rows={2} value={formData.return_policy} onChange={e => setFormData((p: Partial<Product>) => ({...p, return_policy: e.target.value}))} className="w-full bg-white border-b-2 border-[#1c1c18]/5 p-4 text-xs outline-none focus:border-[#a3851a] transition-all resize-none italic" />
                        </div>
                     </div>
 

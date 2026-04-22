@@ -7,12 +7,13 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 next.user-config.*
 
-# Environment variables
-.env*.local
-.env*
+# Environment variables — keep secrets OUT of git
 .env.local
-.env.development
-.env.production
+.env.development.local
+.env.production.local
+.env.test.local
+# Allow .env.example (safe template - no real keys)
+!.env.example
 
 
 # Common ignores

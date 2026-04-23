@@ -297,10 +297,12 @@ export default function OthersAdminPage() {
                         <div>
                           <label className="text-[10px] uppercase text-[#747878] mb-2 block">Archive Category</label>
                           <select value={formData.category} onChange={e => setFormData((p: Partial<Product>) => ({...p, category: e.target.value}))} className="w-full bg-white border-b p-4 outline-none">
+                            <option>Men</option>
+                            <option>Women</option>
+                            <option>Sarees</option>
+                            <option>Jewellery</option>
+                            <option>Gift Hampers</option>
                             <option>Others</option>
-                            <option>Kids</option>
-                            <option>Accessories</option>
-                            <option>Special Edition</option>
                           </select>
                        </div>
 

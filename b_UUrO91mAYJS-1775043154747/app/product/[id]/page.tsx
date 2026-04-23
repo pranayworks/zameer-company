@@ -250,7 +250,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-12">
                    <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">{product.category === 'Jewellery' ? 'Material Tone (Required):' : 'Select Tone (Optional):'} {selectedColor || 'None'}</span>
-                   <div className="flex flex-wrap gap-4">{product.colors.map((c) => <button key={c.name} onClick={() => setSelectedColor(c.name)} className={`w-10 h-10 rounded-full border-2 p-0.5 transition-all ${selectedColor === c.name ? 'border-[#a3851a] scale-110' : 'border-transparent'}`}><div className="w-full h-full rounded-full shadow-inner" style={{ backgroundColor: c.hex }} /></button>)}</div>
+                   <div className="flex flex-wrap gap-4">{product.colors.map((c, index) => <button key={c.name} onClick={() => { setSelectedColor(c.name); if (index < allImages.length) { setCurrentImageIndex(index); } }} className={`w-10 h-10 rounded-full border-2 p-0.5 transition-all ${selectedColor === c.name ? 'border-[#a3851a] scale-110' : 'border-transparent'}`}><div className="w-full h-full rounded-full shadow-inner" style={{ backgroundColor: c.hex }} /></button>)}</div>
                 </div>
               )}
 

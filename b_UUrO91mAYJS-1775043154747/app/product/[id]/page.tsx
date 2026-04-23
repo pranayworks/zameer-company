@@ -180,11 +180,14 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       else cartSize = 'Standard';
     }
 
+    const colorIndex = selectedColor && product.colors ? product.colors.findIndex(c => c.name === selectedColor) : -1;
+    const cartImage = colorIndex >= 0 && colorIndex < allImages.length ? allImages[colorIndex] : (allImages[0] || '');
+
     addToCart({
       id: product.id,
       name: product.title,
       price: product.price,
-      image: allImages[0] || '',
+      image: cartImage,
       quantity: quantity,
       selectedSize: cartSize as string,
       selectedColor: selectedColor || undefined

@@ -92,11 +92,23 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
       const slugId = trimmedId.toLowerCase().replace(/ /g, '-')
       const cleanId = trimmedId.replace(/%20/g, ' ')
 
-      const { data, error: pError } = await supabase
+      // First, try to find an exact match on ID or URL slug variants
+      let { data, error: pError } = await supabase
         .from('products')
         .select('*')
-        .or(`id.eq."${trimmedId}",id.eq."${decodedId}",id.eq."${normalizedSlug}",id.eq."${slugId}",id.eq."${cleanId}",title.ilike."%${decodedId}%"`)
+        .or(`id.eq."${trimmedId}",id.eq."${decodedId}",id.eq."${normalizedSlug}",id.eq."${slugId}",id.eq."${cleanId}",title.eq."${decodedId}"`)
         .limit(1)
+
+      // If no exact match, fallback to a careful `ilike` search just in case
+      if (!data || data.length === 0) {
+        const { data: fallbackData } = await supabase
+          .from('products')
+          .select('*')
+          .ilike('title', `%${decodedId}%`)
+          .limit(1)
+        
+        data = fallbackData
+      }
 
       const p = data && data.length > 0 ? data[0] : null
 

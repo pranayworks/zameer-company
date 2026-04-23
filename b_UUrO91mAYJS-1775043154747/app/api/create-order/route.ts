@@ -28,8 +28,12 @@ export async function POST(req: NextRequest) {
     })
   } catch (error: any) {
     console.error('Razorpay order creation failed:', error)
+    
+    // Extract the exact error description from Razorpay if available
+    const exactError = error?.error?.description || error?.description || error?.message || 'Failed to create order'
+    
     return NextResponse.json(
-      { error: error?.message || 'Failed to create order' },
+      { error: exactError },
       { status: 500 }
     )
   }

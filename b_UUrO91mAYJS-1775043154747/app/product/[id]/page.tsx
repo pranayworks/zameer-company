@@ -263,10 +263,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               </div>
 
                <div className="flex flex-col gap-4 mb-2">
-                 <div className="flex gap-4">
-                    <button onClick={handleAddToCart} disabled={product.stock === 0} className={`flex-1 ${product.stock === 0 ? 'bg-[#1c1c18]/20 text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} py-6 font-body uppercase tracking-[0.3em] font-bold text-[10px] transition-all`}>{product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}</button>
-                    <button onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))} className={`p-6 border border-[#1c1c18]/10 transition-all ${product && isInWishlist(product.id) ? 'bg-red-50 text-red-500' : 'hover:bg-[#1c1c18] hover:text-white'}`}><span className="material-symbols-outlined text-2xl">favorite</span></button>
-                    <button onClick={handleShare} className="p-6 border border-[#1c1c18]/10 hover:bg-[#a3851a] hover:text-white transition-all"><span className="material-symbols-outlined text-2xl">ios_share</span></button>
+                 <div className="flex gap-3 md:gap-4 h-14 md:h-16">
+                    <button onClick={handleAddToCart} disabled={product.stock === 0} className={`flex-1 h-full ${product.stock === 0 ? 'bg-[#1c1c18]/20 text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} font-body uppercase tracking-[0.2em] md:tracking-[0.3em] font-bold text-[9px] md:text-[10px] transition-all`}>{product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}</button>
+                    <button onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))} className={`w-14 md:w-16 h-full flex items-center justify-center shrink-0 border border-[#1c1c18]/10 transition-all active:scale-95 ${product && isInWishlist(product.id) ? 'bg-red-50 text-red-500' : 'hover:bg-[#1c1c18] hover:text-white'}`}><span className="material-symbols-outlined text-xl md:text-2xl">favorite</span></button>
+                    <button onClick={handleShare} className="w-14 md:w-16 h-full flex items-center justify-center shrink-0 border border-[#1c1c18]/10 hover:bg-[#a3851a] hover:text-white transition-all active:scale-95"><span className="material-symbols-outlined text-xl md:text-2xl">ios_share</span></button>
                  </div>
                </div>
 

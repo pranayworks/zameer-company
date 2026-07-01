@@ -123,14 +123,16 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
         const { data: revs } = await supabase.from('reviews').select('*').eq('product_id', trimmedId).order('created_at', { ascending: false }).limit(4)
         if (revs) setCommunityReviews(revs)
 
-        if (p.category === 'Sarees') {
-          const { data: relatedSaree } = await supabase.from('products').select('*').eq('category', 'Sarees').neq('id', trimmedId).limit(1)
-          const { data: relatedJewellery } = await supabase.from('products').select('*').eq('category', 'Jewellery').limit(1)
-          const { data: relatedWomen } = await supabase.from('products').select('*').eq('category', 'Women').limit(1)
-          setRelatedProducts([...(relatedSaree || []), ...(relatedJewellery || []), ...(relatedWomen || [])])
-        } else {
-          const { data: related } = await supabase.from('products').select('*').eq('category', p.category).neq('id', trimmedId).limit(3)
-          if (related) setRelatedProducts(related)
+        const { data: related } = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', p.category)
+          .neq('id', trimmedId)
+          .limit(10)
+        
+        if (related) {
+          const shuffled = [...related].sort(() => 0.5 - Math.random()).slice(0, 4)
+          setRelatedProducts(shuffled)
         }
       }
     } catch (err: any) {
@@ -229,9 +231,41 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 )}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">{allImages.map((_, idx) => <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'bg-[#a3851a] w-6' : 'bg-[#1c1c18]/20'}`} />)}</div>
             </div>
-            <div className="grid grid-cols-2 gap-8">
-               <motion.div className="aspect-square bg-white relative overflow-hidden cursor-zoom-in group" onClick={() => setZoomedImage(allImages[0] || '')}><Image src={allImages[0] || '/placeholder.jpg'} alt="Detail" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" /></motion.div>
-               {product.video_url && (<motion.div className="aspect-square bg-black relative overflow-hidden group shadow-xl cursor-zoom-in" onClick={() => product.video_url && setZoomedImage(product.video_url)}>{/* Video component */}<div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 pointer-events-none"><span className="material-symbols-outlined text-[#a3851a] text-4xl mb-2">play_circle</span><h4 className="font-body text-[9px] uppercase font-bold text-white bg-[#1c1c18]/40 px-3 py-1">The Cinematic Reel</h4></div></motion.div>)}
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+              {allImages.map((img, idx) => (
+                <motion.div 
+                  key={idx}
+                  className={`aspect-square bg-white relative overflow-hidden cursor-pointer group shadow-sm border transition-all ${idx === currentImageIndex ? 'border-[#a3851a] scale-[0.98]' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]'}`} 
+                  onClick={() => setCurrentImageIndex(idx)}
+                >
+                  <Image 
+                    src={img} 
+                    alt={`Thumbnail ${idx + 1}`} 
+                    fill 
+                    className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                    sizes="(max-width: 768px) 33vw, 25vw"
+                  />
+                </motion.div>
+              ))}
+              {product.video_url && (
+                <motion.div 
+                  className="aspect-square bg-black relative overflow-hidden group shadow-md cursor-pointer border border-[#1c1c18]/10" 
+                  onClick={() => product.video_url && setZoomedImage(product.video_url)}
+                >
+                  <video 
+                    src={product.video_url} 
+                    className="w-full h-full object-cover opacity-60" 
+                    muted 
+                    loop 
+                    autoPlay 
+                    playsInline
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20">
+                    <span className="material-symbols-outlined text-[#a3851a] text-2xl">play_circle</span>
+                    <span className="text-[8px] uppercase font-bold text-white bg-[#1c1c18]/60 px-1 py-0.5 mt-1">Reel</span>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
 
@@ -283,18 +317,64 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
             </motion.div>
           </div>
         </div>
+
+        {/* Some More Collection Related Products Section */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-24 border-t border-[#1c1c18]/10 pt-16">
+            <div className="mb-12 text-center lg:text-left">
+              <span className="font-body text-[10px] uppercase tracking-[0.3em] text-[#a3851a] mb-2 block">
+                Discover More
+              </span>
+              <h2 className="font-headline text-4xl lg:text-5xl text-[#1c1c18] uppercase tracking-tight">
+                Some More Collection
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {relatedProducts.map((item, index) => (
+                <ProductCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={typeof item.price === 'number' ? `₹${item.price.toLocaleString('en-IN')}` : String(item.price)}
+                  image={item.image}
+                  rating={item.rating || 5.0}
+                  reviews={item.reviews || 0}
+                  index={index}
+                  stock={item.stock}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
 
       <AnimatePresence>
-        {zoomedImage && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setZoomedImage(null)} className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] cursor-zoom-out" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-4 md:inset-12 z-[101] flex items-center justify-center pointer-events-none">
-              <div className="relative w-full h-full pointer-events-auto"><Image src={zoomedImage} alt="Zoom" fill className="object-contain" quality={100} /><button onClick={() => setZoomedImage(null)} className="absolute top-4 right-4 w-12 h-12 bg-white/10 rounded-full text-white flex items-center justify-center hover:bg-white hover:text-black transition-all"><span className="material-symbols-outlined">close</span></button></div>
-            </motion.div>
-          </>
-        )}
+        {zoomedImage && (() => {
+          const isVideo = product.video_url && zoomedImage === product.video_url;
+          return (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setZoomedImage(null)} className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] cursor-zoom-out" />
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-4 md:inset-12 z-[101] flex items-center justify-center pointer-events-none">
+                <div className="relative w-full h-full pointer-events-auto flex items-center justify-center">
+                  {isVideo ? (
+                    <video 
+                      src={zoomedImage} 
+                      className="max-w-full max-h-full object-contain" 
+                      controls 
+                      autoPlay 
+                      playsInline
+                    />
+                  ) : (
+                    <Image src={zoomedImage} alt="Zoom" fill className="object-contain" quality={100} />
+                  )}
+                  <button onClick={() => setZoomedImage(null)} className="absolute top-4 right-4 w-12 h-12 bg-white/10 rounded-full text-white flex items-center justify-center hover:bg-white hover:text-black transition-all"><span className="material-symbols-outlined">close</span></button>
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
       </AnimatePresence>
     </div>
   )

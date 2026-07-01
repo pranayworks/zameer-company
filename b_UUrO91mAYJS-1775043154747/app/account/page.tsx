@@ -426,7 +426,7 @@ function AccountContent() {
                         <div className="text-right">
                           <span className="text-[10px] uppercase tracking-widest text-[#a09e96]">Next Milestone</span>
                           <div className="font-headline text-xl text-white mt-1">
-                            {(userProfile.customer_segment === 'VIP' ? 4000 : 5000)} pts
+                            {(userProfile.customer_segment === 'VIP' ? 80 : 100)} pts
                           </div>
                         </div>
                       </div>
@@ -437,7 +437,7 @@ function AccountContent() {
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ 
-                              width: `${Math.min(100, ((userProfile.loyalty_points || 0) / (userProfile.customer_segment === 'VIP' ? 4000 : 5000)) * 100)}%` 
+                              width: `${Math.min(100, ((userProfile.loyalty_points || 0) / (userProfile.customer_segment === 'VIP' ? 80 : 100)) * 100)}%` 
                             }}
                             transition={{ duration: 1, ease: "easeOut" }}
                             className="h-full bg-gradient-to-r from-[#a3851a] to-[#e2bb53] rounded-full"
@@ -446,10 +446,10 @@ function AccountContent() {
                         
                         {/* Motivational Message */}
                         <p className="text-xs font-body italic text-[#d4af37]/80 mt-4 leading-relaxed">
-                          {(userProfile.loyalty_points || 0) >= (userProfile.customer_segment === 'VIP' ? 4000 : 5000) ? (
+                          {(userProfile.loyalty_points || 0) >= (userProfile.customer_segment === 'VIP' ? 80 : 100) ? (
                             "✨ Congratulations! You have reached your milestone and you will be getting an exclusive gift worth of ₹5,000! A curator will reach out to you shortly to arrange details."
                           ) : (
-                            `You have ${userProfile.loyalty_points || 0} points. Accumulate ${(userProfile.customer_segment === 'VIP' ? 4000 : 5000) - (userProfile.loyalty_points || 0)} more points to unlock an exclusive gift worth of ₹5,000!`
+                            `You have ${userProfile.loyalty_points || 0} points. Accumulate ${(userProfile.customer_segment === 'VIP' ? 80 : 100) - (userProfile.loyalty_points || 0)} more points to unlock an exclusive gift worth of ₹5,000!`
                           )}
                         </p>
                       </div>

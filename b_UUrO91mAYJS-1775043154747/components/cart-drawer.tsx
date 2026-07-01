@@ -183,7 +183,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 const estimatedPoints = Math.floor((subtotal / 100) * multiplier);
                 const currentPoints = profile?.loyalty_points || 0;
                 const projectedPoints = currentPoints + estimatedPoints;
-                const milestoneTarget = segment === 'VIP' ? 4000 : 5000;
+                const milestoneTarget = segment === 'VIP' ? 80 : 100;
                 
                 const spendNeededForMilestone = Math.ceil((milestoneTarget - currentPoints) * (100 / multiplier)) - subtotal;
                 const showMilestoneUpsell = spendNeededForMilestone > 0 && spendNeededForMilestone <= 5000 && projectedPoints < milestoneTarget;

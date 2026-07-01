@@ -183,7 +183,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 const estimatedPoints = Math.floor((subtotal / 100) * multiplier);
                 const currentPoints = profile?.loyalty_points || 0;
                 const projectedPoints = currentPoints + estimatedPoints;
-                const milestoneTarget = segment === 'VIP' ? 800 : 1000;
+                const milestoneTarget = segment === 'VIP' ? 4000 : 5000;
                 
                 const spendNeededForMilestone = Math.ceil((milestoneTarget - currentPoints) * (100 / multiplier)) - subtotal;
                 const showMilestoneUpsell = spendNeededForMilestone > 0 && spendNeededForMilestone <= 5000 && projectedPoints < milestoneTarget;
@@ -200,7 +200,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     </div>
                     {showMilestoneUpsell ? (
                       <p className="text-[10px] italic text-[#a3851a] leading-normal mt-1 border-t border-[#a3851a]/15 pt-2">
-                        ✨ Add <b>₹{spendNeededForMilestone.toLocaleString('en-IN')}</b> more to unlock your exclusive gift worth of ₹3,000!
+                        ✨ Add <b>₹{spendNeededForMilestone.toLocaleString('en-IN')}</b> more to unlock your exclusive gift worth of ₹5,000!
                       </p>
                     ) : showGapUpsell ? (
                       <p className="text-[10px] italic text-[#a3851a] leading-normal mt-1 border-t border-[#a3851a]/15 pt-2">

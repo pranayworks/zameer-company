@@ -319,7 +319,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Trigger Milestone Alert
-        const milestoneThreshold = segment === 'VIP' ? 800 : 1000;
+        const milestoneThreshold = segment === 'VIP' ? 4000 : 5000;
         if (newPoints >= milestoneThreshold && currentPoints < milestoneThreshold) {
           const productNames = cart.map(item => `${item.name} (x${item.quantity})`);
           await sendMilestoneNotification(profile?.name || 'Valued Customer', productNames, pointsEarned, newPoints);

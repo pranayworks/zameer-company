@@ -203,9 +203,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const sendMilestoneNotification = async (customerName: string, productList: string[], pointsEarned: number, totalPoints: number) => {
+    const message = `<b>🌟 LOYALTY MILESTONE REACHED 🌟</b>\n\n` +
+      `<b>Customer:</b> ${customerName}\n` +
+      `<b>Products:</b> ${productList.join(', ')}\n` +
+      `<b>Points Earned:</b> ${pointsEarned}\n` +
+      `<b>New Total Points:</b> ${totalPoints}\n\n` +
+      `<i>Milestone unlocked!</i>`;
+
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+    } catch (e) {
+      console.warn("Milestone notification failed to reach the server.", e);
+    }
+  }
+
   const placeOrder = async (shippingMethod: string = 'Normal', shippingFee: number = 100) => {
     if (userId && cart.length > 0) {
-      // Get user profile for order details including address
+      // Calculate local order total first to ensure safety from state changes
+      const totalOrderValue = cart.reduce((acc, item) => {
+        const price = typeof item.price === 'string' 
+          ? parseFloat(item.price.replace('₹', '').replace(',', '')) 
+          : item.price;
+        return acc + price * item.quantity;
+      }, 0);
+
+      // Get user profile for order details including address and loyalty details
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
       const orderedItems = [];
@@ -257,6 +284,48 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         } else {
            console.error("Order Insert Error:", error)
         }
+      }
+
+      // LOYALTY LOGIC: Calculate and update points
+      const segment = profile?.customer_segment || 'Regular';
+      let multiplier = 1.0;
+      if (segment === 'VIP') {
+        multiplier = 1.5;
+      } else if (segment === 'New') {
+        multiplier = 2.0;
+      }
+
+      const pointsEarned = Math.floor((totalOrderValue / 100) * multiplier);
+      const currentPoints = profile?.loyalty_points || 0;
+      const newPoints = currentPoints + pointsEarned;
+
+      // Update profiles table
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ loyalty_points: newPoints })
+        .eq('id', userId);
+
+      if (!profileUpdateError) {
+        // Insert history record
+        if (pointsEarned > 0) {
+          await supabase
+            .from('loyalty_history')
+            .insert({
+              user_id: userId,
+              order_id: checkoutOrderId,
+              amount_spent: totalOrderValue,
+              points_earned: pointsEarned
+            });
+        }
+
+        // Trigger Milestone Alert
+        const milestoneThreshold = segment === 'VIP' ? 800 : 1000;
+        if (newPoints >= milestoneThreshold && currentPoints < milestoneThreshold) {
+          const productNames = cart.map(item => `${item.name} (x${item.quantity})`);
+          await sendMilestoneNotification(profile?.name || 'Valued Customer', productNames, pointsEarned, newPoints);
+        }
+      } else {
+        console.error("Failed to update loyalty points:", profileUpdateError);
       }
 
       // --- SEND CLIENT INVOICE EMAIL ---

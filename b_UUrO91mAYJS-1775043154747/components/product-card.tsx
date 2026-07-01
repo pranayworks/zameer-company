@@ -110,7 +110,7 @@ export function ProductCard({
             star
           </span>
           <span className="font-body text-[10px] text-[#747878] uppercase tracking-tighter">
-            {(rating || 5).toFixed(1)} ({reviews} {reviews === 1 ? 'Review' : 'Reviews'})
+            {rating != null ? Number(rating).toFixed(1) : '5.0'} ({reviews || 0} {(reviews || 0) === 1 ? 'Review' : 'Reviews'})
           </span>
         </div>
       </Link>

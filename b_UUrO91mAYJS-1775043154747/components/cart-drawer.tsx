@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/cart-context'
-import { getSessionUser } from '@/lib/supabase'
+import { getSessionUser, supabase } from '@/lib/supabase'
 
 interface CartDrawerProps {
   isOpen: boolean
@@ -15,6 +15,31 @@ interface CartDrawerProps {
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const router = useRouter()
   const { cart, updateQuantity, removeFromCart, subtotal, totalItems, placeOrder } = useCart()
+  const [profile, setProfile] = useState<{ loyalty_points?: number, customer_segment?: string } | null>(null)
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const isLoggedIn = localStorage.getItem('currentUserEmail');
+      if (!isLoggedIn) return;
+      
+      const { user } = await getSessionUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('loyalty_points, customer_segment')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setProfile(data);
+      }
+    };
+
+    if (isOpen) {
+      fetchProfile();
+    }
+  }, [isOpen]);
   // Payment handled on /checkout page
 
   // Block body scroll
@@ -144,6 +169,48 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
             {/* Footer */}
             <div className="p-8 border-t border-[#1c1c18]/5 bg-white space-y-6 shadow-2xl">
+              
+              {/* Loyalty Info & Upsell Prompt */}
+              {subtotal > 0 && (() => {
+                const segment = profile?.customer_segment || 'Regular';
+                let multiplier = 1.0;
+                if (segment === 'VIP') {
+                  multiplier = 1.5;
+                } else if (segment === 'New') {
+                  multiplier = 2.0;
+                }
+
+                const estimatedPoints = Math.floor((subtotal / 100) * multiplier);
+                const currentPoints = profile?.loyalty_points || 0;
+                const projectedPoints = currentPoints + estimatedPoints;
+                const milestoneTarget = segment === 'VIP' ? 800 : 1000;
+                
+                const spendNeededForMilestone = Math.ceil((milestoneTarget - currentPoints) * (100 / multiplier)) - subtotal;
+                const showMilestoneUpsell = spendNeededForMilestone > 0 && spendNeededForMilestone <= 5000 && projectedPoints < milestoneTarget;
+
+                const nextThousand = Math.ceil(subtotal / 1000) * 1000;
+                const gap = nextThousand - subtotal;
+                const showGapUpsell = gap > 0 && gap <= 500;
+
+                return (
+                  <div className="bg-[#a3851a]/5 border border-[#a3851a]/20 p-4 space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-body text-[#747878] uppercase tracking-wider">Estimated Points ({segment})</span>
+                      <span className="font-headline text-[#a3851a] font-bold">+{estimatedPoints} pts</span>
+                    </div>
+                    {showMilestoneUpsell ? (
+                      <p className="text-[10px] italic text-[#a3851a] leading-normal mt-1 border-t border-[#a3851a]/15 pt-2">
+                        ✨ Add <b>₹{spendNeededForMilestone.toLocaleString('en-IN')}</b> more to unlock your exclusive gift worth of ₹3,000!
+                      </p>
+                    ) : showGapUpsell ? (
+                      <p className="text-[10px] italic text-[#a3851a] leading-normal mt-1 border-t border-[#a3851a]/15 pt-2">
+                        💡 Add <b>₹{gap.toLocaleString('en-IN')}</b> more to your cart to earn extra points!
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })()}
+
               <div className="flex justify-between items-center">
                 <span className="font-body uppercase tracking-widest text-xs text-[#747878]">Total Value</span>
                 <span className="font-headline text-3xl tracking-tight">₹{subtotal.toLocaleString('en-IN')}</span>

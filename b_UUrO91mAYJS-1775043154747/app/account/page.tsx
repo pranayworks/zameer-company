@@ -171,9 +171,11 @@ function AccountContent() {
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any>(null)
   const [reviewingOrder, setReviewingOrder] = useState<any>(null)
   const [reviews, setReviews] = useState<{ id: string, title: string, content: string, stars: number, date: string, img: string }[]>([])
-  const [userProfile, setUserProfile] = useState<{fullName?: string, email?: string, phone?: string, address?: string, tier?: string, userId?: string}>({
+  const [userProfile, setUserProfile] = useState<{fullName?: string, email?: string, phone?: string, address?: string, tier?: string, userId?: string, loyalty_points?: number, customer_segment?: string}>({
     fullName: 'The Collector',
-    tier: 'Gold Tier Member'
+    tier: 'Gold Tier Member',
+    loyalty_points: 0,
+    customer_segment: 'Regular'
   })
   const [isAdmin, setIsAdmin] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
@@ -189,6 +191,8 @@ function AccountContent() {
   }, [searchParams])
 
   useEffect(() => {
+    let channel: any;
+
     const fetchUser = async () => {
       const { user, error: authError } = await getSessionUser();
       if (authError || !user) {
@@ -208,8 +212,10 @@ function AccountContent() {
           email: profileData.email || user.email,
           phone: profileData.phone || user.user_metadata?.phone || '',
           address: profileData.address || '',
-          tier: 'Gold Tier Member',
-          userId: user.id
+          tier: profileData.customer_segment === 'VIP' ? 'VIP Tier Member' : 'Gold Tier Member',
+          userId: user.id,
+          loyalty_points: profileData.loyalty_points || 0,
+          customer_segment: profileData.customer_segment || 'Regular'
         });
         setEditData({
           name: profileData.name || user.user_metadata?.full_name || '',
@@ -230,9 +236,41 @@ function AccountContent() {
 
       const { authorized } = await import('@/lib/admin-helpers').then(m => m.checkAdminAuth());
       setIsAdmin(authorized);
+
+      // Subscribe to real-time profile updates
+      channel = supabase
+        .channel(`profile-updates-${user.id}-${Math.random().toString(36).slice(2, 9)}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          },
+          (payload: any) => {
+            const updatedProfile = payload.new;
+            setUserProfile(prev => ({
+              ...prev,
+              fullName: updatedProfile.name || prev.fullName,
+              phone: updatedProfile.phone || prev.phone,
+              address: updatedProfile.address || prev.address,
+              tier: updatedProfile.customer_segment === 'VIP' ? 'VIP Tier Member' : 'Gold Tier Member',
+              loyalty_points: updatedProfile.loyalty_points || 0,
+              customer_segment: updatedProfile.customer_segment || 'Regular'
+            }));
+          }
+        )
+        .subscribe();
     };
     
     fetchUser();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [router])
 
   const handleLogout = async () => {
@@ -313,7 +351,13 @@ function AccountContent() {
               <Image src="/placeholder-user.jpg" alt="Profile" fill className="object-cover" />
             </div>
             <h2 className="font-headline text-xl mb-2 text-[#1c1c18]">{userProfile.fullName}</h2>
-            <span className="bg-[#e2bb53] text-[#1c1c18] text-[9px] uppercase tracking-widest px-3 py-1 font-bold">{userProfile.tier}</span>
+            <div className="flex flex-col gap-1 items-center lg:items-start">
+              <span className="bg-[#e2bb53] text-[#1c1c18] text-[9px] uppercase tracking-widest px-3 py-1 font-bold">{userProfile.tier}</span>
+              <span className="text-[10px] text-[#a3851a] uppercase tracking-widest mt-1 font-semibold flex items-center gap-1">
+                <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
+                {userProfile.loyalty_points || 0} Points Collected
+              </span>
+            </div>
           </motion.div>
 
           <nav className="space-y-2 mb-12 flex-1">
@@ -349,6 +393,69 @@ function AccountContent() {
           <AnimatePresence mode="wait">
              {activeTab === 'profile' && (
                 <motion.div key="profile" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-12">
+                  
+                  {/* Loyalty Points Progress Card */}
+                  <div className="bg-gradient-to-br from-[#1c1c18] to-[#2c2c26] text-[#fdf9f2] p-8 lg:p-12 shadow-md relative overflow-hidden group">
+                    <div className="absolute right-0 bottom-0 w-64 h-64 bg-[#a3851a]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#a3851a]/10 transition-all duration-700" />
+                    
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-[#fdf9f2]/10 pb-6">
+                      <div>
+                        <span className="text-[9px] uppercase tracking-[0.25em] text-[#e2bb53] font-bold">
+                          Atelier Privileges
+                        </span>
+                        <h3 className="font-headline text-3xl mt-1 text-white">Loyalty Collector</h3>
+                      </div>
+                      <div className="text-left md:text-right">
+                        <span className="text-[10px] uppercase tracking-widest text-[#747878] block">
+                          Current Status
+                        </span>
+                        <span className="bg-[#e2bb53] text-[#1c1c18] text-[9px] uppercase tracking-[0.2em] px-3 py-1 font-bold inline-block mt-1">
+                          {userProfile.customer_segment || 'Regular'} Client
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <span className="text-[10px] uppercase tracking-widest text-[#a09e96]">Collected Points</span>
+                          <div className="font-headline text-5xl text-white mt-1">
+                            {userProfile.loyalty_points || 0} <span className="text-lg font-body text-[#e2bb53] uppercase tracking-widest font-normal">pts</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase tracking-widest text-[#a09e96]">Next Milestone</span>
+                          <div className="font-headline text-xl text-white mt-1">
+                            {(userProfile.customer_segment === 'VIP' ? 800 : 1000)} pts
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div>
+                        <div className="w-full h-[6px] bg-[#fdf9f2]/15 rounded-full overflow-hidden relative">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ 
+                              width: `${Math.min(100, ((userProfile.loyalty_points || 0) / (userProfile.customer_segment === 'VIP' ? 800 : 1000)) * 100)}%` 
+                            }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="h-full bg-gradient-to-r from-[#a3851a] to-[#e2bb53] rounded-full"
+                          />
+                        </div>
+                        
+                        {/* Motivational Message */}
+                        <p className="text-xs font-body italic text-[#d4af37]/80 mt-4 leading-relaxed">
+                          {(userProfile.loyalty_points || 0) >= (userProfile.customer_segment === 'VIP' ? 800 : 1000) ? (
+                            "✨ Congratulations! You have reached your milestone and you will be getting an exclusive gift worth of ₹3,000! A curator will reach out to you shortly to arrange details."
+                          ) : (
+                            `You have ${userProfile.loyalty_points || 0} points. Accumulate ${(userProfile.customer_segment === 'VIP' ? 800 : 1000) - (userProfile.loyalty_points || 0)} more points to unlock an exclusive gift worth of ₹3,000!`
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-white border border-[#1c1c18]/5 p-8 lg:p-12 shadow-sm">
                     {isEditingProfile ? (
                       <form onSubmit={handleUpdateProfile} className="space-y-8">

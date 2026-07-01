@@ -128,10 +128,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
           .select('*')
           .eq('category', p.category)
           .neq('id', trimmedId)
-          .limit(10)
+          .limit(20)
         
         if (related) {
-          const shuffled = [...related].sort(() => 0.5 - Math.random()).slice(0, 4)
+          const shuffled = [...related].sort(() => 0.5 - Math.random()).slice(0, 6)
           setRelatedProducts(shuffled)
         }
       }
@@ -330,7 +330,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {relatedProducts.map((item, index) => (
                 <ProductCard
                   key={item.id}

@@ -57,13 +57,17 @@ export function ProductCard({
       viewport={{ once: true, margin: '0px 0px -100px 0px' }}
     >
       <Link href={productPath} className="block">
-        {/* Product Image */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-white group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-shadow duration-700 mb-6">
+        <div 
+          className="relative aspect-[3/4] overflow-hidden bg-[#ebdcb9]/15 group-hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-shadow duration-700 mb-6"
+          style={{ position: 'relative' }}
+        >
           <Image
             src={displayImage}
             alt={title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
+            priority={index < 4}
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
           />
           
           {/* URGENCE & EXCLUSIVITY RIBBONS */}

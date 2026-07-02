@@ -217,9 +217,18 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24">
           <div className="space-y-8">
-            <div className="relative aspect-[3/4] bg-white overflow-hidden shadow-2xl group">
+            <div 
+              className="relative aspect-[3/4] bg-[#ebdcb9]/15 overflow-hidden shadow-2xl group"
+              style={{ position: 'relative' }}
+            >
+              {/* Prefetch/Preload other product images in background to remove switching lag */}
+              <div className="hidden" aria-hidden="true">
+                {allImages.map((img, idx) => (
+                  <img key={idx} src={img} alt="preload" />
+                ))}
+              </div>
                <AnimatePresence mode='wait'>
-                   <motion.div key={currentImageIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute inset-0 cursor-zoom-in" onClick={() => setZoomedImage(allImages[currentImageIndex])} drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={(_, info) => { if (info.offset.x > 30) setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); else if (info.offset.x < -30) setCurrentImageIndex((prev) => (prev + 1) % allImages.length); }}>
+                   <motion.div key={currentImageIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute inset-0 cursor-zoom-in" style={{ position: 'absolute' }} onClick={() => setZoomedImage(allImages[currentImageIndex])} drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={(_, info) => { if (info.offset.x > 30) setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); else if (info.offset.x < -30) setCurrentImageIndex((prev) => (prev + 1) % allImages.length); }}>
                     <Image src={allImages[currentImageIndex] || '/placeholder.jpg'} alt={`${product.title}`} fill className="object-cover group-hover:scale-105 transition-transform duration-1000 select-none pointer-events-none" priority />
                   </motion.div>
                 </AnimatePresence>
@@ -235,7 +244,8 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               {allImages.map((img, idx) => (
                 <motion.div 
                   key={idx}
-                  className={`aspect-square bg-white relative overflow-hidden cursor-pointer group shadow-sm border transition-all ${idx === currentImageIndex ? 'border-[#a3851a] scale-[0.98]' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]'}`} 
+                  className={`aspect-square bg-[#ebdcb9]/15 relative overflow-hidden cursor-pointer group shadow-sm border transition-all ${idx === currentImageIndex ? 'border-[#a3851a] scale-[0.98]' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]'}`} 
+                  style={{ position: 'relative' }}
                   onClick={() => setCurrentImageIndex(idx)}
                 >
                   <Image 

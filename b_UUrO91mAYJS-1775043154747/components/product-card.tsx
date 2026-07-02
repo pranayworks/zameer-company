@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/cart-context'
 import { slugify } from '@/lib/utils'
+import { useState, useEffect } from 'react'
 
 interface ProductCardProps {
   id?: string | number
@@ -32,6 +33,11 @@ export function ProductCard({
   const router = useRouter()
   const productPath = `/product/${id || slugify(title)}`
   const displayImage = image ? image.split(',')[0].trim() || '/placeholder.jpg' : '/placeholder.jpg'
+  const [imgSrc, setImgSrc] = useState(displayImage)
+
+  useEffect(() => {
+    setImgSrc(displayImage)
+  }, [displayImage])
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -62,12 +68,13 @@ export function ProductCard({
           style={{ position: 'relative' }}
         >
           <Image
-            src={displayImage}
+            src={imgSrc}
             alt={title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
             priority={index < 4}
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            onError={() => setImgSrc('/placeholder.jpg')}
           />
           
           {/* URGENCE & EXCLUSIVITY RIBBONS */}

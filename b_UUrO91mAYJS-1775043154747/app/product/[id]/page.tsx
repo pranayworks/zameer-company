@@ -57,6 +57,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   const [isSubmittingNotify, setIsSubmittingNotify] = useState(false)
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     fetchProductAndRelated()
@@ -229,7 +230,18 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
               </div>
                <AnimatePresence mode='wait'>
                    <motion.div key={currentImageIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute inset-0 cursor-zoom-in" style={{ position: 'absolute' }} onClick={() => setZoomedImage(allImages[currentImageIndex])} drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={(_, info) => { if (info.offset.x > 30) setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); else if (info.offset.x < -30) setCurrentImageIndex((prev) => (prev + 1) % allImages.length); }}>
-                    <Image src={allImages[currentImageIndex] || '/placeholder.jpg'} alt={`${product.title}`} fill className="object-cover group-hover:scale-105 transition-transform duration-1000 select-none pointer-events-none" priority />
+                     <Image 
+                       src={allImages[currentImageIndex] && !failedImages[allImages[currentImageIndex]] ? allImages[currentImageIndex] : '/placeholder.jpg'} 
+                       alt={`${product.title}`} 
+                       fill 
+                       className="object-cover group-hover:scale-105 transition-transform duration-1000 select-none pointer-events-none" 
+                       priority 
+                       onError={() => {
+                         if (allImages[currentImageIndex]) {
+                           setFailedImages(prev => ({ ...prev, [allImages[currentImageIndex]]: true }))
+                         }
+                       }}
+                     />
                   </motion.div>
                 </AnimatePresence>
                 {allImages.length > 1 && (
@@ -249,12 +261,17 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                   onClick={() => setCurrentImageIndex(idx)}
                 >
                   <Image 
-                    src={img} 
-                    alt={`Thumbnail ${idx + 1}`} 
-                    fill 
-                    className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                    sizes="(max-width: 768px) 33vw, 25vw"
-                  />
+                     src={img && !failedImages[img] ? img : '/placeholder.jpg'} 
+                     alt={`Thumbnail ${idx + 1}`} 
+                     fill 
+                     className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                     sizes="(max-width: 768px) 33vw, 25vw"
+                     onError={() => {
+                       if (img) {
+                         setFailedImages(prev => ({ ...prev, [img]: true }))
+                       }
+                     }}
+                   />
                 </motion.div>
               ))}
               {product.video_url && (

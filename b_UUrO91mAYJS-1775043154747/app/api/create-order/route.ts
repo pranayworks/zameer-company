@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Razorpay from 'razorpay'
 
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-})
+let razorpayInstance: Razorpay | null = null
+
+function getRazorpay() {
+  if (!razorpayInstance) {
+    razorpayInstance = new Razorpay({
+      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'fallback_key',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || 'fallback_secret',
+    })
+  }
+  return razorpayInstance
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
+    const razorpay = getRazorpay()
     const order = await razorpay.orders.create({
       amount: Math.round(amount * 100), // Convert ₹ to paise
       currency,

@@ -125,6 +125,8 @@ export default function TestDbPage() {
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'failed'>('idle')
   const [testEmailAddr, setTestEmailAddr] = useState('mamidipranay07@gmail.com')
   const [copySuccess, setCopySuccess] = useState(false)
+  const [telegramError, setTelegramError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
 
   const runAudit = async () => {
     setLoading(true)
@@ -159,6 +161,7 @@ export default function TestDbPage() {
 
   const checkTelegram = async () => {
     setTelegramStatus('testing')
+    setTelegramError(null)
     try {
       const testMessage = `<b>🛡️ SYSTEM AUDIT BOT VERIFICATION 🛡️</b>\n\n` +
         `• <b>Status</b>: Active Connection Verified\n` +
@@ -172,17 +175,21 @@ export default function TestDbPage() {
       const data = await response.json()
       if (response.ok && data.success) {
         setTelegramStatus('success')
+        setTelegramError(null)
       } else {
         setTelegramStatus('failed')
+        setTelegramError(data.error || 'Connection Rejected')
       }
-    } catch {
+    } catch (err: any) {
       setTelegramStatus('failed')
+      setTelegramError(err.message || 'Herald Connection Interrupted')
     }
   }
 
   const sendTestEmail = async () => {
     if (!testEmailAddr.trim()) return
     setEmailStatus('sending')
+    setEmailError(null)
     try {
       const response = await fetch('/api/send-invoice', {
         method: 'POST',
@@ -200,11 +207,14 @@ export default function TestDbPage() {
       const data = await response.json()
       if (response.ok && data.success) {
         setEmailStatus('success')
+        setEmailError(null)
       } else {
         setEmailStatus('failed')
+        setEmailError(data.error || 'SMTP Dispatch Rejected')
       }
-    } catch {
+    } catch (err: any) {
       setEmailStatus('failed')
+      setEmailError(err.message || 'SMTP Connection Terminated')
     }
   }
 
@@ -257,7 +267,10 @@ export default function TestDbPage() {
               <span className="text-[10px] uppercase bg-green-500/10 text-green-500 px-3 py-1 font-bold tracking-widest rounded-full border border-green-500/20">🟢 Connected</span>
             )}
             {telegramStatus === 'failed' && (
-              <span className="text-[10px] uppercase bg-red-500/10 text-red-500 px-3 py-1 font-bold tracking-widest rounded-full border border-red-500/20">🔴 Connection Failed</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase bg-red-500/10 text-red-500 px-3 py-1 font-bold tracking-widest rounded-full border border-red-500/20">🔴 Connection Failed</span>
+                {telegramError && <span className="text-[8px] text-red-400 mt-1 tracking-wide">{telegramError}</span>}
+              </div>
             )}
           </div>
           <button 
@@ -286,7 +299,10 @@ export default function TestDbPage() {
               <span className="text-[10px] uppercase bg-green-500/10 text-green-500 px-3 py-1 font-bold tracking-widest rounded-full border border-green-500/20">🟢 Email Dispatched</span>
             )}
             {emailStatus === 'failed' && (
-              <span className="text-[10px] uppercase bg-red-500/10 text-red-500 px-3 py-1 font-bold tracking-widest rounded-full border border-red-500/20">🔴 Dispatch Failed</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase bg-red-500/10 text-red-500 px-3 py-1 font-bold tracking-widest rounded-full border border-red-500/20">🔴 Dispatch Failed</span>
+                {emailError && <span className="text-[8px] text-red-400 mt-1 tracking-wide">{emailError}</span>}
+              </div>
             )}
           </div>
           

@@ -229,7 +229,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
                 ))}
               </div>
                <AnimatePresence mode='wait'>
-                   <motion.div key={currentImageIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute inset-0 cursor-zoom-in" style={{ position: 'absolute' }} onClick={() => setZoomedImage(allImages[currentImageIndex])} drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={(_, info) => { if (info.offset.x > 30) setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); else if (info.offset.x < -30) setCurrentImageIndex((prev) => (prev + 1) % allImages.length); }}>
+                   <motion.div key={currentImageIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute inset-0 cursor-zoom-in" style={{ position: 'absolute' }} onClick={() => { const currentImg = allImages[currentImageIndex]; setZoomedImage(currentImg && !failedImages[currentImg] ? currentImg : '/placeholder.jpg'); }} drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={(_, info) => { if (info.offset.x > 30) setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); else if (info.offset.x < -30) setCurrentImageIndex((prev) => (prev + 1) % allImages.length); }}>
                      <Image 
                        src={allImages[currentImageIndex] && !failedImages[allImages[currentImageIndex]] ? allImages[currentImageIndex] : '/placeholder.jpg'} 
                        alt={`${product.title}`} 

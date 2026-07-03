@@ -82,14 +82,11 @@ export default function AdminDashboard() {
   }
 
   const getCategoryCount = (cat: string) => {
-    if (cat === 'Others') return products.filter(p => !['Men', 'Women', 'Sarees', 'Jewellery', 'Gift Hampers'].includes(p.category)).length
     return products.filter(p => p.category === cat).length
   }
 
   const getCategoryStock = (cat: string) => {
-    const filtered = cat === 'Others'
-      ? products.filter(p => !['Men', 'Women', 'Sarees', 'Jewellery', 'Gift Hampers'].includes(p.category))
-      : products.filter(p => p.category === cat)
+    const filtered = products.filter(p => p.category === cat)
     return filtered.reduce((sum, p) => sum + p.stock, 0)
   }
 

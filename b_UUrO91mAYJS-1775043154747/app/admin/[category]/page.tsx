@@ -578,8 +578,6 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           <option>Women</option>
                           <option>Sarees</option>
                           <option>Jewellery</option>
-                          <option>Gift Hampers</option>
-                          <option>Others</option>
                         </select>
                       </div>
 

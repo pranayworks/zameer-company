@@ -50,15 +50,13 @@ export const ADMIN_EMAILS = [
   'friendsof4.support@gmail.com'
 ]
 
-export const CATEGORIES = ['Men', 'Women', 'Sarees', 'Jewellery', 'Gift Hampers', 'Others'] as const
+export const CATEGORIES = ['Men', 'Women', 'Sarees', 'Jewellery'] as const
 
 export const CATEGORY_ICONS: Record<string, string> = {
   Men: 'person',
   Women: 'female',
   Sarees: 'styler',
   Jewellery: 'diamond',
-  'Gift Hampers': 'redeem',
-  Others: 'category',
 }
 
 export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
@@ -66,8 +64,6 @@ export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   Women: 'Tunics, Dresses, Blouses & Curated Fits',
   Sarees: 'Hand-woven Silks, Banarasi & Designer Drapes',
   Jewellery: 'Heritage Chokers, Jhumkas & Statement Pieces',
-  'Gift Hampers': 'Curated Heritage Collections & Bespoke Giving',
-  Others: 'Kids, Accessories & Special Collections',
 }
 
 export async function checkAdminAuth(): Promise<{ authorized: boolean; email?: string }> {
@@ -96,10 +92,6 @@ export async function fetchAllProducts(): Promise<Product[]> {
 }
 
 export async function fetchProductsByCategory(category: string): Promise<Product[]> {
-  if (category === 'Others') {
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-    return ((data || []) as Product[]).filter(p => !['Men', 'Women', 'Sarees', 'Jewellery', 'Gift Hampers'].includes(p.category))
-  }
   const { data } = await supabase.from('products').select('*').eq('category', category).order('created_at', { ascending: false })
   return (data || []) as Product[]
 }

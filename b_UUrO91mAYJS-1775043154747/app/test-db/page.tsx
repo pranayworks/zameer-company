@@ -192,9 +192,9 @@ export default function TestDbPage() {
           name: 'Atelier Schema Audit Tester',
           orderId: 'TEST-' + Math.floor(Math.random() * 9000 + 1000),
           items: [
-            { name: 'Heritage Saree (Diagnostic Test)', quantity: 1, price: 0, size: 'Standard', color: 'Gold' }
+            { name: 'Heritage Saree (Diagnostic Test)', quantity: 1, price: 99, size: 'Standard', color: 'Gold' }
           ],
-          total: 0
+          total: 99
         })
       })
       const data = await response.json()

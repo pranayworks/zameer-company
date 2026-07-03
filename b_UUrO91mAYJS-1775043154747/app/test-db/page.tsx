@@ -160,19 +160,14 @@ export default function TestDbPage() {
   const checkTelegram = async () => {
     setTelegramStatus('testing')
     try {
+      const testMessage = `<b>🛡️ SYSTEM AUDIT BOT VERIFICATION 🛡️</b>\n\n` +
+        `• <b>Status</b>: Active Connection Verified\n` +
+        `• <b>Timestamp</b>: ${new Date().toLocaleString()}\n\n` +
+        `<i>Your Telegram notification channel is fully authenticated.</i>`
       const response = await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order_id: 'SYSTEM-AUDIT-TEST',
-          customer_name: 'System Audit Bot Verification',
-          phone: '9999999999',
-          address: 'System Diagnostic Dashboard',
-          product_name: 'Auditing connectivity check',
-          size: 'Standard',
-          color: 'Default',
-          price: 0,
-        })
+        body: JSON.stringify({ message: testMessage })
       })
       const data = await response.json()
       if (response.ok && data.success) {

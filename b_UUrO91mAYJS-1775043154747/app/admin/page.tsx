@@ -18,12 +18,125 @@ import {
   CATEGORY_DESCRIPTIONS,
 } from '@/lib/admin-helpers'
 
+const GOOGLE_APPS_SCRIPT_CODE = `function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Process categories (Sarees, Men, Women, Jewellery)
+    for (const category in data) {
+      let sheet = ss.getSheetByName(category);
+      if (!sheet) {
+        sheet = ss.insertSheet(category);
+      } else {
+        sheet.clear();
+      }
+      
+      const items = data[category];
+      if (items && items.length > 0) {
+        // Headers
+        const headers = ["ID", "Title", "Price", "Stock", "Rating", "Reviews", "Image URL"];
+        sheet.appendRow(headers);
+        sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
+        
+        // Rows
+        const rows = items.map(item => [
+          item.id,
+          item.title,
+          typeof item.price === 'number' ? item.price : parseFloat((item.price || "0").toString().replace(/[^0-9.]/g, '')),
+          item.stock || 0,
+          item.rating || 0,
+          item.reviews || 0,
+          item.image || ""
+        ]);
+        
+        sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+      }
+    }
+    
+    // Auto-remove default Sheet1 if empty
+    const defaultSheet = ss.getSheetByName("Sheet1");
+    if (defaultSheet && ss.getSheets().length > 1 && defaultSheet.getLastRow() === 0) {
+      ss.deleteSheet(defaultSheet);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ success: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  
+  const [sheetUrl, setSheetUrl] = useState('')
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'failed'>('idle')
+  const [syncError, setSyncError] = useState<string | null>(null)
+  const [showScriptCode, setShowScriptCode] = useState(false)
+  const [copyCodeSuccess, setCopyCodeSuccess] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedUrl = localStorage.getItem('atelier_google_sheet_url')
+      if (savedUrl) setSheetUrl(savedUrl)
+    }
+  }, [])
+
+  const handleSaveUrl = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('atelier_google_sheet_url', sheetUrl.trim())
+      alert('Google Sheets Web App URL saved successfully!')
+    }
+  }
+
+  const handleCopyScript = () => {
+    navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE)
+    setCopyCodeSuccess(true)
+    setTimeout(() => setCopyCodeSuccess(false), 3000)
+  }
+
+  const handleSyncToSheets = async () => {
+    if (!sheetUrl.trim()) {
+      alert('Please enter your Google Sheets Apps Script Web App URL first.')
+      return
+    }
+    
+    setSyncStatus('syncing')
+    setSyncError(null)
+    
+    try {
+      const categoriesGroup: Record<string, Product[]> = {}
+      CATEGORIES.forEach(cat => {
+        categoriesGroup[cat] = products.filter(p => p.category === cat)
+      })
+      
+      const response = await fetch(sheetUrl.trim(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: JSON.stringify(categoriesGroup)
+      })
+      
+      const data = await response.json()
+      if (response.ok && data.success) {
+        setSyncStatus('success')
+        alert('Inventory stock successfully synced to Google Sheets!')
+      } else {
+        setSyncStatus('failed')
+        setSyncError(data.error || 'Server rejected synchronization request.')
+      }
+    } catch (err: any) {
+      setSyncStatus('failed')
+      setSyncError(err.message || 'Could not connect to the Google Apps Script Web App. Please ensure it is deployed with access set to "Anyone".')
+    }
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -291,6 +404,110 @@ export default function AdminDashboard() {
                   </div>
                 </div>
             </motion.div>
+          </div>
+        </div>
+
+        {/* Google Sheets Integration Section */}
+        <div className="mt-16 bg-white border border-[#1c1c18]/5 p-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row gap-8 justify-between items-start">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-green-50 flex items-center justify-center rounded">
+                  <span className="material-symbols-outlined text-xl text-green-600">table_chart</span>
+                </div>
+                <div>
+                  <h3 className="font-headline text-2xl text-[#1c1c18]">Google Sheets Inventory Sync</h3>
+                  <p className="font-body text-xs text-[#747878] mt-0.5">Export and update your entire stock to Google Sheets in one click.</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4 font-body text-xs text-[#747878] leading-relaxed">
+                <p>
+                  This integration automatically synchronizes all boutique items categorized by tab: <strong>Sarees</strong>, <strong>Men</strong>, <strong>Women</strong>, and <strong>Jewellery</strong>.
+                </p>
+                <div className="bg-[#fdf9f2] p-4 border border-[#1c1c18]/5 space-y-2 rounded">
+                  <p className="font-bold text-[#1c1c18]">Quick Setup Instructions:</p>
+                  <ol className="list-decimal list-inside space-y-1 pl-1">
+                    <li>Create a new Google Sheet.</li>
+                    <li>Open <strong>Extensions &gt; Apps Script</strong>.</li>
+                    <li>Paste the custom Apps Script code (click <strong>"Get Sync Script Code"</strong> below to copy).</li>
+                    <li>Click <strong>Deploy &gt; New Deployment</strong>, choose type <strong>Web App</strong>, execute as <strong>Me</strong>, set access to <strong>Anyone</strong>, and deploy.</li>
+                    <li>Copy the generated <strong>Web App URL</strong>, paste it in the field below, and click <strong>Sync Stock</strong>.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-4">
+                <button
+                  onClick={() => setShowScriptCode(!showScriptCode)}
+                  className="border border-[#1c1c18]/20 hover:border-[#1c1c18] text-[#1c1c18] px-4 py-2 font-body text-[10px] uppercase tracking-widest font-black rounded transition-all"
+                >
+                  {showScriptCode ? 'Hide Sync Script' : 'Get Sync Script Code'}
+                </button>
+                {showScriptCode && (
+                  <button
+                    onClick={handleCopyScript}
+                    className="bg-[#1c1c18] text-white hover:bg-[#a3851a] px-4 py-2 font-body text-[10px] uppercase tracking-widest font-black rounded transition-all"
+                  >
+                    {copyCodeSuccess ? '✓ Copied' : 'Copy Script Code'}
+                  </button>
+                )}
+              </div>
+
+              {showScriptCode && (
+                <motion.pre 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-4 p-4 bg-[#1a1a1a] text-green-400 font-mono text-[10px] overflow-x-auto rounded max-h-60 overflow-y-auto block w-full border border-neutral-800"
+                >
+                  {GOOGLE_APPS_SCRIPT_CODE}
+                </motion.pre>
+              )}
+            </div>
+
+            <div className="w-full lg:w-96 bg-[#fdf9f2] p-6 border border-[#1c1c18]/5 space-y-4">
+              <h4 className="font-headline text-lg text-[#1c1c18]">Configuration</h4>
+              
+              <div className="space-y-2">
+                <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] block font-bold">Google Web App URL</label>
+                <input
+                  type="url"
+                  value={sheetUrl}
+                  onChange={e => setSheetUrl(e.target.value)}
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  className="w-full bg-white border border-[#1c1c18]/10 p-3 text-xs outline-none focus:border-[#a3851a] font-mono text-[#1c1c18]"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveUrl}
+                  className="flex-1 border border-[#1c1c18]/20 hover:border-[#1c1c18] text-[#1c1c18] py-3 text-[10px] uppercase tracking-widest font-black rounded transition-all"
+                >
+                  Save URL
+                </button>
+                <button
+                  onClick={handleSyncToSheets}
+                  disabled={syncStatus === 'syncing' || !sheetUrl}
+                  className="flex-1 bg-[#9eff00] hover:bg-[#82d100] disabled:bg-neutral-200 text-black disabled:text-neutral-500 py-3 text-[10px] uppercase tracking-widest font-black rounded transition-all shadow-sm"
+                >
+                  {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Stock'}
+                </button>
+              </div>
+
+              {syncStatus === 'success' && (
+                <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-center font-body text-[10px] font-bold uppercase tracking-wider rounded">
+                  🟢 Stock Sync Completed
+                </div>
+              )}
+
+              {syncStatus === 'failed' && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded space-y-1">
+                  <p className="font-body text-[10px] font-bold uppercase tracking-wider text-center">🔴 Sync Failed</p>
+                  <p className="font-body text-[8px] leading-relaxed text-red-600">{syncError}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

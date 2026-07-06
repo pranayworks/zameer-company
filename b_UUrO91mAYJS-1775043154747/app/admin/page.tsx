@@ -23,32 +23,35 @@ const GOOGLE_APPS_SCRIPT_CODE = `function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // Process categories (Sarees, Men, Women, Jewellery)
-    for (const category in data) {
-      let sheet = ss.getSheetByName(category);
+    for (const sheetName in data) {
+      let sheet = ss.getSheetByName(sheetName);
       if (!sheet) {
-        sheet = ss.insertSheet(category);
+        sheet = ss.insertSheet(sheetName);
       } else {
         sheet.clear();
       }
       
-      const items = data[category];
+      const items = data[sheetName];
       if (items && items.length > 0) {
-        // Headers
-        const headers = ["ID", "Title", "Price", "Stock", "Rating", "Reviews", "Image URL"];
+        // Collect all unique keys from all items to build dynamic headers
+        const keySet = {};
+        items.forEach(item => {
+          Object.keys(item).forEach(k => { keySet[k] = true; });
+        });
+        const headers = Object.keys(keySet);
+        
         sheet.appendRow(headers);
         sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f3f3");
         
-        // Rows
-        const rows = items.map(item => [
-          item.id,
-          item.title,
-          typeof item.price === 'number' ? item.price : parseFloat((item.price || "0").toString().replace(/[^0-9.]/g, '')),
-          item.stock || 0,
-          item.rating || 0,
-          item.reviews || 0,
-          item.image || ""
-        ]);
+        // Build rows matching the headers order
+        const rows = items.map(item => {
+          return headers.map(header => {
+            const val = item[header];
+            if (val === null || val === undefined) return "";
+            if (typeof val === 'object') return JSON.stringify(val);
+            return val;
+          });
+        });
         
         sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
       }
@@ -111,10 +114,11 @@ export default function AdminDashboard() {
     setSyncError(null)
     
     try {
-      const categoriesGroup: Record<string, Product[]> = {}
+      const categoriesGroup: Record<string, any[]> = {}
       CATEGORIES.forEach(cat => {
         categoriesGroup[cat] = products.filter(p => p.category === cat)
       })
+      categoriesGroup['Shipment Log'] = orders
       
       const response = await fetch(sheetUrl.trim(), {
         method: 'POST',
@@ -423,7 +427,7 @@ export default function AdminDashboard() {
               
               <div className="space-y-4 font-body text-xs text-[#747878] leading-relaxed">
                 <p>
-                  This integration automatically synchronizes all boutique items categorized by tab: <strong>Sarees</strong>, <strong>Men</strong>, <strong>Women</strong>, and <strong>Jewellery</strong>.
+                  This integration automatically synchronizes all boutique items and operations logs categorized by tabs: <strong>Sarees</strong>, <strong>Men</strong>, <strong>Women</strong>, <strong>Jewellery</strong>, and <strong>Shipment Log</strong>.
                 </p>
                 <div className="bg-[#fdf9f2] p-4 border border-[#1c1c18]/5 space-y-2 rounded">
                   <p className="font-bold text-[#1c1c18]">Quick Setup Instructions:</p>
@@ -491,13 +495,13 @@ export default function AdminDashboard() {
                   disabled={syncStatus === 'syncing' || !sheetUrl}
                   className="flex-1 bg-[#9eff00] hover:bg-[#82d100] disabled:bg-neutral-200 text-black disabled:text-neutral-500 py-3 text-[10px] uppercase tracking-widest font-black rounded transition-all shadow-sm"
                 >
-                  {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Stock'}
+                  {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Stock & Logs'}
                 </button>
               </div>
 
               {syncStatus === 'success' && (
                 <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-center font-body text-[10px] font-bold uppercase tracking-wider rounded">
-                  🟢 Stock Sync Completed
+                  🟢 Sync Completed
                 </div>
               )}
 

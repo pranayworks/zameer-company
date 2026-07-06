@@ -82,7 +82,7 @@ export function CategoriesGrid() {
           <Link 
             key={category.label} 
             href={category.href}
-            className={`${category.span} group relative overflow-hidden bg-[#e6e2db] cursor-pointer block`}
+            className={`${category.span} group relative overflow-hidden bg-[#e6e2db] cursor-pointer block h-[380px] md:h-full`}
           >
             <motion.div
               className="w-full h-full relative"

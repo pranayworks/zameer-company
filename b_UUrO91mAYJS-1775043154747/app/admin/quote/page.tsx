@@ -26,6 +26,7 @@ export default function QuotationCreatorPage() {
   const [deliveryCost, setDeliveryCost] = useState(15000) // Default delivery cost in MK
   const [currencySymbol, setCurrencySymbol] = useState('MK') // Malawi Kwacha default for Entire Printers
   const [sigImage, setSigImage] = useState<string | null>(null)
+  const [signatoryRole, setSignatoryRole] = useState<'ceo' | 'founder'>('ceo')
 
   const [items, setItems] = useState<QuoteItem[]>([
     { description: '', quantity: 1, rate: 0 }
@@ -228,9 +229,22 @@ export default function QuotationCreatorPage() {
                 />
               </div>
 
+              {/* Signatory Select Dropdown */}
+              <div className="space-y-2 pt-2 border-t border-[#1c1c18]/5">
+                <label className="uppercase tracking-widest text-[9px] text-[#747878] font-bold block">Signatory Representative</label>
+                <select
+                  value={signatoryRole}
+                  onChange={e => setSignatoryRole(e.target.value as 'ceo' | 'founder')}
+                  className="w-full bg-[#fdf9f2] border-b border-[#1c1c18]/10 p-3 text-xs outline-none focus:border-[#a3851a] cursor-pointer"
+                >
+                  <option value="ceo">M. Pranay Kumar (CEO)</option>
+                  <option value="founder">Zameer Pattan (Founder)</option>
+                </select>
+              </div>
+
               {/* Signature Upload */}
               <div className="space-y-2 pt-2 border-t border-[#1c1c18]/5">
-                <label className="uppercase tracking-widest text-[9px] text-[#747878] font-bold block">CEO Signature Upload</label>
+                <label className="uppercase tracking-widest text-[9px] text-[#747878] font-bold block">Signature Image Upload</label>
                 <input
                   type="file" accept="image/*" onChange={handleSigUpload}
                   className="w-full text-xs text-[#747878] file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[9px] file:uppercase file:tracking-wider file:font-black file:bg-[#1c1c18] file:text-white hover:file:bg-[#a3851a] file:cursor-pointer"
@@ -380,12 +394,16 @@ export default function QuotationCreatorPage() {
               </div>
               <div className="w-48 text-center flex flex-col items-center justify-end min-h-[80px]">
                 {sigImage ? (
-                  <img src={sigImage} alt="CEO Signature" className="max-h-12 max-w-[150px] object-contain mb-2" />
+                  <img src={sigImage} alt="Signature" className="max-h-12 max-w-[150px] object-contain mb-2" />
                 ) : (
                   <div className="border-b border-neutral-400 w-full h-10 mb-2"></div>
                 )}
-                <p className="uppercase tracking-widest font-bold text-[#0f172a] text-[9px]">M. Pranay Kumar</p>
-                <p className="uppercase tracking-[0.2em] text-[7px] text-[#747878] mt-0.5 font-bold">CEO Signature</p>
+                <p className="uppercase tracking-widest font-bold text-[#0f172a] text-[9px]">
+                  {signatoryRole === 'ceo' ? 'M. Pranay Kumar' : 'Zameer Pattan'}
+                </p>
+                <p className="uppercase tracking-[0.2em] text-[7px] text-[#747878] mt-0.5 font-bold">
+                  {signatoryRole === 'ceo' ? 'CEO Signature' : 'Founder Signature'}
+                </p>
               </div>
             </div>
           </div>

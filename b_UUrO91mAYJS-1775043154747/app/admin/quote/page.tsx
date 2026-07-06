@@ -25,10 +25,22 @@ export default function QuotationCreatorPage() {
   const [leadTime, setLeadTime] = useState('5-7 Business Days')
   const [deliveryCost, setDeliveryCost] = useState(15000) // Default delivery cost in MK
   const [currencySymbol, setCurrencySymbol] = useState('MK') // Malawi Kwacha default for Entire Printers
+  const [sigImage, setSigImage] = useState<string | null>(null)
 
   const [items, setItems] = useState<QuoteItem[]>([
     { description: '', quantity: 1, rate: 0 }
   ])
+
+  const handleSigUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setSigImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleAddItem = () => {
     setItems([...items, { description: '', quantity: 1, rate: 0 }])
@@ -148,6 +160,23 @@ export default function QuotationCreatorPage() {
                   type="date" value={validUntil} onChange={e => setValidUntil(e.target.value)}
                   className="w-full bg-[#fdf9f2] border border-[#1c1c18]/10 p-2 outline-none focus:border-[#a3851a]"
                 />
+              </div>
+
+              {/* Signature Upload */}
+              <div className="space-y-2 pt-2 border-t border-[#1c1c18]/5">
+                <label className="uppercase tracking-widest text-[9px] text-[#747878] font-bold block">CEO Signature Upload</label>
+                <input
+                  type="file" accept="image/*" onChange={handleSigUpload}
+                  className="w-full text-xs text-[#747878] file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[9px] file:uppercase file:tracking-wider file:font-black file:bg-[#1c1c18] file:text-white hover:file:bg-[#a3851a] file:cursor-pointer"
+                />
+                {sigImage && (
+                  <button 
+                    onClick={() => setSigImage(null)}
+                    className="text-[9px] uppercase tracking-widest text-red-500 font-bold hover:underline block"
+                  >
+                    Remove Signature
+                  </button>
+                )}
               </div>
             </div>
 
@@ -278,9 +307,20 @@ export default function QuotationCreatorPage() {
             </div>
 
             {/* Terms and Specifications footer */}
-            <div className="border-t border-slate-200 pt-6 font-body text-[10px] text-slate-500 leading-relaxed">
-              <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#0f172a' }}>Terms & Specifications:</p>
-              <p>This quotation is valid for 30 days from the date of issue. Production begins upon a 50% deposit clearance, with the balance due immediately upon delivery verification. Price quotes are in the specified currency.</p>
+            <div className="border-t border-slate-200 pt-6 flex justify-between items-end font-body text-[10px] text-slate-500 leading-relaxed">
+              <div className="max-w-md">
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#0f172a' }}>Terms & Specifications:</p>
+                <p>This quotation is valid for 30 days from the date of issue. Production begins upon a 50% deposit clearance, with the balance due immediately upon delivery verification. Price quotes are in the specified currency.</p>
+              </div>
+              <div className="w-48 text-center flex flex-col items-center justify-end min-h-[80px]">
+                {sigImage ? (
+                  <img src={sigImage} alt="CEO Signature" className="max-h-12 max-w-[150px] object-contain mb-2" />
+                ) : (
+                  <div className="border-b border-neutral-400 w-full h-10 mb-2"></div>
+                )}
+                <p className="uppercase tracking-widest font-bold text-[#0f172a] text-[9px]">M. Pranay Kumar</p>
+                <p className="uppercase tracking-[0.2em] text-[7px] text-[#747878] mt-0.5 font-bold">CEO Signature</p>
+              </div>
             </div>
           </div>
         </div>

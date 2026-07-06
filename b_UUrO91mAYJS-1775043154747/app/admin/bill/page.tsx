@@ -26,10 +26,22 @@ export default function BillBookPage() {
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
   const [paymentMode, setPaymentMode] = useState('Bank Transfer')
   const [taxRate, setTaxRate] = useState(15) // Default VAT
+  const [sigImage, setSigImage] = useState<string | null>(null)
   
   const [items, setItems] = useState<InvoiceItem[]>([
     { description: '', quantity: 1, price: 0 }
   ])
+
+  const handleSigUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setSigImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleAddItem = () => {
     setItems([...items, { description: '', quantity: 1, price: 0 }])
@@ -152,6 +164,23 @@ export default function BillBookPage() {
                     className="w-full bg-[#fdf9f2] border border-[#1c1c18]/10 p-2 outline-none focus:border-[#a3851a]"
                   />
                 </div>
+              </div>
+
+              {/* Signature Upload */}
+              <div className="space-y-2 pt-2 border-t border-[#1c1c18]/5">
+                <label className="uppercase tracking-widest text-[9px] text-[#747878] font-bold block">CEO Signature Upload</label>
+                <input
+                  type="file" accept="image/*" onChange={handleSigUpload}
+                  className="w-full text-xs text-[#747878] file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-[9px] file:uppercase file:tracking-wider file:font-black file:bg-[#1c1c18] file:text-white hover:file:bg-[#a3851a] file:cursor-pointer"
+                />
+                {sigImage && (
+                  <button 
+                    onClick={() => setSigImage(null)}
+                    className="text-[9px] uppercase tracking-widest text-red-500 font-bold hover:underline block"
+                  >
+                    Remove Signature
+                  </button>
+                )}
               </div>
             </div>
 
@@ -290,9 +319,14 @@ export default function BillBookPage() {
                 <span className="uppercase tracking-widest text-[#a3851a] font-bold block mb-1">Boutique Specifications</span>
                 <p>Please clear the estimated total within 14 days of invoice issue. Standard custom orders are finalized upon deposit clearance and adhere to our boutique preservation guidelines.</p>
               </div>
-              <div className="w-48 text-center">
-                <div className="border-b border-neutral-400 h-10 mb-2"></div>
-                <p className="uppercase tracking-widest">Authorized Signature</p>
+              <div className="w-48 text-center flex flex-col items-center justify-end min-h-[80px]">
+                {sigImage ? (
+                  <img src={sigImage} alt="CEO Signature" className="max-h-12 max-w-[150px] object-contain mb-2" />
+                ) : (
+                  <div className="border-b border-neutral-400 w-full h-10 mb-2"></div>
+                )}
+                <p className="uppercase tracking-widest font-bold text-[#1c1c18] text-[9px]">M. Pranay Kumar</p>
+                <p className="uppercase tracking-[0.2em] text-[7px] text-[#747878] mt-0.5 font-bold">CEO Signature</p>
               </div>
             </div>
           </div>

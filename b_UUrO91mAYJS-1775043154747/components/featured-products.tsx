@@ -44,39 +44,42 @@ export function FeaturedProducts() {
             The Seasonal Edit
           </h2>
         </div>
-        <motion.a
-          href="#"
-          className="font-body uppercase tracking-widest text-xs text-[#1c1b1b] border-b border-[#1c1b1b]/20 hover:border-[#1c1b1b] transition-all pb-1"
-          whileHover={{ x: 5 }}
-        >
-          View Collection
-        </motion.a>
+        <div className="flex items-center gap-6">
+          <motion.a
+            href="/sarees"
+            className="font-body uppercase tracking-widest text-xs text-[#1c1b1b] border-b border-[#1c1b1b]/20 hover:border-[#1c1b1b] transition-all pb-1 hidden sm:block"
+            whileHover={{ x: 5 }}
+          >
+            View Collection
+          </motion.a>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={() => scroll('left')}
+              className="w-10 h-10 rounded-full border border-[#1c1b1b]/20 flex items-center justify-center hover:bg-[#1c1b1b] hover:text-white transition-all text-[#1c1b1b]"
+              aria-label="Previous products"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+            <button 
+              onClick={() => scroll('right')}
+              className="w-10 h-10 rounded-full border border-[#1c1b1b]/20 flex items-center justify-center hover:bg-[#1c1b1b] hover:text-white transition-all text-[#1c1b1b]"
+              aria-label="Next products"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+          </div>
+        </div>
       </motion.div>
 
       <div className="relative group/carousel -mx-4 px-4">
-        {/* Left Arrow */}
-        <button 
-          onClick={() => scroll('left')} 
-          className="absolute top-[40%] -translate-y-1/2 left-0 md:-left-4 z-20 w-12 h-12 bg-white/90 shadow-2xl rounded-full flex items-center justify-center text-[#1c1c18] hover:bg-[#a3851a] hover:text-white transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0"
-        >
-          <span className="material-symbols-outlined">chevron_left</span>
-        </button>
-
-        {/* Right Arrow */}
-        <button 
-          onClick={() => scroll('right')} 
-          className="absolute top-[40%] -translate-y-1/2 right-0 md:-right-4 z-20 w-12 h-12 bg-white/90 shadow-2xl rounded-full flex items-center justify-center text-[#1c1c18] hover:bg-[#a3851a] hover:text-white transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0"
-        >
-          <span className="material-symbols-outlined">chevron_right</span>
-        </button>
-
         <div 
           ref={scrollRef} 
           className="flex overflow-x-auto snap-x snap-mandatory gap-8 pb-12 scrollbar-none" 
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {products.map((product, index) => (
-            <div key={product.id} className="snap-start shrink-0 w-[85vw] sm:w-[45vw] md:w-[35vw] lg:w-[28vw] xl:w-[22vw]">
+            <div key={product.id} className="snap-start shrink-0 w-[76vw] sm:w-[45vw] md:w-[35vw] lg:w-[28vw] xl:w-[22vw]">
               <ProductCard
                 id={product.id}
                 title={product.title}

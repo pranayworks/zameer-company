@@ -279,7 +279,7 @@ export default function BillBookPage() {
               {/* Header */}
               <div className="flex justify-between items-start border-b-2 border-[#a3851a] pb-6 mb-8">
                 <div>
-                  <h1 className="font-headline text-3xl text-[#1c1b1b] uppercase tracking-wider margin-0">Atelier Heritage</h1>
+                  <h1 className="font-headline text-3xl text-[#1c1b1b] uppercase tracking-wider margin-0">Friends of 4</h1>
                   <p className="font-body text-[9px] text-[#747878] uppercase tracking-[0.2em] mt-1">Boutique of Curated Tradition</p>
                 </div>
                 <div className="text-right">

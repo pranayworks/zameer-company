@@ -36,7 +36,64 @@ export default function QuotationCreatorPage() {
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setSigImage(reader.result as string)
+        const base64 = reader.result as string
+        
+        // Process image to remove background and make strokes bold
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) {
+            setSigImage(base64)
+            return
+          }
+          
+          // Draw bold offsets (up, down, left, right, and diagonals) to make the strokes thicker/bold
+          ctx.drawImage(img, -1.5, 0)
+          ctx.drawImage(img, 1.5, 0)
+          ctx.drawImage(img, 0, -1.5)
+          ctx.drawImage(img, 0, 1.5)
+          ctx.drawImage(img, -1, -1)
+          ctx.drawImage(img, 1, 1)
+          ctx.drawImage(img, 0, 0)
+          
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const data = imgData.data
+          
+          // Find max brightness (background level)
+          let maxB = 0
+          for (let i = 0; i < data.length; i += 4) {
+            const b = (data[i] + data[i + 1] + data[i + 2]) / 3
+            if (b > maxB) maxB = b
+          }
+          
+          // Adaptive threshold
+          const threshold = Math.max(130, maxB - 45)
+          
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i]
+            const g = data[i + 1]
+            const b = data[i + 2]
+            const brightness = (r + g + b) / 3
+            
+            if (brightness > threshold) {
+              // Make background fully transparent
+              data[i + 3] = 0
+            } else {
+              // Force dark ink to solid black
+              data[i] = 12   // Very dark ink black
+              data[i + 1] = 12
+              data[i + 2] = 12
+              data[i + 3] = 255
+            }
+          }
+          
+          ctx.putImageData(imgData, 0, 0)
+          setSigImage(canvas.toDataURL('image/png'))
+        }
+        img.src = base64
       }
       reader.readAsDataURL(file)
     }

@@ -332,7 +332,7 @@ export default function AdminDashboard() {
         {/* Section: Orders & Archive */}
         <div>
           <h2 className="font-headline text-3xl tracking-tight mb-8">Operations</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Active Orders Card */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }} 
@@ -404,6 +404,62 @@ export default function AdminDashboard() {
 
                   <div className="mt-6 pt-4 border-t border-[#1c1c18]/5 flex items-center justify-between">
                     <span className="font-body text-[9px] uppercase tracking-widest text-[#a3851a] group-hover:text-[#1c1c18] font-bold transition-colors">View Archive</span>
+                    <span className="material-symbols-outlined text-sm text-[#a3851a] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </div>
+                </div>
+            </motion.div>
+
+            {/* Bill Book Creator Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.7 }}
+              onClick={() => router.push('/admin/bill')}
+              className="block bg-white border border-[#1c1c18]/5 p-8 shadow-sm hover:shadow-xl hover:border-[#a3851a]/30 transition-all group relative overflow-hidden cursor-pointer"
+            >
+                <span className="material-symbols-outlined text-[120px] absolute -bottom-4 -right-4 text-[#1c1c18]/[0.03] group-hover:text-[#a3851a]/[0.08] transition-colors">receipt_long</span>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-[#1c1c18] flex items-center justify-center mb-6">
+                    <span className="material-symbols-outlined text-xl text-white">receipt_long</span>
+                  </div>
+                  <h3 className="font-headline text-2xl mb-1">Bill Book Creator</h3>
+                  <p className="font-body text-[10px] text-[#747878] mb-6">Generate, customize, and print customer invoice bills</p>
+
+                  <div className="pt-2">
+                    <p className="font-body text-[9px] uppercase tracking-widest text-[#a3851a] font-bold">Standard Formats</p>
+                    <p className="font-headline text-2xl text-[#1c1c18] mt-1">VAT Enabled</p>
+                  </div>
+
+                  <div className="mt-14 pt-4 border-t border-[#1c1c18]/5 flex items-center justify-between">
+                    <span className="font-body text-[9px] uppercase tracking-widest text-[#a3851a] group-hover:text-[#1c1c18] font-bold transition-colors">Create Invoice</span>
+                    <span className="material-symbols-outlined text-sm text-[#a3851a] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </div>
+                </div>
+            </motion.div>
+
+            {/* Quotation Creator Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.8 }}
+              onClick={() => router.push('/admin/quote')}
+              className="block bg-white border border-[#1c1c18]/5 p-8 shadow-sm hover:shadow-xl hover:border-[#a3851a]/30 transition-all group relative overflow-hidden cursor-pointer"
+            >
+                <span className="material-symbols-outlined text-[120px] absolute -bottom-4 -right-4 text-[#1c1c18]/[0.03] group-hover:text-[#a3851a]/[0.08] transition-colors">request_quote</span>
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-[#1c1c18] flex items-center justify-center mb-6">
+                    <span className="material-symbols-outlined text-xl text-white">request_quote</span>
+                  </div>
+                  <h3 className="font-headline text-2xl mb-1">Quotation Creator</h3>
+                  <p className="font-body text-[10px] text-[#747878] mb-6">Generate, customize, and print business cost quotations</p>
+
+                  <div className="pt-2">
+                    <p className="font-body text-[9px] uppercase tracking-widest text-[#a3851a] font-bold">Client Proposals</p>
+                    <p className="font-headline text-2xl text-[#1c1c18] mt-1">Multi-Currency</p>
+                  </div>
+
+                  <div className="mt-14 pt-4 border-t border-[#1c1c18]/5 flex items-center justify-between">
+                    <span className="font-body text-[9px] uppercase tracking-widest text-[#a3851a] group-hover:text-[#1c1c18] font-bold transition-colors">Create Quotation</span>
                     <span className="material-symbols-outlined text-sm text-[#a3851a] group-hover:translate-x-1 transition-transform">arrow_forward</span>
                   </div>
                 </div>

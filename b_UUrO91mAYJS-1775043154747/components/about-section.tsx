@@ -104,13 +104,8 @@ export function AboutSection() {
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
               >
                 <div className="relative aspect-[2/3] mb-6 overflow-hidden bg-[#1c1c18]/5">
-                  <motion.div
-                    className="w-full h-full"
-                    variants={{
-                      hoverState: { filter: "grayscale(0)", scale: 1.05 }
-                    }}
-                    initial={{ filter: isMobile ? "grayscale(0)" : "grayscale(1)", scale: 1 }}
-                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                  <div
+                    className="w-full h-full relative transition-all duration-700 ease-out filter grayscale-0 md:grayscale group-hover:grayscale-0 group-hover:scale-105"
                   >
                     <Image
                       src={person.img}
@@ -118,7 +113,7 @@ export function AboutSection() {
                       fill
                       className="object-cover object-top"
                     />
-                  </motion.div>
+                  </div>
                 </div>
                 <div className="flex justify-between items-end mb-3 border-b border-[#1c1c18]/10 pb-2">
                   <h4 className="font-headline text-2xl text-[#1c1c18]">{person.name}</h4>

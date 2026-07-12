@@ -260,10 +260,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           email: profile?.email || 'No Email provided',
           phone: profile?.phone || 'No Phone provided',
           address: fullAddress,
-          product_name: item.name,
+          product_name: `${item.name} (Qty: ${item.quantity})`,
           size: item.selectedSize || 'Standard',
           color: item.selectedColor || 'Default',
-          price: price,
+          price: price * item.quantity,
           order_id: checkoutOrderId,
           order_status: 'Preparing',
           payment_status: 'Paid'

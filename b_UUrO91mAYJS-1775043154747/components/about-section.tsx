@@ -24,7 +24,8 @@ export function AboutSection() {
     // ... rest of the component
     { name: 'Pattan Zameer', role: 'FOUNDER', desc: 'Pattan Zameer is the Founder of the company and the driving force behind its creation. He defines the vision, business model, and long-term goals. With strong knowledge of business and Indian stock markets, he focuses on strategic planning, investment decisions, and identifying profitable opportunities. He guides the leadership team and ensures the company grows in the right direction.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775091849/WhatsApp_Image_2026-04-02_at_6.32.32_AM_zommec.jpg' },
     { name: 'M. Pranay Kumar', role: 'CEO', desc: 'M. Pranay Kumar is responsible for executing the vision set by the founder. As CEO, he manages the overall business activities, leads the team, and ensures daily operations align with company goals. He focuses on growth, sales performance, and building the brand in the e-commerce market.', img: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775438058/WhatsApp_Image_2026-04-06_at_6.38.31_AM_sxtmuk.jpg' },
-    { name: 'Kusanapudi Reshwanth', role: 'CMO', desc: 'Kusanapudi Reshwanth leads the marketing vision of the company. As CMO, he drives brand awareness, audience engagement, and digital growth strategies. A passionate student at NIT Pondicherry, he brings a fresh, data-driven perspective to building the brand\'s voice and expanding its reach across markets.', img: '/reshwanth_cmo.jpg' }
+    { name: 'Kusanapudi Reshwanth', role: 'COO', desc: 'Kusanapudi Reshwanth leads the core operations of the company. As COO, he manages inventory, supplier relationships, order processing, and delivery logistics. A passionate student at NIT Pondicherry, he brings a fresh, data-driven approach to ensuring smooth and efficient day-to-day functioning of the business.', img: '/reshwanth_cmo.jpg' },
+    { name: 'Sai Kumar', role: 'CFO', desc: 'Sai Kumar oversees the financial side of the business. He manages budgeting, tracks expenses and profits, sets pricing strategies, and ensures financial stability. His role is key to maintaining profitability and sustainable growth.', img: '/placeholder-user.jpg' }
   ]
 
   return (
@@ -90,7 +91,7 @@ export function AboutSection() {
             <div className="h-[1px] w-24 bg-[#a3851a] mx-auto" />
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 max-w-7xl mx-auto">
             {visionaries.map((person, idx) => (
               <motion.div
                 key={person.name}

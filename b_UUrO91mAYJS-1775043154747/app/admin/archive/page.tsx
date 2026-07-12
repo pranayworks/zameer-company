@@ -214,9 +214,22 @@ export default function AdminArchivePage() {
                       <div className="text-[9px] text-[#747878]">{new Date(order.created_at).toLocaleDateString()}</div>
                     </td>
                     <td className="p-6">
-                      <div className="text-xs font-bold">{order.customer_name}</div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <div className="text-xs font-bold">{order.customer_name}</div>
+                        {order.customer_segment && (
+                          <span className={`text-[7px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded-sm ${order.customer_segment === 'VIP' ? 'bg-[#a3851a] text-white' : order.customer_segment === 'New' ? 'bg-green-600 text-white' : 'bg-neutral-200 text-[#747878]'}`}>
+                            {order.customer_segment}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-[#747878]">{order.phone}</div>
-                      <div className="text-[10px] text-[#a3851a] font-bold mt-1">{order.product_name}</div>
+                      {order.loyalty_points !== undefined && (
+                        <p className="text-[9px] text-[#a3851a] font-bold mt-0.5">⭐ {order.loyalty_points} Points</p>
+                      )}
+                      {order.user_id && (
+                        <p className="text-[8px] text-[#747878]/50 font-mono mt-0.5 select-all">UID: {order.user_id}</p>
+                      )}
+                      <div className="text-[10px] text-[#a3851a] font-bold mt-2">{order.product_name}</div>
                       <div className="text-[8px] text-[#747878] uppercase mt-0.5">{order.size} • {order.color}</div>
                     </td>
                     <td className="p-6">

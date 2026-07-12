@@ -171,9 +171,22 @@ export default function AdminOrdersPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-5 border-t border-[#1c1c18]/5">
                       <div>
                         <span className="font-body text-[9px] uppercase tracking-widest text-[#747878] block mb-1">Customer</span>
-                        <p className="font-bold text-sm">{order.customer_name}</p>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <p className="font-bold text-sm">{order.customer_name}</p>
+                          {order.customer_segment && (
+                            <span className={`text-[7px] uppercase tracking-widest font-black px-1.5 py-0.5 rounded-sm ${order.customer_segment === 'VIP' ? 'bg-[#a3851a] text-white' : order.customer_segment === 'New' ? 'bg-green-600 text-white' : 'bg-neutral-200 text-[#747878]'}`}>
+                              {order.customer_segment}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-[#747878]">{order.email}</p>
                         <p className="text-[11px] text-[#747878]">{order.phone}</p>
+                        {order.loyalty_points !== undefined && (
+                          <p className="text-[10px] text-[#a3851a] font-bold mt-1">⭐ {order.loyalty_points} Points</p>
+                        )}
+                        {order.user_id && (
+                          <p className="text-[9px] text-[#747878]/50 font-mono mt-1 select-all">UID: {order.user_id}</p>
+                        )}
                       </div>
                       <div>
                         <span className="font-body text-[9px] uppercase tracking-widest text-[#747878] block mb-1">Shipping Address</span>

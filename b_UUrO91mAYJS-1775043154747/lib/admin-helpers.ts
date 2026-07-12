@@ -43,6 +43,9 @@ export interface Order {
   order_status: string
   created_at: string
   shipment_id?: string
+  user_id?: string
+  customer_segment?: string
+  loyalty_points?: number
 }
 
 export const ADMIN_EMAILS = [
@@ -97,8 +100,34 @@ export async function fetchProductsByCategory(category: string): Promise<Product
 }
 
 export async function fetchAllOrders(): Promise<Order[]> {
-  const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
-  return (data || []) as Order[]
+  const { data: ordersData } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+  const orders = (ordersData || []) as Order[]
+  
+  try {
+    const userIds = Array.from(new Set(orders.map(o => o.user_id).filter(Boolean)))
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, customer_segment, loyalty_points')
+        .in('id', userIds)
+      
+      if (profilesData) {
+        const profileMap = new Map(profilesData.map(p => [p.id, p]))
+        return orders.map(o => {
+          const profile = o.user_id ? profileMap.get(o.user_id) : null
+          return {
+            ...o,
+            customer_segment: profile?.customer_segment || 'Regular',
+            loyalty_points: profile?.loyalty_points || 0
+          }
+        })
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to join user profiles for orders:", e)
+  }
+  
+  return orders
 }
 
 export async function deleteProduct(id: string): Promise<{ success: boolean; error?: string }> {

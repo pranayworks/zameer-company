@@ -45,6 +45,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
   const { showToast } = useToast()
   const [quantity, setQuantity] = useState(1)
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false)
+  const [fitHeight, setFitHeight] = useState('')
+  const [fitChest, setFitChest] = useState('')
+  const [calculatedFit, setCalculatedFit] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<string | null>('fabric')
@@ -124,10 +128,15 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
         const { data: revs } = await supabase.from('reviews').select('*').eq('product_id', trimmedId).order('created_at', { ascending: false }).limit(4)
         if (revs) setCommunityReviews(revs)
 
+        // Editorial Recommendations ("Complete the Look")
+        const recommendationCategories = p.category === 'Jewellery'
+          ? ['Sarees', 'Women', 'Men']
+          : ['Jewellery'];
+
         const { data: related } = await supabase
           .from('products')
           .select('*')
-          .eq('category', p.category)
+          .in('category', recommendationCategories)
           .neq('id', trimmedId)
           .limit(20)
         
@@ -306,7 +315,15 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
 
               {product.sizes && product.sizes.length > 0 && (
                 <div className="mb-8">
-                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">Select Size</span>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878]">Select Size</span>
+                    <button 
+                      onClick={() => setIsSizeGuideOpen(true)}
+                      className="font-body text-[9px] uppercase tracking-widest text-[#a3851a] font-bold border-b border-[#a3851a] pb-0.5 hover:text-[#1c1c18] hover:border-[#1c1c18] transition-colors"
+                    >
+                      Size Guide & Fit Finder
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-4">{product.sizes.map((size) => <button key={size} onClick={() => setSelectedSize(size)} className={`h-12 px-6 border transition-all ${selectedSize === size ? 'border-[#a3851a] bg-[#a3851a] text-white font-bold' : 'border-[#1c1c18]/20 hover:border-[#1c1c18]'} font-body text-xs uppercase tracking-widest`}>{size}</button>)}</div>
                 </div>
               )}
@@ -350,10 +367,10 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
           <div className="mt-24 border-t border-[#1c1c18]/10 pt-16">
             <div className="mb-12 text-center lg:text-left">
               <span className="font-body text-[10px] uppercase tracking-[0.3em] text-[#a3851a] mb-2 block">
-                Discover More
+                Editorial Styling
               </span>
               <h2 className="font-headline text-4xl lg:text-5xl text-[#1c1c18] uppercase tracking-tight">
-                Some More Collection
+                Complete The Look
               </h2>
             </div>
             
@@ -375,6 +392,199 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </main>
+      
+      {/* Size Guide & Fit Finder Drawer */}
+      <AnimatePresence>
+        {isSizeGuideOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setIsSizeGuideOpen(false); setCalculatedFit(null); }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-lg z-[100]"
+            />
+
+            {/* Slide-out Drawer Container */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed top-0 right-0 h-[100dvh] w-full max-w-lg bg-[#fdf9f2]/90 backdrop-blur-2xl border-l border-white/20 z-[101] shadow-[0_0_50px_rgba(0,0,0,0.35)] flex flex-col font-body"
+            >
+              {/* Header */}
+              <div className="p-8 border-b border-[#1c1c18]/5 flex justify-between items-center bg-white/30 backdrop-blur-md shrink-0">
+                <div>
+                  <h2 className="font-headline text-2xl tracking-tighter">Size Guide & Fit Finder</h2>
+                  <p className="font-body text-[10px] text-[#a3851a] uppercase tracking-widest mt-1">Curate your perfect fit</p>
+                </div>
+                <button
+                  onClick={() => { setIsSizeGuideOpen(false); setCalculatedFit(null); }}
+                  className="material-symbols-outlined text-[#1c1b1b] hover:rotate-90 transition-transform duration-500"
+                >
+                  close
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-10">
+                
+                {/* 1. Interactive Fit Finder Calculator */}
+                <div className="bg-white border border-[#1c1c18]/5 p-6 shadow-sm">
+                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#a3851a] font-bold block mb-4">🔮 Smart Fit Finder</span>
+                  <p className="text-[11px] text-[#747878] leading-relaxed mb-6">
+                    Enter your measurements below and our smart calculator will recommend the ideal size.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="space-y-2">
+                      <label className="text-[9px] uppercase tracking-widest text-[#747878] font-bold block">Height (cm)</label>
+                      <input 
+                        type="number" 
+                        value={fitHeight} 
+                        onChange={(e) => setFitHeight(e.target.value)} 
+                        placeholder="e.g. 175" 
+                        className="w-full bg-[#fdf9f2] border border-[#1c1c18]/10 p-3 text-xs outline-none focus:border-[#a3851a] text-[#1c1c18]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] uppercase tracking-widest text-[#747878] font-bold block">Chest/Bust (inches)</label>
+                      <input 
+                        type="number" 
+                        value={fitChest} 
+                        onChange={(e) => setFitChest(e.target.value)} 
+                        placeholder="e.g. 38" 
+                        className="w-full bg-[#fdf9f2] border border-[#1c1c18]/10 p-3 text-xs outline-none focus:border-[#a3851a] text-[#1c1c18]"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const h = parseFloat(fitHeight)
+                      const c = parseFloat(fitChest)
+                      if (!h || !c) {
+                        alert("Please fill in both height and chest measurements.");
+                        return;
+                      }
+                      
+                      let recommended = 'M';
+                      if (product.category === 'Men') {
+                        if (c <= 37) recommended = '38R (S)';
+                        else if (c <= 39) recommended = '40R (M)';
+                        else if (c <= 41) recommended = '42R (L)';
+                        else recommended = '44R (XL)';
+                      } else { // Women/Sarees/General
+                        if (c <= 34) recommended = 'S';
+                        else if (c <= 37) recommended = 'M';
+                        else if (c <= 40) recommended = 'L';
+                        else recommended = 'XL';
+                      }
+                      setCalculatedFit(recommended);
+                    }}
+                    className="w-full bg-[#1c1c18] text-white py-4 font-body uppercase tracking-[0.2em] text-[10px] font-bold hover:bg-[#a3851a] transition-all shadow-md"
+                  >
+                    Calculate Recommended Fit
+                  </button>
+
+                  {calculatedFit && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      className="mt-6 p-4 bg-[#a3851a]/5 border border-[#a3851a]/20 text-center"
+                    >
+                      <span className="text-[9px] uppercase tracking-widest text-[#747878] block">Your Suggested Size</span>
+                      <span className="font-headline text-3xl text-[#a3851a] font-bold block mt-1">{calculatedFit}</span>
+                      <button 
+                        onClick={() => {
+                          const cleanSize = calculatedFit.includes('(') ? calculatedFit.split('(')[1].replace(')', '') : calculatedFit;
+                          setSelectedSize(cleanSize);
+                          setIsSizeGuideOpen(false);
+                          setCalculatedFit(null);
+                          showToast(`Size ${cleanSize} selected!`, 'success', 'check_circle');
+                        }}
+                        className="text-[9px] uppercase tracking-widest text-[#1c1c18] border-b border-[#1c1c18] font-bold pb-0.5 mt-3 hover:text-[#a3851a] hover:border-[#a3851a] transition-colors"
+                      >
+                        Apply Size Select
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* 2. Official Measurement Chart */}
+                <div className="space-y-4">
+                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] font-bold block">📊 Measurement Matrix ({product.category})</span>
+                  <div className="border border-[#1c1c18]/10 bg-white overflow-hidden shadow-sm">
+                    {product.category === 'Men' ? (
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#1c1c18]/5 font-bold border-b border-[#1c1c18]/10 text-[9px] uppercase tracking-wider text-[#747878]">
+                            <th className="p-4">Size Tag</th>
+                            <th className="p-4">Chest (in)</th>
+                            <th className="p-4">Waist (in)</th>
+                            <th className="p-4">Sleeve (in)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#1c1c18]/5 font-body text-[#1c1c18]">
+                          {['38R (S)', '40R (M)', '42R (L)', '44R (XL)'].map((tag, i) => (
+                            <tr key={tag} className="hover:bg-[#fdf9f2] transition-colors">
+                              <td className="p-4 font-bold">{tag}</td>
+                              <td className="p-4">{36 + i*2} - {37 + i*2}</td>
+                              <td className="p-4">{30 + i*2} - {31 + i*2}</td>
+                              <td className="p-4">{32.5 + i*0.5}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : product.category === 'Jewellery' ? (
+                      <div className="p-6 text-xs text-[#747878] leading-relaxed">
+                        💍 All luxury jewellery pieces in the Atelier catalog are handcrafted to standard sizes. 
+                        Chokers include adjustable silk dori string backings to fit all neck types perfectly. 
+                        Jhumkas and rings are standard sizing.
+                      </div>
+                    ) : product.category === 'Sarees' ? (
+                      <div className="p-6 text-xs text-[#747878] leading-relaxed">
+                        🧣 Sarees are woven as one size fits all.
+                        Includes 6 meters of premium fabric drape and comes with an unstitched matching blouse piece (80cm) to allow personalized tailoring.
+                      </div>
+                    ) : (
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#1c1c18]/5 font-bold border-b border-[#1c1c18]/10 text-[9px] uppercase tracking-wider text-[#747878]">
+                            <th className="p-4">Size</th>
+                            <th className="p-4">Bust (in)</th>
+                            <th className="p-4">Waist (in)</th>
+                            <th className="p-4">Hips (in)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#1c1c18]/5 font-body text-[#1c1c18]">
+                          {[['XS', '32-33', '24-25', '34-35'], ['S', '34-35', '26-27', '36-37'], ['M', '36-37', '28-29', '38-39'], ['L', '38-40', '30-32', '40-42'], ['XL', '41-43', '33-35', '43-45']].map(([sz, b, w, h]) => (
+                            <tr key={sz} className="hover:bg-[#fdf9f2] transition-colors">
+                              <td className="p-4 font-bold">{sz}</td>
+                              <td className="p-4">{b}</td>
+                              <td className="p-4">{w}</td>
+                              <td className="p-4">{h}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Luxury Styling Tip */}
+                <div className="border-t border-[#1c1c18]/10 pt-6 text-[10px] leading-relaxed uppercase tracking-wider text-[#747878]">
+                  🌿 <strong>Tip:</strong> If you are between sizes, we recommend selecting the larger size for a relaxed drape, or custom tailoring it locally to match your exact silhouette.
+                </div>
+
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <Footer />
 
       <AnimatePresence>

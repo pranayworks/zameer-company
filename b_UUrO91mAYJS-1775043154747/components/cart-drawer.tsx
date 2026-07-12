@@ -73,7 +73,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-lg z-[100]"
           />
 
           {/* Drawer container (Portaled feel via fixed positioning) */}
@@ -82,10 +82,10 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 h-[100dvh] w-full max-w-md bg-[#fdf9f2] z-[101] shadow-[0_0_50px_rgba(0,0,0,0.3)] flex flex-col"
+            className="fixed top-0 right-0 h-[100dvh] w-full max-w-md bg-[#fdf9f2]/70 backdrop-blur-2xl border-l border-white/20 z-[101] shadow-[0_0_50px_rgba(0,0,0,0.35)] flex flex-col"
           >
             {/* Header */}
-            <div className="p-8 border-b border-[#1c1c18]/5 flex justify-between items-center bg-white">
+            <div className="p-8 border-b border-[#1c1c18]/5 flex justify-between items-center bg-white/30 backdrop-blur-md">
               <div>
                  <h2 className="font-headline text-2xl tracking-tighter">Your Bag</h2>
                  <p className="font-body text-[10px] text-[#a3851a] uppercase tracking-widest mt-1">{totalItems} Editorial Pieces</p>
@@ -168,8 +168,32 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             </div>
 
             {/* Footer */}
-            <div className="p-8 border-t border-[#1c1c18]/5 bg-white space-y-6 shadow-2xl">
+            <div className="p-8 border-t border-[#1c1c18]/5 bg-white/30 backdrop-blur-md space-y-6 shadow-2xl">
               
+              {/* Express Shipping Progress Bar */}
+              {subtotal > 0 && (
+                <div className="bg-[#a3851a]/5 border border-[#a3851a]/20 p-4 space-y-3 rounded-sm">
+                  <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-[#747878]">Express Delivery Status</span>
+                    <span className="text-[#a3851a] font-bold">
+                      {subtotal >= 50000 ? 'Unlocked' : `₹${subtotal.toLocaleString('en-IN')} / ₹50,000`}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[#1c1c18]/5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[#a3851a] transition-all duration-500 ease-out" 
+                      style={{ width: `${Math.min(100, (subtotal / 50000) * 100)}%` }} 
+                    />
+                  </div>
+                  <p className="text-[9px] uppercase tracking-widest text-[#747878] font-bold leading-normal">
+                    {subtotal >= 50000 
+                      ? '🎉 Congratulations! You have unlocked FREE Express Shipping!' 
+                      : `💡 Add ₹${(50000 - subtotal).toLocaleString('en-IN')} more to unlock FREE Express Shipping!`
+                    }
+                  </p>
+                </div>
+              )}
+
               {/* Loyalty Info & Upsell Prompt */}
               {subtotal > 0 && (() => {
                 const segment = profile?.customer_segment || 'Regular';

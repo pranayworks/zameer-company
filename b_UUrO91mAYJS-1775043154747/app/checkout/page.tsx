@@ -363,10 +363,6 @@ export default function CheckoutPage() {
                       <span className="uppercase tracking-widest text-[#747878]">Shipping Fee</span>
                       <span>₹{shippingFee}</span>
                     </div>
-                    <div className="flex justify-between text-xs font-body">
-                      <span className="uppercase tracking-widest text-[#747878]">GST (incl.)</span>
-                      <span>₹{Math.round((subtotal + shippingFee) * 0.05).toLocaleString('en-IN')}</span>
-                    </div>
                     <div className="border-t border-[#1c1c18]/10 pt-4 flex justify-between items-baseline">
                       <span className="text-[10px] uppercase tracking-widest font-bold">Total Payable</span>
                       <span className="font-headline text-3xl text-[#a3851a]">₹{(subtotal + shippingFee).toLocaleString('en-IN')}</span>

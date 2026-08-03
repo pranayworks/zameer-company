@@ -23,7 +23,7 @@ export default function Home() {
   }, [router]);
 
   return (
-    <main className="w-full bg-[#fdf9f2]">
+    <main className="w-full bg-[#FAF7F2]">
       <Header />
       <HeroSection />
       <FeaturedProducts />

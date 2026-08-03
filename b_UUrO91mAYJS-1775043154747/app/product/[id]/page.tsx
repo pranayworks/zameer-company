@@ -214,7 +214,7 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
   ]
 
   return (
-    <div className="min-h-screen bg-[#fdf9f2]">
+    <div className="min-h-screen bg-[#FAF7F2]">
       <Header activeCategory={product?.category} />
       <main className="pt-32 pb-24 px-8 md:px-24 max-w-[1920px] mx-auto">
         <nav className="mb-12 flex items-center gap-4 text-[10px] uppercase tracking-widest text-[#747878]">

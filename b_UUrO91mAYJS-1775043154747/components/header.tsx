@@ -86,12 +86,12 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] glass-header">
-      <nav className="flex justify-between items-center w-full px-4 md:px-12 py-1.5 md:py-2.5 max-w-[1920px] mx-auto">
+      <header className="fixed top-0 left-0 right-0 z-[100] glass-header border-b border-[#D4AF37]/20 shadow-[0_4px_30px_rgba(0,0,0,0.04)]">
+      <nav className="flex justify-between items-center w-full px-4 md:px-12 py-2 md:py-3 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-4 md:gap-12">
           {/* Mobile Hamburger Button */}
           <button 
-            className="md:hidden relative z-[100] text-[#1c1b1b] mr-2 p-1"
+            className="md:hidden relative z-[100] text-[#12131A] mr-2 p-1"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <span className="material-symbols-outlined text-3xl">
@@ -101,23 +101,23 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
 
           <Link 
             href="/" 
-            className="flex items-center gap-2 md:gap-4 transition-colors group cursor-pointer"
+            className="flex items-center gap-3 md:gap-4 transition-colors group cursor-pointer"
           >
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="relative w-12 h-12 md:w-20 md:h-20 shrink-0"
+              className="relative w-12 h-12 md:w-16 md:h-16 shrink-0 p-1 bg-white rounded-full border border-[#D4AF37]/30 shadow-md"
             >
-              <Image src="/logo.png" alt="Friends of 4 Logo" fill className="object-contain" />
+              <Image src="/logo.png" alt="Friends of 4 Logo" fill className="object-contain p-1" />
             </motion.div>
             <motion.div
                whileHover={{ x: 2 }}
-               className="flex flex-col max-w-[150px] sm:max-w-none"
+               className="flex flex-col max-w-[170px] sm:max-w-none"
             >
-              <span className="text-lg sm:text-xl md:text-2xl font-headline tracking-tighter text-[#1c1b1b] leading-tight mb-0.5 truncate sm:overflow-visible">
+              <span className="text-lg sm:text-xl md:text-2xl font-headline tracking-tighter text-[#12131A] font-bold leading-tight mb-0.5 truncate sm:overflow-visible">
                 Style Of Tradition
               </span>
-              <span className="text-[8px] md:text-[10px] font-body font-black tracking-[0.2em] md:tracking-[0.3em] uppercase text-[#a3851a] leading-none">
-                Friends of 4
+              <span className="text-[8px] md:text-[10px] font-body font-black tracking-[0.25em] uppercase text-gold-gradient leading-none">
+                Friends of 4 Atelier
               </span>
             </motion.div>
           </Link>
@@ -127,14 +127,14 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
               <Link 
                 key={item.label} 
                 href={item.href}
-                className={`font-body uppercase tracking-widest text-xs transition-colors duration-300 relative pb-1 cursor-pointer ${
+                className={`font-body uppercase tracking-[0.2em] text-[11px] font-bold transition-all duration-300 relative pb-1 cursor-pointer ${
                   activeNav === item.label
-                    ? 'text-[#1c1b1b] border-b border-[#1c1b1b]'
-                    : 'text-[#747878] hover:text-[#1c1c18] border-b border-transparent'
+                    ? 'text-[#12131A] border-b-2 border-[#D4AF37]'
+                    : 'text-[#6E727A] hover:text-[#12131A] border-b-2 border-transparent'
                 }`}
                 onClick={() => setActiveNav(item.label)}
               >
-                 <motion.span whileHover={{ y: -2, display: 'inline-block' }}>
+                 <motion.span whileHover={{ y: -1, display: 'inline-block' }}>
                    {item.label}
                  </motion.span>
               </Link>
@@ -145,7 +145,7 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
         <div className="flex items-center gap-3 md:gap-6 ml-auto">
           <motion.button 
              onClick={() => setIsSearchOpen(true)}
-             className="text-[#1c1b1b] hover:text-[#a3851a] transition-colors"
+             className="text-[#12131A] hover:text-[#D4AF37] transition-colors p-2 rounded-full hover:bg-[#FAF7F2]"
              whileHover={{ scale: 1.1 }}
              whileTap={{ scale: 0.95 }}
           >
@@ -154,13 +154,13 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
 
           <Link href="/account?tab=wishlist">
             <motion.div 
-              className="text-[#1c1b1b] hover:text-[#a3851a] transition-colors relative"
+              className="text-[#12131A] hover:text-[#D4AF37] transition-colors relative p-2 rounded-full hover:bg-[#FAF7F2]"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
               <span className="material-symbols-outlined text-2xl">favorite</span>
               {wishlist.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-md">
                   {wishlist.length}
                 </span>
               )}
@@ -169,13 +169,13 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
           
           <motion.button 
             onClick={() => setIsCartOpen(true)}
-            className="text-[#1c1b1b] hover:text-[#a3851a] transition-colors relative"
+            className="text-[#12131A] hover:text-[#D4AF37] transition-colors relative p-2 rounded-full hover:bg-[#FAF7F2]"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
             <span className="material-symbols-outlined text-2xl">shopping_cart</span>
             {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#a3851a] text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              <span className="absolute top-0 right-0 gold-satin text-[#0B0C10] text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-black shadow-md border border-amber-200">
                 {totalItems}
               </span>
             )}
@@ -183,7 +183,7 @@ export function Header({ activeCategory }: { activeCategory?: string }) {
 
           <Link href="/account">
             <motion.div 
-              className="text-[#1c1b1b] hover:text-[#a3851a] transition-colors cursor-pointer"
+              className="text-[#12131A] hover:text-[#D4AF37] transition-colors cursor-pointer p-2 rounded-full hover:bg-[#FAF7F2]"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >

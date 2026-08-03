@@ -29,47 +29,44 @@ export function FeaturedProducts() {
   }
 
   return (
-    <section ref={ref} className="py-20 md:py-28 px-6 md:px-12 max-w-[1920px] mx-auto bg-[#FAF7F2] relative">
+    <section ref={ref} className="py-16 md:py-24 px-6 md:px-12 max-w-[1920px] mx-auto bg-[#fdf9f2]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.7 }}
-        className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-16 gap-6"
+        transition={{ duration: 0.6 }}
+        className="flex justify-between items-end mb-12 md:mb-16"
       >
         <div>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/5 mb-3">
-            <span className="text-gold-gradient font-body uppercase tracking-[0.3em] text-[10px] md:text-xs font-bold">
-              ATELIER ARRIVALS
-            </span>
-          </div>
-          <h2 className="font-headline text-4xl md:text-5xl lg:text-6xl text-[#12131A] font-extrabold tracking-tight">
-            The Seasonal <span className="text-gold-gradient italic font-serif">Edit</span>
+          <span className="font-body uppercase tracking-widest text-xs text-[#735c00] mb-2 block">
+            New Arrivals
+          </span>
+          <h2 className="font-headline text-4xl text-[#1c1b1b]">
+            The Seasonal Edit
           </h2>
         </div>
-
-        <div className="flex items-center gap-6 self-end md:self-auto">
+        <div className="flex items-center gap-6">
           <motion.a
             href="/sarees"
-            className="font-body uppercase tracking-[0.2em] text-xs font-bold text-[#12131A] border-b-2 border-[#D4AF37] hover:text-[#D4AF37] transition-all pb-1 hidden sm:block"
-            whileHover={{ x: 4 }}
+            className="font-body uppercase tracking-widest text-xs text-[#1c1b1b] border-b border-[#1c1b1b]/20 hover:border-[#1c1b1b] transition-all pb-1 hidden sm:block"
+            whileHover={{ x: 5 }}
           >
-            View Full Archive →
+            View Collection
           </motion.a>
           
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button 
               onClick={() => scroll('left')}
-              className="w-11 h-11 rounded-full border border-[#D4AF37]/30 bg-white shadow-md flex items-center justify-center hover:bg-[#D4AF37] hover:text-[#0B0C10] transition-all text-[#12131A] active:scale-95"
+              className="w-10 h-10 rounded-full border border-[#1c1b1b]/20 flex items-center justify-center hover:bg-[#1c1b1b] hover:text-white transition-all text-[#1c1b1b]"
               aria-label="Previous products"
             >
-              <span className="material-symbols-outlined text-xl">chevron_left</span>
+              <span className="material-symbols-outlined text-lg">chevron_left</span>
             </button>
             <button 
               onClick={() => scroll('right')}
-              className="w-11 h-11 rounded-full border border-[#D4AF37]/30 bg-white shadow-md flex items-center justify-center hover:bg-[#D4AF37] hover:text-[#0B0C10] transition-all text-[#12131A] active:scale-95"
+              className="w-10 h-10 rounded-full border border-[#1c1b1b]/20 flex items-center justify-center hover:bg-[#1c1b1b] hover:text-white transition-all text-[#1c1b1b]"
               aria-label="Next products"
             >
-              <span className="material-symbols-outlined text-xl">chevron_right</span>
+              <span className="material-symbols-outlined text-lg">chevron_right</span>
             </button>
           </div>
         </div>
@@ -82,7 +79,7 @@ export function FeaturedProducts() {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {products.map((product, index) => (
-            <div key={product.id} className="snap-start shrink-0 w-[78vw] sm:w-[45vw] md:w-[35vw] lg:w-[28vw] xl:w-[22vw]">
+            <div key={product.id} className="snap-start shrink-0 w-[76vw] sm:w-[45vw] md:w-[35vw] lg:w-[28vw] xl:w-[22vw]">
               <ProductCard
                 id={product.id}
                 title={product.title}
@@ -100,4 +97,3 @@ export function FeaturedProducts() {
     </section>
   )
 }
-

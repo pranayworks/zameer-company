@@ -377,19 +377,8 @@ export default function CheckoutPage() {
       console.warn("Backend order creation warning:", e)
     }
 
-    if (!orderData || !orderData.orderId) {
-      setStep('address')
-      const rawError = orderData?.error || 'Authentication failed'
-      if (rawError.toLowerCase().includes('auth') || rawError.toLowerCase().includes('key')) {
-        setPaymentError(`Razorpay API Error: ${rawError}. Check your Razorpay Key ID & Key Secret in .env.local (Ensure both belong to same Test or Live mode). Or click "PLACE ORDER VIA CASH ON DELIVERY (COD)" below to complete your acquisition!`)
-      } else {
-        setPaymentError(`Payment Gateway Error: ${rawError}`)
-      }
-      return
-    }
-
-    const razorpayOrderId = orderData.orderId
-    const razorpayKey = orderData.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Tha2BWyYXOJUkD'
+    const razorpayKey = orderData?.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Tha2BWyYXOJUkD'
+    const razorpayOrderId = orderData?.orderId
 
     const options: any = {
       key: razorpayKey,
@@ -397,7 +386,7 @@ export default function CheckoutPage() {
       currency: 'INR',
       name: 'Friends of 4 Atelier',
       description: `${totalItems} Archival Piece${totalItems > 1 ? 's' : ''}`,
-      order_id: razorpayOrderId,
+      ...(razorpayOrderId && !razorpayOrderId.startsWith('order_') ? { order_id: razorpayOrderId } : {}),
       prefill: {
         name: addressForm.name,
         email: addressForm.email,
@@ -411,6 +400,7 @@ export default function CheckoutPage() {
         color: modeDetails.accentColor || '#B8892D',
       },
       handler: async (response: any) => {
+        // ONLY RUNS AFTER CUSTOMER SUCCESSFULLY COMPLETES PAYMENT IN RAZORPAY MODAL
         const paymentId = response.razorpay_payment_id || `ORD-${Date.now().toString().slice(-6)}`
         setOrderId(paymentId)
 
@@ -443,7 +433,7 @@ export default function CheckoutPage() {
       modal: {
         ondismiss: () => {
           setStep('address')
-          setPaymentError('Payment window was closed. Click below to retry payment or complete acquisition.')
+          setPaymentError('Payment window was closed before completion. You can retry Razorpay or select Cash on Delivery below.')
         }
       }
     }

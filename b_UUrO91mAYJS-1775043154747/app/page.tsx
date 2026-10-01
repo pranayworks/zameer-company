@@ -8,7 +8,6 @@ import { HeritageStoryTeaser } from '@/components/heritage-story-teaser'
 import { TrustBadges } from '@/components/trust-badges'
 import { Testimonials } from '@/components/testimonials'
 import { Footer } from '@/components/footer'
-import { FloatingWhatsapp } from '@/components/floating-whatsapp'
 import { useMode } from '@/context/mode-context'
 
 export default function HomePage() {
@@ -27,7 +26,6 @@ export default function HomePage() {
       <TrustBadges />
       <Testimonials />
       <Footer />
-      <FloatingWhatsapp />
     </main>
   )
 }

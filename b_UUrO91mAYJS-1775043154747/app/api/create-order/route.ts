@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     }
 
     const key_id = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Tha2BWyYXOJUkD'
-    const key_secret = process.env.RAZORPAY_KEY_SECRET
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || 'lWKqLYGPhq3YCWPcHryx6xIk'
 
     if (key_id && key_secret && key_secret !== 'fallback_secret') {
       try {

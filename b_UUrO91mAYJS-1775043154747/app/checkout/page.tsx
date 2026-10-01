@@ -372,6 +372,9 @@ export default function CheckoutPage() {
 
       if (res.ok) {
         orderData = await res.json()
+      } else {
+        const errObj = await res.json().catch(() => ({}))
+        orderData = { error: errObj.error || 'Payment server order creation failed' }
       }
     } catch (e: any) {
       console.warn("Backend order creation warning:", e)
@@ -379,6 +382,12 @@ export default function CheckoutPage() {
 
     const razorpayKey = orderData?.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Tha2BWyYXOJUkD'
     const razorpayOrderId = orderData?.orderId
+
+    if (!razorpayOrderId || !razorpayOrderId.startsWith('order_')) {
+      setStep('address')
+      setPaymentError(orderData?.error || 'Unable to initialize Razorpay payment session. Please retry or choose Cash on Delivery.')
+      return
+    }
 
     const options: any = {
       key: razorpayKey,

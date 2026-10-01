@@ -65,6 +65,7 @@ import { CartProvider } from '@/context/cart-context'
 import { WishlistProvider } from '@/context/wishlist-context'
 import { ToastProvider } from '@/context/toast-context'
 import { ModeProvider } from '@/context/mode-context'
+import { BujjiChatbot } from '@/components/bujji-chatbot'
 
 export default function RootLayout({
   children,
@@ -88,6 +89,7 @@ export default function RootLayout({
               <WishlistProvider>
                 <LoadingScreen />
                 {children}
+                <BujjiChatbot />
                 <Analytics />
               </WishlistProvider>
             </CartProvider>

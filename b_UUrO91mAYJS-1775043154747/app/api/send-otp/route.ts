@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { sendOtpEmail } from '@/lib/email-service'
+import { sendOtpSms } from '@/lib/sms-service'
 
 const SECRET = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'fo4_smtp_otp_secret_key_2026'
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json()
+    const body = await req.json()
+    const rawTarget = body.target || body.email || body.phone
 
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
+    if (!rawTarget || typeof rawTarget !== 'string') {
+      return NextResponse.json({ error: 'Please enter your email address or 10-digit mobile number.' }, { status: 400 })
     }
 
-    const cleanEmail = email.toLowerCase().trim()
-    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      return NextResponse.json({ error: 'Please enter a valid email address to receive your OTP.' }, { status: 400 })
+    const input = rawTarget.trim()
+    const isEmail = input.includes('@')
+    const digitsOnly = input.replace(/[^0-9]/g, '')
+    const isPhone = !isEmail && digitsOnly.length >= 10
+
+    if (!isEmail && !isPhone) {
+      return NextResponse.json({ error: 'Please enter a valid email address or 10-digit mobile number.' }, { status: 400 })
     }
+
+    const cleanTarget = isEmail ? input.toLowerCase() : digitsOnly.slice(-10)
 
     // Generate random 6-digit OTP code
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
@@ -26,23 +34,34 @@ export async function POST(req: NextRequest) {
     // Compute HMAC signature for stateless verification across serverless instances
     const hash = crypto
       .createHmac('sha256', SECRET)
-      .update(`${cleanEmail}:${otp}:${expiresAt}`)
+      .update(`${cleanTarget}:${otp}:${expiresAt}`)
       .digest('hex')
 
     const token = `${expiresAt}.${hash}`
 
-    // Send real OTP email via Gmail SMTP
-    const mailRes = await sendOtpEmail({ email: cleanEmail, otp })
+    let dispatchType: 'email' | 'sms' = isEmail ? 'email' : 'sms'
+    let dispatchMsg = ''
 
-    if (!mailRes.success) {
-      console.warn("SMTP OTP email fallback notice:", mailRes.error)
-      // Even if SMTP returns warning, allow token creation so customer can log in
+    if (isEmail) {
+      const mailRes = await sendOtpEmail({ email: cleanTarget, otp })
+      if (!mailRes.success) {
+        console.warn("SMTP OTP email fallback notice:", mailRes.error)
+      }
+      dispatchMsg = `A 6-digit OTP code has been dispatched via email to ${cleanTarget}.`
+    } else {
+      const smsRes = await sendOtpSms({ phone: cleanTarget, otp })
+      if (!smsRes.success) {
+        console.warn("SMS OTP dispatch notice:", smsRes.error)
+      }
+      dispatchMsg = `A 6-digit OTP code has been dispatched via SMS to +91 ${cleanTarget}.`
     }
 
     return NextResponse.json({
       success: true,
       token,
-      message: `A 6-digit OTP code has been sent via SMTP to ${cleanEmail}.`
+      target: cleanTarget,
+      type: dispatchType,
+      message: dispatchMsg
     })
   } catch (error: any) {
     console.error("Error in /api/send-otp:", error)

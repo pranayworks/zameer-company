@@ -5,13 +5,18 @@ const SECRET = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_ADMIN_
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, otp, token } = await req.json()
+    const body = await req.json()
+    const rawTarget = body.target || body.email || body.phone
+    const otp = body.otp
+    const token = body.token
 
-    if (!email || !otp) {
-      return NextResponse.json({ error: 'Please enter both your email address and 6-digit OTP code.' }, { status: 400 })
+    if (!rawTarget || !otp) {
+      return NextResponse.json({ error: 'Please enter both your email/mobile number and the 6-digit OTP code.' }, { status: 400 })
     }
 
-    const cleanEmail = email.toLowerCase().trim()
+    const input = String(rawTarget).trim()
+    const isEmail = input.includes('@')
+    const cleanTarget = isEmail ? input.toLowerCase() : input.replace(/[^0-9]/g, '').slice(-10)
     const cleanOtp = String(otp).trim()
 
     if (cleanOtp.length !== 6) {
@@ -37,16 +42,17 @@ export async function POST(req: NextRequest) {
     // Verify HMAC signature
     const expectedHash = crypto
       .createHmac('sha256', SECRET)
-      .update(`${cleanEmail}:${cleanOtp}:${expiresAtStr}`)
+      .update(`${cleanTarget}:${cleanOtp}:${expiresAtStr}`)
       .digest('hex')
 
     if (expectedHash !== signature) {
-      return NextResponse.json({ error: 'Incorrect 6-digit OTP code. Please check your email inbox and try again.' }, { status: 400 })
+      return NextResponse.json({ error: 'Incorrect 6-digit OTP code. Please check your SMS/email inbox and try again.' }, { status: 400 })
     }
 
     return NextResponse.json({
       success: true,
-      email: cleanEmail,
+      target: cleanTarget,
+      isEmail,
       message: 'OTP verified successfully.'
     })
   } catch (error: any) {

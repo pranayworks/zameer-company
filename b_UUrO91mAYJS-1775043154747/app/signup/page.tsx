@@ -224,7 +224,7 @@ export default function SignupPage() {
     }
   }
 
-  // OTP Request Submit via Gmail SMTP
+  // OTP Request Submit via SMS / Email
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!acceptedTerms) {
@@ -233,11 +233,9 @@ export default function SignupPage() {
     }
     const target = otpTarget.trim()
     if (!target) {
-      setErrorMsg('Please enter your email address to receive your 6-digit OTP code.')
+      setErrorMsg('Please enter your email address or 10-digit mobile number.')
       return
     }
-
-    const emailToUse = target.includes('@') ? target : `${target}@gmail.com`
 
     setLoading(true)
     setErrorMsg('')
@@ -245,12 +243,12 @@ export default function SignupPage() {
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailToUse }),
+        body: JSON.stringify({ target }),
       })
       const data = await res.json()
 
       if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Failed to dispatch OTP code. Please verify email address.')
+        setErrorMsg(data.error || 'Failed to dispatch OTP code. Please check your entry.')
         return
       }
 
@@ -258,9 +256,9 @@ export default function SignupPage() {
       setOtpSent(true)
       setResendTimer(30)
       setCanResend(false)
-      setSuccessMsg(`A 6-digit OTP code has been dispatched via SMTP to ${emailToUse}. Please check your email inbox.`)
+      setSuccessMsg(data.message || `A 6-digit OTP code has been dispatched to ${target}.`)
     } catch (e: any) {
-      setErrorMsg('Failed to send OTP email. Please verify network connection or try again.')
+      setErrorMsg('Failed to send OTP code. Please verify network connection or try again.')
     } finally {
       setLoading(false)
     }
@@ -280,33 +278,37 @@ export default function SignupPage() {
 
     try {
       const target = otpTarget.trim()
-      const emailToUse = target.includes('@') ? target : `${target}@gmail.com`
 
       const res = await fetch('/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailToUse, otp: pinCode, token: otpToken }),
+        body: JSON.stringify({ target, otp: pinCode, token: otpToken }),
       })
       const data = await res.json()
 
       if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Incorrect or expired OTP code. Please check your email inbox.')
+        setErrorMsg(data.error || 'Incorrect or expired OTP code. Please check your inbox.')
         return
       }
 
       // OTP Verified successfully!
+      const isEmail = target.includes('@')
+      const cleanPhone = target.replace(/[^0-9]/g, '').slice(-10)
+      const userEmail = isEmail ? target.toLowerCase() : `${cleanPhone}@friendsof4.com`
+      const userPhone = isEmail ? '+91 9876543210' : `+91 ${cleanPhone}`
+
       const dbStr = localStorage.getItem('usersDb')
       const usersDb = dbStr ? JSON.parse(dbStr) : {}
 
-      usersDb[emailToUse] = {
+      usersDb[userEmail] = {
         fullName: otpFullName || 'OTP Registered Member',
-        phone: target.includes('@') ? '+91 9876543210' : target,
-        email: emailToUse,
+        phone: userPhone,
+        email: userEmail,
         tier: 'Gold Tier Member',
         authProvider: 'otp'
       }
       localStorage.setItem('usersDb', JSON.stringify(usersDb))
-      localStorage.setItem('currentUserEmail', emailToUse)
+      localStorage.setItem('currentUserEmail', userEmail)
 
       router.push(getRedirectTarget())
     } catch (err: any) {

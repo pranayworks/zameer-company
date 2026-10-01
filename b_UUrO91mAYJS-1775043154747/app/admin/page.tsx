@@ -32,7 +32,11 @@ function SafeAdminImage({ src, alt }: { src?: string; alt: string }) {
     if (!url || !url.trim() || url === 'null' || url === 'undefined' || url.length < 3) {
       return '/placeholder.jpg'
     }
-    return url.split(',')[0].trim()
+    const trimmed = url.trim()
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+      return trimmed
+    }
+    return trimmed.split(',')[0].trim() || '/placeholder.jpg'
   }
 
   const [imgSrc, setImgSrc] = useState(() => getCleanSrc(src))

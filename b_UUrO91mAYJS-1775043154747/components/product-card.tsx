@@ -39,7 +39,13 @@ export function ProductCard({
   const isWishlisted = isInWishlist(productId)
 
   const productPath = `/product/${id || slugify(title)}`
-  const displayImage = image ? image.split(',')[0].trim() || '/placeholder.jpg' : '/placeholder.jpg'
+  const getCleanImage = (raw?: string) => {
+    if (!raw || !raw.trim() || raw === 'null' || raw === 'undefined') return '/placeholder.jpg'
+    const trimmed = raw.trim()
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return trimmed
+    return trimmed.split(',')[0].trim() || '/placeholder.jpg'
+  }
+  const displayImage = getCleanImage(image)
   const [imgSrc, setImgSrc] = useState(displayImage)
 
   useEffect(() => {

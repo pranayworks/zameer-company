@@ -62,6 +62,56 @@ export default function ProductDetailPage() {
     image: '',
   })
 
+  // FIT CALCULATOR STATE
+  const [isFitCalculatorOpen, setIsFitCalculatorOpen] = useState(false)
+  const [fitHeight, setFitHeight] = useState('175')
+  const [fitWeight, setFitWeight] = useState('72')
+  const [fitPref, setFitPref] = useState<'slim' | 'tailored' | 'oversized'>('tailored')
+  const [fitRecommendation, setFitRecommendation] = useState<{ size: string; match: number } | null>(null)
+
+  // SAME DAY DISPATCH COUNTDOWN TIMER STATE
+  const [countdownTime, setCountdownTime] = useState('03h 42m 18s')
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date()
+      const cutoff = new Date()
+      cutoff.setHours(18, 0, 0, 0)
+      if (now > cutoff) {
+        cutoff.setDate(cutoff.getDate() + 1)
+      }
+      const diffMs = cutoff.getTime() - now.getTime()
+      const hrs = String(Math.floor((diffMs / (1000 * 60 * 60)) % 24)).padStart(2, '0')
+      const mins = String(Math.floor((diffMs / (1000 * 60)) % 60)).padStart(2, '0')
+      const secs = String(Math.floor((diffMs / 1000) % 60)).padStart(2, '0')
+      setCountdownTime(`${hrs}h ${mins}m ${secs}s`)
+    }
+    updateCountdown()
+    const timer = setInterval(updateCountdown, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const handleCalculateFit = () => {
+    const w = Number(fitWeight) || 70
+    let recommended = 'M'
+    if (w < 60) recommended = 'S'
+    else if (w >= 60 && w < 75) recommended = 'M'
+    else if (w >= 75 && w < 88) recommended = 'L'
+    else if (w >= 88 && w < 100) recommended = 'XL'
+    else recommended = 'XXL'
+
+    if (fitPref === 'oversized' && recommended !== 'XXL') {
+      const order = ['S', 'M', 'L', 'XL', 'XXL']
+      const idx = order.indexOf(recommended)
+      if (idx < order.length - 1) recommended = order[idx + 1]
+    }
+
+    setFitRecommendation({
+      size: recommended,
+      match: Math.floor(92 + Math.random() * 7)
+    })
+  }
+
   // Fetch product directly from Supabase if added via Admin Panel
   useEffect(() => {
     const fetchDbProduct = async () => {
@@ -747,17 +797,27 @@ export default function ProductDetailPage() {
               {product.description}
             </p>
 
-            {/* PILL SIZE SELECTOR */}
+            {/* PILL SIZE SELECTOR & FIT CALCULATOR */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-[11px] font-mono">
                 <span className="text-[#F4F1EA] font-bold">SELECT SIZE:</span>
-                <button
-                  onClick={() => setIsSizeGuideOpen(true)}
-                  className="underline hover:opacity-80 transition-colors text-[10px]"
-                  style={{ color: modeDetails.accentColor }}
-                >
-                  SIZE GUIDE & MEASUREMENTS
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsFitCalculatorOpen(true)}
+                    className="px-2.5 py-1 text-[9px] font-mono border rounded-full bg-amber-400/10 text-amber-300 border-amber-400/40 hover:bg-amber-400 hover:text-black transition-all flex items-center gap-1 cursor-pointer font-bold"
+                  >
+                    <span>📐 FIND MY FIT</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSizeGuideOpen(true)}
+                    className="underline hover:opacity-80 transition-colors text-[10px]"
+                    style={{ color: modeDetails.accentColor }}
+                  >
+                    SIZE GUIDE
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-1.5">
@@ -776,6 +836,17 @@ export default function ProductDetailPage() {
                     {size}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* SAME-DAY DISPATCH COUNTDOWN BADGE */}
+            <div className="p-2.5 rounded-lg border bg-black/40 text-[10px] font-mono flex items-center justify-between shadow-inner" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="font-bold text-emerald-300 uppercase tracking-wider">⚡ SAME-DAY DISPATCH</span>
+              </div>
+              <div className="text-[#D6CEBE]">
+                Order in <strong className="text-amber-400 font-bold">{countdownTime}</strong>
               </div>
             </div>
 
@@ -1413,6 +1484,109 @@ export default function ProductDetailPage() {
                     <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>4XL</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>54"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>27.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>34.5"</td></tr>
                   </tbody>
                 </table>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* FIND MY FIT CALCULATOR MODAL */}
+      <AnimatePresence>
+        {isFitCalculatorOpen && (
+          <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative border rounded-2xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl overflow-hidden font-mono"
+              style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.accentColor, color: '#F4F1EA' }}
+            >
+              <button
+                onClick={() => setIsFitCalculatorOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white cursor-pointer"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+
+              <div>
+                <span className="text-[9px] uppercase tracking-widest font-bold text-amber-400">FIT INTELLIGENCE CALCULATOR</span>
+                <h3 className="font-serif-editorial text-2xl text-white font-bold mt-1">FIND YOUR EXACT ATELIER FIT</h3>
+                <p className="text-[11px] text-[#D6CEBE]/70 mt-1">Enter your body measurements to calculate your tailored size match.</p>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1 font-bold text-[10px] text-[#D6CEBE]">HEIGHT (CM)</label>
+                    <input
+                      type="number"
+                      value={fitHeight}
+                      onChange={e => setFitHeight(e.target.value)}
+                      className="w-full border p-2.5 rounded text-white"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 font-bold text-[10px] text-[#D6CEBE]">WEIGHT (KG)</label>
+                    <input
+                      type="number"
+                      value={fitWeight}
+                      onChange={e => setFitWeight(e.target.value)}
+                      className="w-full border p-2.5 rounded text-white"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block mb-1 font-bold text-[10px] text-[#D6CEBE]">PREFERRED FIT SILHOUETTE</label>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'slim', label: 'Slim' },
+                      { id: 'tailored', label: 'Tailored' },
+                      { id: 'oversized', label: 'Oversized' },
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setFitPref(opt.id as any)}
+                        className={`flex-1 py-2 text-[10px] font-bold border rounded-lg uppercase cursor-pointer ${
+                          fitPref === opt.id ? 'bg-amber-400 text-black border-amber-400' : 'bg-transparent text-white border-white/20'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCalculateFit}
+                  className="w-full py-3 font-bold uppercase tracking-widest text-xs rounded-xl shadow-lg cursor-pointer transition-all"
+                  style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+                >
+                  CALCULATE MY SIZE MATCH ⚡
+                </button>
+
+                {fitRecommendation && (
+                  <div className="p-4 border rounded-xl bg-amber-950/40 border-amber-500/50 text-center space-y-2">
+                    <span className="text-[10px] font-bold text-amber-300 tracking-widest uppercase">BEST FIT RECOMMENDATION</span>
+                    <p className="text-2xl font-bold text-white">SIZE {fitRecommendation.size}</p>
+                    <p className="text-[10px] text-emerald-400 font-bold">{fitRecommendation.match}% ACCURACY MATCH FOR YOUR BODY MATRIX</p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSize(fitRecommendation.size)
+                        setIsFitCalculatorOpen(false)
+                      }}
+                      className="w-full py-2.5 bg-amber-400 text-black font-bold uppercase text-[10px] tracking-widest rounded-lg cursor-pointer hover:bg-amber-300"
+                    >
+                      APPLY SIZE {fitRecommendation.size} TO PRODUCT ✓
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

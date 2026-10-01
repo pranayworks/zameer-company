@@ -35,11 +35,39 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  const results = query.trim() === '' ? [] : products.filter(p =>
-    p.title.toLowerCase().includes(query.toLowerCase()) ||
-    p.mode.toLowerCase().includes(query.toLowerCase()) ||
-    p.category.toLowerCase().includes(query.toLowerCase()) ||
-    p.description.toLowerCase().includes(query.toLowerCase())
+  const [allProds, setAllProds] = useState<any[]>(products)
+
+  useEffect(() => {
+    const loadProds = async () => {
+      try {
+        const { fetchAllProducts } = await import('@/lib/admin-helpers')
+        const data = await fetchAllProducts()
+        if (data && data.length > 0) {
+          const map = new Map<string, any>()
+          products.forEach(p => map.set(p.id, p))
+          data.forEach((p: any) => map.set(p.id, {
+            ...p,
+            price: typeof p.price === 'number' ? `₹${p.price.toLocaleString('en-IN')}` : String(p.price)
+          }))
+          setAllProds(Array.from(map.values()))
+        }
+      } catch (e) {}
+    }
+    if (isOpen) loadProds()
+  }, [isOpen])
+
+  const getCleanImage = (raw?: string) => {
+    if (!raw || !raw.trim() || raw === 'null' || raw === 'undefined') return '/placeholder.jpg'
+    const trimmed = raw.trim()
+    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return trimmed
+    return trimmed.split(',')[0].trim() || '/placeholder.jpg'
+  }
+
+  const results = query.trim() === '' ? [] : allProds.filter(p =>
+    (p.title || '').toLowerCase().includes(query.toLowerCase()) ||
+    (p.mode || '').toLowerCase().includes(query.toLowerCase()) ||
+    (p.category || '').toLowerCase().includes(query.toLowerCase()) ||
+    (p.description || '').toLowerCase().includes(query.toLowerCase())
   )
 
   return (
@@ -108,10 +136,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                   <div className="pt-2 border-t" style={{ borderColor: `${modeDetails.borderColor}40` }}>
                     <p className="uppercase tracking-widest font-bold mb-2 text-[10px] text-[#D6CEBE]">
-                      ALL ATELIER PRODUCTS ({products.length})
+                      ALL ATELIER PRODUCTS ({allProds.length})
                     </p>
                     <div className="space-y-2">
-                      {products.slice(0, 5).map((p) => (
+                      {allProds.slice(0, 5).map((p) => (
                         <Link
                           key={p.id}
                           href={`/product/${p.id}`}
@@ -120,8 +148,8 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                           style={{ borderColor: modeDetails.borderColor }}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="relative w-8 h-8 rounded border overflow-hidden" style={{ borderColor: modeDetails.borderColor }}>
-                              <Image src={p.image} alt={p.title} fill className="object-contain" />
+                            <div className="relative w-8 h-8 rounded border overflow-hidden shrink-0" style={{ borderColor: modeDetails.borderColor }}>
+                              <img src={getCleanImage(p.image)} alt={p.title} className="w-full h-full object-cover" />
                             </div>
                             <span className="text-white font-bold">{p.title}</span>
                           </div>
@@ -136,8 +164,8 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                   No matching pieces found for "{query}".
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <p className="text-[9px] font-mono uppercase font-bold text-[#D6CEBE]/70 mb-2">
+                <div className="space-y-2 font-mono">
+                  <p className="text-[9px] uppercase font-bold text-[#D6CEBE]/70 mb-2">
                     {results.length} MATCHING PIECES FOUND
                   </p>
                   {results.map((product) => (
@@ -149,13 +177,13 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
                     >
                       <div className="relative w-12 h-14 border overflow-hidden flex-shrink-0 rounded" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
-                        <Image src={product.image} alt={product.title} fill className="object-contain p-1" />
+                        <img src={getCleanImage(product.image)} alt={product.title} className="w-full h-full object-cover p-0.5" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-serif-editorial text-base text-[#F4F1EA] transition-colors group-hover:text-amber-400">
                           {product.title}
                         </h4>
-                        <p className="text-[10px] font-mono uppercase font-semibold" style={{ color: modeDetails.accentColor }}>
+                        <p className="text-[10px] uppercase font-semibold" style={{ color: modeDetails.accentColor }}>
                           {product.category} • {product.mode} • {product.price}
                         </p>
                       </div>

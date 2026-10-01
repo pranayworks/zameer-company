@@ -203,16 +203,16 @@ export default function ProductDetailPage() {
   const product = dbProduct || staticProduct
   const productGallery = (product.gallery && product.gallery.length > 0) ? product.gallery : [product.image]
 
-  // Auto-Spin 360 effect
+  // Auto-Spin 360 effect (Slow, smooth luxury turntable spin)
   useEffect(() => {
     let interval: any
-    if (isAutoSpinning && activeTab === '360') {
+    if (isAutoSpinning) {
       interval = setInterval(() => {
-        setRotationAngle(prev => (prev + 3) % 360)
-      }, 50)
+        setRotationAngle(prev => (prev + 1) % 360)
+      }, 40) // Smooth slow rotation: 1 degree every 40ms (~14s per full 360° rotation)
     }
     return () => clearInterval(interval)
-  }, [isAutoSpinning, activeTab])
+  }, [isAutoSpinning])
 
   // Load product reviews from localStorage & Supabase
   useEffect(() => {
@@ -569,13 +569,13 @@ export default function ProductDetailPage() {
                     </div>
                   </motion.div>
                 ) : activeTab === '360' ? (
-                  /* 360 DEGREE INTERACTIVE ROTATOR VIEW - HD CRISP ZERO-BLUR RENDERING */
+                  /* 360 DEGREE INTERACTIVE ROTATOR VIEW - SMOOTH SLOW LUXURY ROTATION */
                   <motion.div
                     key="360-view"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="relative w-full h-full flex flex-col items-center justify-center select-none cursor-grab active:cursor-grabbing touch-pan-y"
+                    className="relative w-full h-full flex flex-col items-center justify-between select-none cursor-grab active:cursor-grabbing touch-pan-y p-3"
                     onMouseDown={handleMouseDown360}
                     onMouseMove={handleMouseMove360}
                     onMouseUp={handleMouseUp360}
@@ -584,28 +584,29 @@ export default function ProductDetailPage() {
                     onTouchMove={handleTouchMove360}
                     onTouchEnd={handleMouseUp360}
                   >
-                    <div className="relative w-full h-full p-4 flex items-center justify-center overflow-hidden">
-                      {/* CRISP ULTRA-HD UN-DISTORTED IMAGE CONTAINER */}
+                    <div className="relative w-full h-full p-2 flex items-center justify-center overflow-hidden">
+                      {/* CRISP ULTRA-HD UN-DISTORTED IMAGE CONTAINER WITH SMOOTH CONTINUOUS 3D PERSPECTIVE */}
                       {(() => {
                         const totalFrames = productGallery.length
                         const frameIdx = totalFrames > 1 ? Math.floor((rotationAngle / 360) * totalFrames) % totalFrames : 0
                         const activeImage = productGallery[frameIdx] || product.image
                         const lightSheenOffset = (rotationAngle / 360) * 100
+                        const yAngle = (rotationAngle % 360) > 180 ? 360 - (rotationAngle % 360) : (rotationAngle % 360)
 
                         return (
                           <div className="relative w-full h-full flex items-center justify-center">
-                            {/* NATIVE HIGH-DPI CRISP IMAGE DISPLAY - NO 3D MATRIX WARP BLUR */}
-                            <div className="relative w-full h-full flex items-center justify-center">
-                              <Image
+                            <div 
+                              className="relative w-full h-full flex items-center justify-center transition-transform duration-75"
+                              style={{
+                                transform: `perspective(1200px) rotateY(${yAngle * 0.25}deg)`
+                              }}
+                            >
+                              <img
                                 src={activeImage}
                                 alt={`360 Degree View Frame - ${rotationAngle}°`}
-                                fill
-                                priority
-                                unoptimized
-                                className="object-contain p-2 transition-transform duration-75"
+                                className="w-full h-full object-contain p-2 select-none"
                                 style={{
-                                  imageRendering: 'crisp-edges',
-                                  WebkitFontSmoothing: 'antialiased'
+                                  imageRendering: 'crisp-edges'
                                 }}
                               />
 
@@ -621,21 +622,47 @@ export default function ProductDetailPage() {
                         )
                       })()}
 
-                      {/* 360 OVERLAY STATUS & CONTROLS */}
-                      <div className="absolute top-4 left-4 z-10 font-mono text-[10px] bg-black/85 px-3.5 py-1.5 rounded-full border border-amber-500/40 flex items-center gap-2 shadow-lg backdrop-blur-md">
+                      {/* 360 OVERLAY STATUS & BADGE */}
+                      <div className="absolute top-3 left-3 z-10 font-mono text-[10px] bg-black/85 px-3.5 py-1.5 rounded-full border border-amber-500/40 flex items-center gap-2 shadow-lg backdrop-blur-md">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                         <span style={{ color: modeDetails.accentColor }} className="font-bold">
-                          360° AXIS: {rotationAngle}°
+                          360° TURNTABLE: {rotationAngle}°
                         </span>
                         <span className="text-[9px] text-emerald-400 font-bold border-l pl-2 border-white/20">
-                          HD CRISP
+                          {isAutoSpinning ? 'SLOW AUTO-SPINNING' : 'DRAG TO ROTATE'}
                         </span>
                       </div>
 
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/90 p-2 rounded-full border border-white/20 backdrop-blur-md shadow-2xl">
+                      {/* QUICK ANGLE PRESETS */}
+                      <div className="absolute top-3 right-3 z-10 flex gap-1 font-mono text-[9px]">
+                        {[
+                          { label: '0° FRONT', val: 0 },
+                          { label: '90° SIDE', val: 90 },
+                          { label: '180° BACK', val: 180 },
+                          { label: '270° SIDE', val: 270 },
+                        ].map((preset) => (
+                          <button
+                            key={preset.val}
+                            type="button"
+                            onClick={() => {
+                              setIsAutoSpinning(false)
+                              setRotationAngle(preset.val)
+                            }}
+                            className="px-2 py-1 bg-black/80 border border-white/20 text-white rounded hover:bg-white/20 cursor-pointer font-bold"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* PLAY / PAUSE & ROTATION CONTROLS STRIP */}
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/90 p-2 rounded-full border border-white/20 backdrop-blur-md shadow-2xl">
                         <button
                           type="button"
-                          onClick={() => setRotationAngle(prev => (prev - 15 + 360) % 360)}
+                          onClick={() => {
+                            setIsAutoSpinning(false)
+                            setRotationAngle(prev => (prev - 15 + 360) % 360)
+                          }}
                           className="p-1.5 text-xs text-white hover:text-amber-400 font-mono cursor-pointer"
                           title="-15° Left"
                         >
@@ -644,7 +671,10 @@ export default function ProductDetailPage() {
 
                         <button
                           type="button"
-                          onClick={() => setIsAutoSpinning(!isAutoSpinning)}
+                          onClick={() => {
+                            setActiveTab('360')
+                            setIsAutoSpinning(!isAutoSpinning)
+                          }}
                           className={`px-3 py-1 text-[10px] font-mono font-bold uppercase rounded-full border transition-all cursor-pointer ${
                             isAutoSpinning ? 'bg-amber-400 text-black border-amber-400 shadow-md' : 'bg-white/10 text-white border-white/30'
                           }`}
@@ -654,7 +684,10 @@ export default function ProductDetailPage() {
 
                         <button
                           type="button"
-                          onClick={() => setRotationAngle(prev => (prev + 15) % 360)}
+                          onClick={() => {
+                            setIsAutoSpinning(false)
+                            setRotationAngle(prev => (prev + 15) % 360)
+                          }}
                           className="p-1.5 text-xs text-white hover:text-amber-400 font-mono cursor-pointer"
                           title="+15° Right"
                         >
@@ -669,10 +702,25 @@ export default function ProductDetailPage() {
                           RESET
                         </button>
                       </div>
+                    </div>
 
-                      <div className="absolute top-4 right-4 z-10 text-[9px] font-mono bg-black/80 px-3 py-1.5 rounded-full border border-white/20 text-white/90 shadow">
-                        SWIPE / DRAG HORIZONTALLY TO ROTATE 360°
+                    {/* INTERACTIVE 360° SCRUBBING RANGE SLIDER BAR */}
+                    <div className="w-full pt-2 px-4 flex flex-col gap-1 font-mono text-[9px] z-10 bg-black/60 rounded-xl p-2 border border-white/10">
+                      <div className="flex items-center justify-between text-[#D6CEBE]">
+                        <span>DRAG SLIDER OR SWIPE IMAGE TO ROTATE MANUALLY:</span>
+                        <span className="font-bold text-amber-400">{rotationAngle}° / 360°</span>
                       </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={360}
+                        value={rotationAngle}
+                        onChange={(e) => {
+                          setIsAutoSpinning(false)
+                          setRotationAngle(Number(e.target.value))
+                        }}
+                        className="w-full accent-amber-400 cursor-pointer h-2 bg-white/20 rounded-lg"
+                      />
                     </div>
                   </motion.div>
                 ) : (

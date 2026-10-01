@@ -2,13 +2,18 @@
 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
 import { useRef, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useMode } from '@/context/mode-context'
 
 export default function JewelleryPage() {
+  const router = useRouter()
+  const { modeDetails } = useMode()
   const [jewelleryProducts, setJewelleryProducts] = useState<any[]>([])
   const [sortBy, setSortBy] = useState('newest')
   const productsRef = useRef<HTMLDivElement>(null)
@@ -31,11 +36,29 @@ export default function JewelleryPage() {
   }, [sortBy])
 
   return (
-    <main className="w-full bg-[#fdf9f2]">
+    <main className="w-full transition-colors duration-700" style={{ backgroundColor: modeDetails.themeBg, color: '#F4F1EA' }}>
       <Header />
 
+      {/* BACK BUTTON STRIP */}
+      <div className="pt-28 max-w-[1920px] mx-auto px-6 md:px-12 flex items-center justify-between">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest transition-opacity hover:opacity-80 cursor-pointer"
+          style={{ color: modeDetails.accentColor }}
+        >
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          Back
+        </button>
+
+        <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D6CEBE]/70 flex items-center space-x-2">
+          <Link href="/" className="hover:opacity-80">HOME</Link>
+          <span>/</span>
+          <span className="font-bold text-white">BESPOKE JEWELLERY</span>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative h-[80vh] md:h-[95vh] w-full pt-20 flex flex-col justify-center overflow-hidden">
+      <section className="relative h-[80vh] w-full pt-12 flex flex-col justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
             src="https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775435771/WhatsApp_Image_2026-04-05_at_9.50.14_PM_dg9fjw.jpg"
@@ -54,55 +77,41 @@ export default function JewelleryPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="font-body uppercase tracking-[0.5em] md:tracking-[0.8em] text-[8px] md:text-[10px] text-[#e2bb53] mb-6 md:mb-10 block drop-shadow-lg font-bold"> Collection: Vintage & Bespoke </span>
-            <h1 className="font-headline text-[50px] sm:text-[70px] md:text-[120px] lg:text-[180px] text-white leading-[0.9] mb-8 md:mb-12 tracking-tighter drop-shadow-2xl">
+            <span className="font-body uppercase tracking-[0.5em] text-[8px] md:text-[10px] text-amber-400 mb-4 block font-bold"> 
+              Collection: Vintage & Bespoke 
+            </span>
+            <h1 className="font-headline text-[45px] sm:text-[65px] md:text-[100px] text-white leading-[0.9] mb-8 tracking-tighter">
               The Fine <br /> Ornament
             </h1>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
-              <motion.button
-                onClick={scrollToProducts}
-                className="bg-[#a3851a] text-white px-10 md:px-16 py-4 md:py-6 font-body uppercase tracking-widest text-[9px] md:text-[10px] shadow-2xl hover:bg-white hover:text-black transition-all font-bold"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Explore Collection
-              </motion.button>
-              <div className="w-px h-12 bg-white/40 hidden md:block" />
-
-            </div>
+            <button
+              onClick={scrollToProducts}
+              className="bg-amber-400 text-black px-10 py-4 font-body uppercase tracking-widest text-[9px] font-bold rounded shadow-2xl hover:bg-white transition-all cursor-pointer"
+            >
+              Explore Collection
+            </button>
           </motion.div>
         </div>
       </section>
 
-      <div className="border-b border-[#1c1c18]/5">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-12 py-10 flex flex-col lg:flex-row justify-between items-center gap-8">
-          <div className="w-full lg:w-1/3 text-center lg:text-left">
-            <h2 className="font-headline text-3xl mb-4">Curated Selections</h2>
-            <p className="font-body text-[#747878] text-[11px] leading-relaxed italic">Each piece is meticulously restored or handcrafted, a timeless narrative of craftsmanship. Curated for the contemporary silhouette.</p>
-          </div>
-          <div className="flex items-center gap-10">
-              <div className="flex items-center gap-4">
-                 <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">{jewelleryProducts.length} Pieces Found</span>
-              </div>
-              <div className="flex items-center gap-4">
-                 <span className="font-body text-[10px] uppercase tracking-widest text-[#1c1c18] font-bold">Sort:</span>
-                 <select 
-                   value={sortBy}
-                   onChange={(e) => setSortBy(e.target.value)}
-                   className="bg-transparent border-none font-body text-[10px] uppercase tracking-widest text-[#a3851a] focus:ring-0 cursor-pointer outline-none font-black"
-                 >
-                   <option value="newest" className="text-[#1c1c18]">New Arrivals</option>
-                   <option value="price-low" className="text-[#1c1c18]">Price: Low to High</option>
-                   <option value="price-high" className="text-[#1c1c18]">Price: High to Low</option>
-                 </select>
-              </div>
+      {/* Product Grid */}
+      <section ref={productsRef} className="max-w-[1920px] mx-auto px-6 md:px-12 py-16">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12 border-b border-white/10 pb-6">
+          <span className="font-body text-[10px] uppercase tracking-widest text-[#D6CEBE]">{jewelleryProducts.length} Pieces Found</span>
+          <div className="flex items-center gap-4">
+            <span className="font-body text-[10px] uppercase tracking-widest text-white font-bold">Sort:</span>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-black/60 border border-white/20 px-3 py-1.5 rounded font-body text-[10px] uppercase tracking-widest text-[#a3851a] focus:ring-0 cursor-pointer outline-none font-bold"
+            >
+              <option value="newest" className="bg-black text-white">New Arrivals</option>
+              <option value="price-low" className="bg-black text-white">Price: Low to High</option>
+              <option value="price-high" className="bg-black text-white">Price: High to Low</option>
+            </select>
           </div>
         </div>
-      </div>
 
-      {/* Product Grid */}
-      <section ref={productsRef} className="max-w-[1920px] mx-auto px-6 md:px-12 py-16 md:py-32">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {jewelleryProducts.map((product, index) => (
             <ProductCard
               key={product.id}
@@ -119,53 +128,7 @@ export default function JewelleryPage() {
         </div>
       </section>
 
-      {/* Personalized Curation Section */}
-      <section className="bg-white py-24 md:py-40 border-y border-[#1c1c18]/5">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center gap-16 lg:gap-32">
-          <div className="w-full md:w-1/2 aspect-[4/5] bg-[#f1ede6] relative shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden">
-            <Image
-              src="/jewelry_story.png"
-              alt="A Jewelry Story"
-              fill
-              className="object-cover transition-transform duration-[3s] hover:scale-110"
-            />
-          </div>
-
-          <div className="w-full md:w-1/2">
-            <h3 className="font-headline text-6xl text-[#1c1c18] mb-12 tracking-tight leading-tight">A Timeless <br /> Narrative</h3>
-            <p className="font-body text-[#747878] text-sm mb-16 max-w-sm leading-[1.8] italic">
-              &quot;Every piece of jewellery tells a story. It is the language of heritage, a whisper of the past, and a promise for the future. We curate not just ornaments, but legacies meant to be worn across eras.&quot;
-            </p>
-
-          </div>
-        </div>
-      </section>
-
-      {/* Jewelry Care */}
-      <section className="py-24 md:py-40 px-6 md:px-12 max-w-[1920px] mx-auto">
-        <div className="flex flex-col md:flex-row justify-between gap-12 md:gap-24 mb-16 md:mb-24 items-start md:items-end">
-          <h2 className="font-headline text-4xl md:text-5xl lg:text-6xl text-[#1c1c18] tracking-tighter shrink-0">Jewelry Care <br /> Essentials</h2>
-          <p className="font-body text-[#747878] text-xs max-w-md leading-relaxed italic">The jewelry in our archive is meant to last lifetimes. Proper maintenance ensures each piece remains as radiant as the day it was constructed.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-12">
-          {careSteps.map((step, i) => (
-            <div key={i} className="group border-l border-[#1c1c18]/5 pl-8 hover:border-[#a3851a] transition-all">
-              <span className="font-headline text-2xl text-[#a3851a] mb-6 block leading-none">{step.id}</span>
-              <h4 className="font-body uppercase tracking-widest text-[10px] font-bold mb-6">{step.title}</h4>
-              <p className="font-body text-[#747878] text-[11px] leading-relaxed">{step.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <Footer />
     </main>
   )
 }
-
-const careSteps = [
-  { id: '01', title: 'The Storage Ritual', desc: 'Each piece is delivered in silk velvet pouches or handcrafted boxes of solid teak. Store individually to prevent surface scratches from metal contact.' },
-  { id: '02', title: 'Cleaning & Polishing', desc: 'Use a lint-free soft cloth after each wear. For deep cleaning, use lukewarm water and a soft-bristled brush, specifically for light metal grain wash.' },
-  { id: '03', title: 'Annual Inspection', desc: 'We recommend an annual professional check of stone settings and clasps to ensure the physical integrity of your heirloom.' }
-]

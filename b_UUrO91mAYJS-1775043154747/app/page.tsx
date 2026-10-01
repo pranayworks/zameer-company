@@ -2,35 +2,33 @@
 
 import { Header } from '@/components/header'
 import { HeroSection } from '@/components/hero-section'
-import { CategoriesGrid } from '@/components/categories-grid'
-import { FeaturedProducts } from '@/components/featured-products'
-import { AboutSection } from '@/components/about-section'
-import { WhyChooseUs } from '@/components/why-choose-us'
+import { ThreeWorldEntry } from '@/components/three-world-entry'
+import { FeaturedArchiveDrop } from '@/components/featured-archive-drop'
+import { HeritageStoryTeaser } from '@/components/heritage-story-teaser'
+import { TrustBadges } from '@/components/trust-badges'
+import { Testimonials } from '@/components/testimonials'
 import { Footer } from '@/components/footer'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { FloatingWhatsapp } from '@/components/floating-whatsapp'
+import { useMode } from '@/context/mode-context'
 
-export default function Home() {
-  const router = useRouter()
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (hash.includes('type=recovery') || hash.includes('error_code=') || hash.includes('access_token=')) {
-        router.push('/reset-password' + hash);
-      }
-    }
-  }, [router]);
+export default function HomePage() {
+  const { modeDetails } = useMode()
 
   return (
-    <main className="w-full bg-[#fdf9f2]">
+    <main 
+      className="min-h-screen text-[#F4F1EA] relative transition-colors duration-700 ease-in-out"
+      style={{ backgroundColor: modeDetails.themeBg }}
+    >
       <Header />
       <HeroSection />
-      <FeaturedProducts />
-      <AboutSection />
-      <CategoriesGrid />
-      <WhyChooseUs />
+      <ThreeWorldEntry />
+      <FeaturedArchiveDrop />
+      <HeritageStoryTeaser />
+      <TrustBadges />
+      <Testimonials />
       <Footer />
+      <FloatingWhatsapp />
     </main>
   )
 }
+

@@ -8,14 +8,20 @@ interface SendInvoiceParams {
   total: number
 }
 
-export async function sendOrderConfirmationEmail({ email, name, orderId, items, total }: SendInvoiceParams) {
-  const transporter = nodemailer.createTransport({
+function getGmailTransporter(customPass?: string) {
+  const rawPass = customPass || process.env.GMAIL_APP_PASSWORD || ''
+  const cleanPass = rawPass.replace(/\s+/g, '')
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: 'friendsof4.support@gmail.com',
-      pass: process.env.GMAIL_APP_PASSWORD, 
+      pass: cleanPass,
     },
   })
+}
+
+export async function sendOrderConfirmationEmail({ email, name, orderId, items, total }: SendInvoiceParams) {
+  const transporter = getGmailTransporter()
 
   const totalDisplay = `₹${total.toLocaleString('en-IN')}`
 
@@ -75,7 +81,14 @@ export async function sendOrderConfirmationEmail({ email, name, orderId, items, 
             </p>
           </div>
 
-          <div style="text-align: center; margin-top: 40px;">
+          <div style="margin-top: 30px; padding: 20px; background-color: #fcfbfa; border: 1px solid #eaddca; border-radius: 4px;">
+            <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #888888; margin: 0 0 8px 0; font-weight: bold;">Authorized & Issued By:</p>
+            <p style="font-family: 'Georgia', serif; font-style: italic; font-size: 18px; color: #a3851a; margin: 0 0 4px 0;">Team Fo4</p>
+            <p style="font-size: 13px; font-weight: bold; color: #1c1c18; margin: 0 0 2px 0;">Team Fo4</p>
+            <p style="font-size: 11px; color: #666666; margin: 0;">Friends of 4 Atelier</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 30px;">
             <a href="https://wa.me/917569145624?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20my%20order%3A%20${orderId}" style="background-color: #25d366; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">WhatsApp Support</a>
           </div>
         </div>
@@ -98,13 +111,7 @@ export async function sendOrderConfirmationEmail({ email, name, orderId, items, 
 }
 
 export async function sendTrackingEmail({ email, name, orderId, trackingNumber }: { email: string, name: string, orderId: string, trackingNumber: string }) {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'friendsof4.support@gmail.com',
-      pass: process.env.GMAIL_APP_PASSWORD, 
-    },
-  })
+  const transporter = getGmailTransporter()
 
   const mailOptions = {
     from: '"Friends of 4 Logistics" <friendsof4.support@gmail.com>',
@@ -154,13 +161,7 @@ export async function sendTrackingEmail({ email, name, orderId, trackingNumber }
 }
 
 export async function sendOrderCancellationEmail({ email, name, orderId, total }: Omit<SendInvoiceParams, 'items'>) {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'friendsof4.support@gmail.com',
-      pass: process.env.GMAIL_APP_PASSWORD, 
-    },
-  })
+  const transporter = getGmailTransporter()
 
   const totalDisplay = `₹${total.toLocaleString('en-IN')}`
 
@@ -202,5 +203,122 @@ export async function sendOrderCancellationEmail({ email, name, orderId, total }
   } catch (error) {
     console.error('Error sending cancellation email:', error)
     return { success: false, error }
+  }
+}
+
+export async function sendCustomClientEmail({
+  toEmail,
+  name,
+  subject,
+  messageBody,
+  customPass
+}: {
+  toEmail: string
+  name: string
+  subject: string
+  messageBody: string
+  customPass?: string
+}) {
+  const transporter = getGmailTransporter(customPass)
+
+  const mailOptions = {
+    from: '"Friends of 4 Concierge" <friendsof4.support@gmail.com>',
+    to: toEmail,
+    subject: subject || 'Important Message from Friends of 4 Atelier',
+    html: `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1c1c18; max-width: 650px; margin: 0 auto; border: 1px solid #e2d9c8; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <div style="background-color: #0b0e17; padding: 35px 30px; text-align: center; border-bottom: 2px solid #c8a951;">
+          <h1 style="color: #ffffff; text-transform: uppercase; letter-spacing: 0.35em; font-weight: 300; font-size: 22px; margin: 0;">FRIENDS OF 4</h1>
+          <p style="color: #c8a951; text-transform: uppercase; letter-spacing: 0.2em; font-size: 9px; margin-top: 8px; font-weight: bold;">Atelier & Executive Support</p>
+        </div>
+
+        <div style="padding: 35px 30px;">
+          <h2 style="font-weight: 600; font-size: 20px; color: #1c1c18; margin-bottom: 15px; border-bottom: 1px solid #eeeeee; pb: 10px;">${subject}</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #444444; font-weight: bold; margin-bottom: 20px;">Hello ${name},</p>
+          
+          <div style="font-size: 14px; line-height: 1.8; color: #222222; background-color: #faf9f6; padding: 22px; border-left: 4px solid #c8a951; border-radius: 4px; white-space: pre-wrap;">${messageBody}</div>
+
+          <div style="margin-top: 30px; padding: 20px; background-color: #fcfbfa; border: 1px solid #eaddca; border-radius: 6px;">
+            <p style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: #888888; margin: 0 0 6px 0; font-weight: bold;">Direct Atelier Executive Contact:</p>
+            <p style="font-family: 'Georgia', serif; font-style: italic; font-size: 18px; color: #a3851a; margin: 0 0 4px 0;">Team Fo4</p>
+            <p style="font-size: 12px; font-weight: bold; color: #1c1c18; margin: 0 0 2px 0;">Team Fo4</p>
+            <p style="font-size: 11px; color: #666666; margin: 0;">Friends of 4 Atelier</p>
+            <p style="font-size: 11px; color: #c8a951; margin-top: 4px; font-weight: bold;">Official Support: friendsof4.support@gmail.com</p>
+          </div>
+        </div>
+
+        <div style="background-color: #0b0e17; padding: 25px; text-align: center; font-size: 11px; color: #888888; border-top: 1px solid #222222;">
+          <p style="margin-bottom: 6px; color: #dddddd;">Friends of 4 Atelier &bull; Style of Tradition</p>
+          <p style="margin: 0; color: #888888; font-size: 10px;">Sent securely from friendsof4.support@gmail.com</p>
+        </div>
+      </div>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error sending custom client email:', error)
+    return { success: false, error: error?.message || String(error) }
+  }
+}
+
+export async function sendBroadcastAnnouncementEmail({
+  recipientEmails,
+  subject,
+  messageBody,
+  customPass
+}: {
+  recipientEmails: string[]
+  subject: string
+  messageBody: string
+  customPass?: string
+}) {
+  const transporter = getGmailTransporter(customPass)
+
+  // Filter unique valid emails
+  const cleanEmails = Array.from(new Set(recipientEmails.map(e => (e || '').trim().toLowerCase()).filter(e => e.includes('@'))))
+  if (cleanEmails.length === 0) return { success: false, error: 'No valid recipient email addresses.' }
+
+  const mailOptions = {
+    from: '"Friends of 4 Announcement" <friendsof4.support@gmail.com>',
+    bcc: cleanEmails, // BCC so customer email addresses remain private
+    subject: subject || 'Exclusive Announcement from Friends of 4 Atelier',
+    html: `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1c1c18; max-width: 650px; margin: 0 auto; border: 1px solid #e2d9c8; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <div style="background-color: #0b0e17; padding: 35px 30px; text-align: center; border-bottom: 2px solid #c8a951;">
+          <h1 style="color: #ffffff; text-transform: uppercase; letter-spacing: 0.35em; font-weight: 300; font-size: 22px; margin: 0;">FRIENDS OF 4</h1>
+          <p style="color: #c8a951; text-transform: uppercase; letter-spacing: 0.2em; font-size: 9px; margin-top: 8px; font-weight: bold;">Official Atelier Broadcast</p>
+        </div>
+
+        <div style="padding: 35px 30px;">
+          <h2 style="font-weight: 600; font-size: 20px; color: #1c1c18; margin-bottom: 15px; border-bottom: 1px solid #eeeeee; pb: 10px;">${subject}</h2>
+          
+          <div style="font-size: 14px; line-height: 1.8; color: #222222; background-color: #faf9f6; padding: 22px; border-left: 4px solid #c8a951; border-radius: 4px; white-space: pre-wrap;">${messageBody}</div>
+
+          <div style="margin-top: 30px; padding: 20px; background-color: #fcfbfa; border: 1px solid #eaddca; border-radius: 6px;">
+            <p style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: #888888; margin: 0 0 6px 0; font-weight: bold;">Issued by Atelier Management:</p>
+            <p style="font-family: 'Georgia', serif; font-style: italic; font-size: 18px; color: #a3851a; margin: 0 0 4px 0;">Team Fo4</p>
+            <p style="font-size: 12px; font-weight: bold; color: #1c1c18; margin: 0 0 2px 0;">Team Fo4</p>
+            <p style="font-size: 11px; color: #666666; margin: 0;">Friends of 4 Atelier</p>
+            <p style="font-size: 11px; color: #c8a951; margin-top: 4px; font-weight: bold;">Support Desk: friendsof4.support@gmail.com</p>
+          </div>
+        </div>
+
+        <div style="background-color: #0b0e17; padding: 25px; text-align: center; font-size: 11px; color: #888888; border-top: 1px solid #222222;">
+          <p style="margin-bottom: 6px; color: #dddddd;">Friends of 4 Atelier &bull; Style of Tradition</p>
+          <p style="margin: 0; color: #888888; font-size: 10px;">Sent via Official Broadcast from friendsof4.support@gmail.com</p>
+        </div>
+      </div>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error sending broadcast announcement email:', error)
+    return { success: false, error: error?.message || String(error) }
   }
 }

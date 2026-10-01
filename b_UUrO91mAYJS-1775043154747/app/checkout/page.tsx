@@ -9,6 +9,8 @@ import { Footer } from '@/components/footer'
 import { useCart } from '@/context/cart-context'
 import { supabase, getSessionUser } from '@/lib/supabase'
 import Link from 'next/link'
+import { useMode } from '@/context/mode-context'
+import { downloadInvoicePDF } from '@/lib/admin-helpers'
 
 declare global {
   interface Window {
@@ -18,222 +20,465 @@ declare global {
 
 type CheckoutStep = 'summary' | 'address' | 'paying' | 'success'
 
-interface UserProfile {
+interface DetailedAddress {
   name: string
   email: string
   phone: string
+  flatNo: string
+  area: string
+  landmark: string
+  pincode: string
+  city: string
+  state: string
+  saveAsDefault: boolean
+}
+
+export interface CompletedOrderSummary {
+  orderId: string
+  date: string
+  items: Array<{
+    name: string
+    size?: string
+    color?: string
+    quantity: number
+    price: number
+    image?: string
+  }>
+  customerName: string
+  email: string
+  phone: string
   address: string
-  userId: string
+  subtotal: number
+  discountAmount: number
+  shippingFee: number
+  finalTotal: number
 }
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cart, subtotal, placeOrder, totalItems } = useCart()
+  const { cart, subtotal, placeOrder, totalItems, clearCart } = useCart()
+  const { modeDetails } = useMode()
 
   const [step, setStep] = useState<CheckoutStep>('summary')
-  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [addressConfirmed, setAddressConfirmed] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [orderId, setOrderId] = useState('')
+  const [completedOrder, setCompletedOrder] = useState<CompletedOrderSummary | null>(null)
   const [shippingMethod, setShippingMethod] = useState<'Standard' | 'Express'>('Standard')
-  const shippingFee = shippingMethod === 'Express' ? 150 : 0
+  const [currency, setCurrency] = useState<'INR' | 'USD'>('INR')
+  const [rzpInstance, setRzpInstance] = useState<any>(null)
+  
+  // DETAILED ADDRESS FORM STATE
+  const [addressForm, setAddressForm] = useState<DetailedAddress>({
+    name: '',
+    email: '',
+    phone: '',
+    flatNo: '',
+    area: '',
+    landmark: '',
+    pincode: '',
+    city: '',
+    state: '',
+    saveAsDefault: true,
+  })
 
-  // Load Razorpay script
+  // DISCOUNT / SINGLE-USE COUPON STATES
+  const [couponInput, setCouponInput] = useState('')
+  const [discountAmount, setDiscountAmount] = useState(0)
+  const [appliedCoupon, setAppliedCoupon] = useState('')
+  const [couponError, setCouponError] = useState('')
+
+  const exchangeRate = currency === 'USD' ? 0.012 : 1.0
+
+  const shippingFee = shippingMethod === 'Express' ? 150 : 0
+  const finalTotal = Math.max(0, subtotal - discountAmount + shippingFee)
+
+  const formatPrice = (amount: number) => {
+    if (currency === 'USD') {
+      return `$${(amount * exchangeRate).toFixed(2)} USD`
+    }
+    return `₹${amount.toLocaleString('en-IN')}`
+  }
+
+  // Load saved default address on mount
   useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    script.async = true
-    document.body.appendChild(script)
-    return () => { document.body.removeChild(script) }
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('fo4_saved_default_address')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          setAddressForm(prev => ({
+            ...prev,
+            ...parsed,
+            saveAsDefault: true,
+          }))
+        }
+      } catch (e) {}
+    }
   }, [])
 
-  // Fetch user profile
+  // Load user session profile as fallback & protect checkout page
   useEffect(() => {
     const fetchProfile = async () => {
-      const { user, error } = await getSessionUser()
-      if (error || !user) {
-        router.push('/login')
+      const { user } = await getSessionUser()
+      const localEmail = typeof window !== 'undefined' ? localStorage.getItem('currentUserEmail') : null
+
+      if (!user && !localEmail) {
+        // User is not logged in — redirect immediately to /login?redirect=/checkout
+        router.push('/login?redirect=/checkout')
         return
       }
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-      setProfile({
-        name: profileData?.name || user.user_metadata?.full_name || 'Valued Customer',
-        email: profileData?.email || user.email || '',
-        phone: profileData?.phone || '',
-        address: profileData?.address || '',
-        userId: user.id,
-      })
+        setAddressForm(prev => ({
+          ...prev,
+          name: prev.name || profileData?.name || user.user_metadata?.full_name || '',
+          email: prev.email || profileData?.email || user.email || '',
+          phone: prev.phone || profileData?.phone || '',
+        }))
+      } else if (localEmail) {
+        const dbStr = localStorage.getItem('usersDb')
+        const usersDb = dbStr ? JSON.parse(dbStr) : {}
+        const localUser = usersDb[localEmail]
+        if (localUser) {
+          setAddressForm(prev => ({
+            ...prev,
+            name: prev.name || localUser.fullName || '',
+            email: prev.email || localUser.email || localEmail,
+            phone: prev.phone || localUser.phone || '',
+          }))
+        }
+      }
       setLoading(false)
     }
     fetchProfile()
   }, [router])
 
-  // Redirect if cart is empty
-  useEffect(() => {
-    if (!loading && cart.length === 0 && step !== 'success') {
-      router.push('/')
-    }
-  }, [cart, loading, step, router])
+  // Single-use Per Account Coupon Application Logic
+  const handleApplyCoupon = (e: React.FormEvent) => {
+    e.preventDefault()
+    const code = couponInput.trim().toUpperCase()
+    if (!code) return
 
-  const handleProceedToAddress = () => {
-    setStep('address')
+    // 1. Check if coupon was deleted by admin
+    let deletedCodes: string[] = []
+    try {
+      deletedCodes = JSON.parse(localStorage.getItem('fo4_deleted_coupons') || '[]')
+    } catch {}
+
+    if (deletedCodes.includes(code)) {
+      setCouponError(`Coupon code [${code}] is no longer active or has been removed by Atelier.`)
+      return
+    }
+
+    // 2. Check if coupon has already been redeemed by THIS account
+    const userEmail = (addressForm.email || localStorage.getItem('currentUserEmail') || 'guest').toLowerCase().trim()
+    let perAccountUsed: string[] = []
+    try {
+      perAccountUsed = JSON.parse(localStorage.getItem(`fo4_used_coupons_${userEmail}`) || '[]')
+    } catch {}
+
+    if (perAccountUsed.includes(code)) {
+      setCouponError(`You have already redeemed coupon code [${code}] on this account. Each coupon is single-use per account.`)
+      return
+    }
+
+    // Verify code against valid coupons
+    let activeCoupons: Record<string, { type: 'percent' | 'fixed'; val: number }> = {
+      'WELCOME10': { type: 'percent', val: 10 },
+      'HERITAGE20': { type: 'percent', val: 20 },
+      'STREETWEAR15': { type: 'percent', val: 15 },
+      'ARCHIVE10': { type: 'fixed', val: 1000 },
+    }
+
+    try {
+      const adminCoupons = JSON.parse(localStorage.getItem('fo4_admin_coupons') || '{}')
+      activeCoupons = { ...activeCoupons, ...adminCoupons }
+    } catch {}
+
+    if (activeCoupons[code]) {
+      const rule = activeCoupons[code]
+      const disc = rule.type === 'percent' ? (subtotal * rule.val) / 100 : Math.min(subtotal, rule.val)
+      setDiscountAmount(disc)
+      setAppliedCoupon(code)
+      setCouponError('')
+    } else {
+      setCouponError('Invalid promo coupon code. Try WELCOME10, HERITAGE20, or STREETWEAR15.')
+    }
   }
 
-  // Express delivery only — no shipping method toggle needed
+  // Load Razorpay script dynamically if missing
+  const loadRazorpaySDK = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve(false)
+      if ((window as any).Razorpay) return resolve(true)
+
+      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(true))
+        existingScript.addEventListener('error', () => resolve(false))
+        return
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.async = true
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+  }
+
+  useEffect(() => {
+    loadRazorpaySDK()
+  }, [])
 
   const handlePay = async () => {
-    if (!profile) return
+    if (!addressForm.name || !addressForm.phone || !addressForm.flatNo || !addressForm.pincode) {
+      setPaymentError('Please fill in all mandatory dispatch address details (Name, Phone, Flat/Building, Pin Code).')
+      return
+    }
+
     setPaymentError('')
     setStep('paying')
 
+    // Format full address
+    const fullFormattedAddress = `${addressForm.flatNo}, ${addressForm.area}${addressForm.landmark ? ', Landmark: ' + addressForm.landmark : ''}, ${addressForm.city}, ${addressForm.state} - ${addressForm.pincode}`
+    
+    // Save default address to localStorage
+    if (addressForm.saveAsDefault && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('fo4_saved_default_address', JSON.stringify(addressForm))
+      } catch {}
+    }
+
+    // Record coupon redemption (Per Account + Global Analytics Log)
+    if (appliedCoupon && typeof window !== 'undefined') {
+      try {
+        const userEmail = (addressForm.email || localStorage.getItem('currentUserEmail') || 'guest').toLowerCase().trim()
+        
+        // 1. Per-account redemption key
+        const perAccountKey = `fo4_used_coupons_${userEmail}`
+        const perAccUsed = JSON.parse(localStorage.getItem(perAccountKey) || '[]')
+        if (!perAccUsed.includes(appliedCoupon)) {
+          perAccUsed.push(appliedCoupon)
+          localStorage.setItem(perAccountKey, JSON.stringify(perAccUsed))
+        }
+
+        // 2. Global coupon redemptions count
+        const used = JSON.parse(localStorage.getItem('fo4_used_coupons') || '[]')
+        used.push(appliedCoupon)
+        localStorage.setItem('fo4_used_coupons', JSON.stringify(used))
+
+        // 3. Detailed redemption log for admin table
+        const redemptions = JSON.parse(localStorage.getItem('fo4_coupon_redemptions') || '[]')
+        redemptions.unshift({
+          email: userEmail,
+          code: appliedCoupon,
+          discount: discountAmount,
+          timestamp: new Date().toISOString()
+        })
+        localStorage.setItem('fo4_coupon_redemptions', JSON.stringify(redemptions))
+      } catch {}
+    }
+
+    const customerProfile = {
+      name: addressForm.name,
+      email: addressForm.email,
+      phone: addressForm.phone,
+      address: fullFormattedAddress,
+      userId: 'guest'
+    }
+
+    const sdkLoaded = await loadRazorpaySDK()
+    if (!sdkLoaded || !window.Razorpay) {
+      setStep('address')
+      setPaymentError('Could not load Razorpay payment SDK. Please check your internet connection and try again.')
+      return
+    }
+
+    let orderData: any = null
     try {
-      // 1. Create Razorpay order on server
       const res = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: subtotal + shippingFee,
+          amount: finalTotal,
           currency: 'INR',
           receipt: `rcpt_${Date.now()}`,
         }),
       })
 
-      const orderData = await res.json()
-      if (!res.ok || !orderData.orderId) {
-        throw new Error(orderData.error || 'Could not create payment order')
+      if (res.ok) {
+        orderData = await res.json()
       }
+    } catch (e: any) {
+      console.warn("Backend order creation warning:", e)
+    }
 
-      // 2. Open Razorpay checkout
-      const options = {
-        key: orderData.key,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'Friends of 4 Atelier',
-        description: `${totalItems} Editorial Piece${totalItems > 1 ? 's' : ''}`,
-        order_id: orderData.orderId,
-        prefill: {
-          name: profile.name,
-          email: profile.email,
-          contact: profile.phone,
-        },
-        theme: {
-          color: '#a3851a',
-          backdrop_color: '#0b0b0b',
-        },
-        modal: {
-          ondismiss: () => {
-            setStep('address')
-            setPaymentError('Payment was cancelled. You can try again.')
-          },
-        },
-        handler: async (response: {
-          razorpay_payment_id: string
-          razorpay_order_id: string
-          razorpay_signature: string
-        }) => {
-          // 3. Verify payment on server
-          const verifyRes = await fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            }),
-          })
+    if (!orderData || !orderData.orderId) {
+      setStep('address')
+      setPaymentError(`Payment Gateway Error: ${orderData?.error || 'Unable to authenticate order with Razorpay. Please check API keys.'}`)
+      return
+    }
 
-          const verifyData = await verifyRes.json()
+    const razorpayOrderId = orderData.orderId
+    const razorpayKey = orderData.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Tha2BWyYXOJUkD'
 
-          if (verifyData.success) {
-            // 4. Place order in Supabase + send Telegram notification
-            setOrderId(response.razorpay_payment_id)
-            // @ts-ignore
-            await placeOrder(shippingMethod, shippingFee)
-            
-            // 5. Send confirmation email
-            try {
-              const emailResp = await fetch('/api/send-invoice', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  email: profile.email,
-                  name: profile.name,
-                  orderId: response.razorpay_payment_id,
-                  items: cart,
-                  total: subtotal + shippingFee,
-                  shippingMethod,
-                  shippingFee
-                })
-              })
-              const emailData = await emailResp.json()
-              if (!emailResp.ok || !emailData.success) {
-                console.error('Email API returned error:', emailData.error)
-              } else {
-                console.log('Confirmation email successfully queued')
-              }
-            } catch (emailError) {
-              console.error('Failed to connect to email API:', emailError)
-            }
+    const options: any = {
+      key: razorpayKey,
+      amount: Math.round(finalTotal * 100), // Convert ₹ to paise
+      currency: 'INR',
+      name: 'Friends of 4 Atelier',
+      description: `${totalItems} Archival Piece${totalItems > 1 ? 's' : ''}`,
+      order_id: razorpayOrderId,
+      prefill: {
+        name: addressForm.name,
+        email: addressForm.email,
+        contact: addressForm.phone,
+      },
+      notes: {
+        address: fullFormattedAddress,
+        coupon: appliedCoupon || 'None'
+      },
+      theme: {
+        color: modeDetails.accentColor || '#B8892D',
+      },
+      handler: async (response: any) => {
+        const paymentId = response.razorpay_payment_id || `ORD-${Date.now().toString().slice(-6)}`
+        setOrderId(paymentId)
 
-            setStep('success')
-          } else {
-            setStep('address')
-            setPaymentError('Payment verification failed. Please contact support.')
-          }
-        },
+        const snapshotItems = cart.map(item => ({
+          name: item.name || item.title || 'Archival Piece',
+          size: item.selectedSize || 'Standard',
+          color: item.selectedColor || 'Default',
+          quantity: item.quantity,
+          price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 4800,
+          image: item.image
+        }))
+
+        setCompletedOrder({
+          orderId: paymentId,
+          date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          items: snapshotItems,
+          customerName: addressForm.name || 'Valued Client',
+          email: addressForm.email || '',
+          phone: addressForm.phone || '',
+          address: fullFormattedAddress,
+          subtotal,
+          discountAmount,
+          shippingFee,
+          finalTotal
+        })
+
+        await placeOrder(shippingMethod, shippingFee, customerProfile)
+        setStep('success')
+      },
+      modal: {
+        ondismiss: () => {
+          setStep('address')
+          setPaymentError('Payment window was closed. Click below to retry payment or complete acquisition.')
+        }
       }
+    }
 
+    try {
       const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', (res: any) => {
+      rzp.on('payment.failed', async (response: any) => {
         setStep('address')
-        setPaymentError(`Payment failed: ${res.error?.description || 'Unknown error'}`)
+        setPaymentError(`Payment Failed: ${response.error?.description || 'Gateway error'}. Please retry.`)
       })
+      setRzpInstance(rzp)
       rzp.open()
     } catch (err: any) {
+      console.error("Error launching Razorpay:", err)
       setStep('address')
-      setPaymentError(err.message || 'Something went wrong. Please try again.')
+      setPaymentError(`Failed to launch Razorpay window: ${err?.message || 'Unknown error'}`)
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fdf9f2] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#a3851a] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center transition-colors duration-700" style={{ backgroundColor: modeDetails.themeBg }}>
+        <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin" style={{ borderLeftColor: modeDetails.accentColor, borderRightColor: modeDetails.accentColor, borderBottomColor: modeDetails.accentColor, borderTopColor: 'transparent' }} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#fdf9f2] flex flex-col font-body">
+    <div className="min-h-screen text-[#F4F1EA] flex flex-col font-body transition-colors duration-700" style={{ backgroundColor: modeDetails.themeBg }}>
       <Header />
 
-      <main className="flex-1 pt-32 pb-24 px-6 md:px-12 xl:px-24 max-w-[1400px] mx-auto w-full">
+      <main className="flex-1 pt-32 pb-24 px-4 sm:px-6 lg:px-12 max-w-7xl mx-auto w-full">
+        
+        {/* BACK NAVIGATION BUTTON */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-xs uppercase tracking-widest font-mono font-bold transition-all hover:opacity-80 cursor-pointer"
+            style={{ color: modeDetails.accentColor }}
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            Back to Collection
+          </button>
+        </div>
 
-        {/* Page Header */}
+        {/* PAGE TITLE & CURRENCY SELECTOR */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-16 text-center"
+          className="mb-12 flex flex-col sm:flex-row sm:items-end justify-between border-b pb-6 transition-colors duration-700"
+          style={{ borderColor: `${modeDetails.borderColor}40` }}
         >
-          <p className="text-[10px] uppercase tracking-[0.4em] text-[#a3851a] mb-4">Secure Checkout</p>
-          <h1 className="font-headline text-5xl lg:text-7xl text-[#1c1c18]">Finalise Your Order</h1>
+          <div>
+            <span className="text-[10px] uppercase tracking-[0.4em] font-semibold" style={{ color: modeDetails.accentColor }}>
+              SECURE CHECKOUT PROTOCOL
+            </span>
+            <h1 className="font-serif-editorial text-4xl sm:text-6xl text-white uppercase mt-1">
+              FINALISE YOUR ORDER
+            </h1>
+          </div>
+
+          {/* CURRENCY SWITCHER IN CHECKOUT */}
+          <div className="mt-4 sm:mt-0 flex items-center space-x-2 border p-1.5 shadow-sm rounded-lg" style={{ backgroundColor: modeDetails.cardBg, borderColor: `${modeDetails.borderColor}40` }}>
+            <span className="text-[10px] font-mono uppercase px-2 opacity-70" style={{ color: '#D6CEBE' }}>CURRENCY:</span>
+            <button
+              onClick={() => setCurrency('INR')}
+              className="px-3 py-1 text-xs font-mono font-bold uppercase transition-all rounded cursor-pointer"
+              style={{
+                backgroundColor: currency === 'INR' ? modeDetails.accentColor : 'transparent',
+                color: currency === 'INR' ? modeDetails.themeBg : '#D6CEBE'
+              }}
+            >
+              INR (₹)
+            </button>
+            <button
+              onClick={() => setCurrency('USD')}
+              className="px-3 py-1 text-xs font-mono font-bold uppercase transition-all rounded cursor-pointer"
+              style={{
+                backgroundColor: currency === 'USD' ? modeDetails.accentColor : 'transparent',
+                color: currency === 'USD' ? modeDetails.themeBg : '#D6CEBE'
+              }}
+            >
+              USD ($)
+            </button>
+          </div>
         </motion.div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-4 mb-16">
+        {/* PROGRESS STEPS */}
+        <div className="flex items-center justify-center gap-4 mb-12">
           {[
-            { id: 'summary', label: 'Review', icon: 'receipt_long' },
-            { id: 'address', label: 'Address', icon: 'location_on' },
-            { id: 'paying', label: 'Payment', icon: 'payment' },
-            { id: 'success', label: 'Confirmed', icon: 'check_circle' },
-          ].map((s, i, arr) => {
+            { id: 'summary', label: '1. REVIEW BAG' },
+            { id: 'address', label: '2. DISPATCH DETAILS' },
+            { id: 'paying', label: '3. PAYMENT' },
+            { id: 'success', label: '4. CONFIRMED' },
+          ].map((s) => {
             const steps: CheckoutStep[] = ['summary', 'address', 'paying', 'success']
             const currentIndex = steps.indexOf(step)
             const thisIndex = steps.indexOf(s.id as CheckoutStep)
@@ -241,476 +486,610 @@ export default function CheckoutPage() {
             const isDone = thisIndex < currentIndex
 
             return (
-              <div key={s.id} className="flex items-center">
-                <div className="flex flex-col items-center gap-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${
-                    isDone ? 'bg-[#a3851a] text-white shadow-lg' :
-                    isActive ? 'bg-[#1c1c18] text-white shadow-xl scale-110' :
-                    'bg-[#1c1c18]/10 text-[#747878]'
-                  }`}>
-                    <span className="material-symbols-outlined text-sm">
-                      {isDone ? 'check' : s.icon}
-                    </span>
-                  </div>
-                  <span className={`text-[8px] uppercase tracking-widest ${isActive ? 'text-[#1c1c18] font-bold' : 'text-[#747878]'}`}>
-                    {s.label}
-                  </span>
-                </div>
-                {i < arr.length - 1 && (
-                  <div className={`w-12 md:w-24 h-px mx-2 mb-5 transition-all duration-700 ${thisIndex < currentIndex ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`} />
-                )}
+              <div key={s.id} className="flex items-center space-x-2">
+                <span 
+                  className={`text-xs font-mono tracking-widest px-3 py-1 uppercase rounded-full border transition-all ${
+                    isDone ? 'font-bold' : isActive ? 'font-bold shadow-md' : 'opacity-60'
+                  }`}
+                  style={{
+                    backgroundColor: isDone || isActive ? modeDetails.accentColor : 'transparent',
+                    color: isDone || isActive ? modeDetails.themeBg : '#D6CEBE',
+                    borderColor: modeDetails.borderColor,
+                  }}
+                >
+                  {s.label}
+                </span>
               </div>
             )
           })}
         </div>
 
+        {/* STEP CONTENT */}
         <AnimatePresence mode="wait">
-
-          {/* ── STEP 1: ORDER SUMMARY ── */}
           {step === 'summary' && (
             <motion.div
               key="summary"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-8"
             >
-              {/* Items */}
-              <div className="lg:col-span-2 space-y-4">
-                <h2 className="font-headline text-2xl text-[#1c1c18] mb-6">Your Bag ({totalItems} {totalItems === 1 ? 'piece' : 'pieces'})</h2>
-                {cart.map((item) => {
-                  const price = typeof item.price === 'string'
-                    ? parseFloat(item.price.replace('₹', '').replace(',', '').replace('$', ''))
-                    : item.price
-                  return (
-                    <motion.div
-                      key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}
-                      layout
-                      className="flex gap-6 p-6 bg-white border border-[#1c1c18]/5 shadow-sm hover:shadow-md transition-all"
-                    >
-                      <div className="relative w-20 aspect-[3/4] bg-[#f5f0e8] overflow-hidden shrink-0">
-                        <Image src={item.image} alt={item.name} fill className="object-cover" />
-                      </div>
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div>
-                          <h3 className="font-headline text-lg text-[#1c1c18] leading-tight">{item.name}</h3>
-                          <div className="flex gap-4 mt-2">
-                            {item.selectedSize && (
-                              <span className="text-[9px] uppercase tracking-widest text-[#747878] bg-[#1c1c18]/5 px-2 py-1">Size: {item.selectedSize}</span>
-                            )}
-                            {item.selectedColor && (
-                              <span className="text-[9px] uppercase tracking-widest text-[#747878] bg-[#1c1c18]/5 px-2 py-1">Color: {item.selectedColor}</span>
-                            )}
+              {/* CART ITEMS LIST */}
+              <div className="lg:col-span-7 space-y-4">
+                <h2 className="font-serif-editorial text-2xl text-white mb-4 uppercase">
+                  YOUR BAG ({totalItems} PIECES)
+                </h2>
+
+                {cart.length === 0 ? (
+                  <div className="border p-8 text-center space-y-3 rounded-lg" style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}>
+                    <p className="font-serif-editorial text-xl">YOUR BAG IS EMPTY</p>
+                    <Link href="/shop" className="inline-block px-6 py-2 text-xs font-mono uppercase font-bold rounded" style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}>
+                      RETURN TO COLLECTION
+                    </Link>
+                  </div>
+                ) : (
+                  cart.map((item, idx) => {
+                    const priceNum = typeof item.price === 'number' 
+                      ? item.price 
+                      : item.rawPrice || parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0
+                    return (
+                      <div
+                        key={`${item.id}-${idx}`}
+                        className="flex gap-4 p-4 border rounded-lg shadow-sm items-center"
+                        style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+                      >
+                        <div className="relative w-20 h-24 border shrink-0 overflow-hidden rounded" style={{ borderColor: modeDetails.borderColor }}>
+                          <Image
+                            src={item.image || '/placeholder.jpg'}
+                            alt={item.name || item.title || 'Garment Piece'}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-serif-editorial text-xl text-white">
+                              {item.name || item.title}
+                            </h3>
+                            <p className="text-[10px] font-mono uppercase font-bold mt-1" style={{ color: modeDetails.accentColor }}>
+                              SIZE: {item.selectedSize || 'Standard'} • QTY: {item.quantity}
+                            </p>
                           </div>
-                        </div>
-                        <div className="flex justify-between items-end">
-                          <span className="text-[9px] uppercase tracking-widest text-[#747878]">Qty: {item.quantity}</span>
-                          <span className="font-headline text-xl text-[#1c1c18]">₹{(price * item.quantity).toLocaleString('en-IN')}</span>
+                          <span className="font-mono text-sm font-bold text-white mt-2">
+                            {formatPrice(priceNum * item.quantity)}
+                          </span>
                         </div>
                       </div>
-                    </motion.div>
-                  )
-                })}
+                    )
+                  })
+                )}
               </div>
 
-              {/* Summary Box */}
-              <div className="lg:col-span-1">
-                <div className="bg-white border border-[#1c1c18]/5 p-8 shadow-sm sticky top-32">
-                  <h2 className="font-headline text-2xl text-[#1c1c18] mb-8 border-b border-[#1c1c18]/5 pb-4">Order Total</h2>
-                  <div className="space-y-4 mb-8">
-                    <div className="flex justify-between text-xs font-body">
-                      <span className="uppercase tracking-widest text-[#747878]">Subtotal</span>
-                      <span>₹{subtotal.toLocaleString('en-IN')}</span>
+              {/* ORDER SUMMARY & PROMO CODES */}
+              <div className="lg:col-span-5 space-y-6 border p-6 shadow-sm rounded-lg" style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}>
+                <h2 className="font-serif-editorial text-2xl text-white uppercase border-b pb-3" style={{ borderColor: modeDetails.borderColor }}>
+                  ORDER SUMMARY
+                </h2>
+
+                {/* SINGLE-USE DISCOUNT COUPON CODE SECTION */}
+                <div className="space-y-2 pt-2">
+                  <span className="text-[10px] font-mono uppercase font-bold block" style={{ color: modeDetails.accentColor }}>
+                    APPLY PROMO / VIP SINGLE-USE COUPON
+                  </span>
+                  <form onSubmit={handleApplyCoupon} className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      placeholder="TRY WELCOME10, HERITAGE20, OR STREETWEAR15"
+                      className="flex-1 border px-3 py-2 text-xs font-mono uppercase text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 font-bold text-xs font-mono uppercase tracking-wider transition-all rounded cursor-pointer"
+                      style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+                    >
+                      APPLY
+                    </button>
+                  </form>
+                  {couponError && <p className="text-[10px] font-mono text-red-400 font-bold">{couponError}</p>}
+                  {appliedCoupon && (
+                    <div className="p-2 border text-[10px] font-mono font-bold flex justify-between items-center rounded" style={{ backgroundColor: `${modeDetails.accentColor}20`, borderColor: modeDetails.accentColor }}>
+                      <span>✓ COUPON {appliedCoupon} APPLIED</span>
+                      <button onClick={() => { setDiscountAmount(0); setAppliedCoupon(''); }} className="text-red-400 hover:underline">REMOVE</button>
                     </div>
-                    <div className="flex flex-col gap-4 py-4 border-y border-[#1c1c18]/5">
-                      <span className="text-[10px] uppercase tracking-widest font-bold text-[#1c1c18]">Shipping Method</span>
-                      
-                      {/* Standard Option */}
-                      <div 
-                        className={`flex items-center justify-between p-5 border cursor-pointer transition-all ${shippingMethod === 'Standard' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#a3851a]/50'}`}
-                        onClick={() => setShippingMethod('Standard')}
+                  )}
+                </div>
+
+                {/* AVAILABLE CODES QUICK CHIPS */}
+                <div className="pt-2 border-t" style={{ borderColor: modeDetails.borderColor }}>
+                  <span className="text-[9px] font-mono text-white/50 uppercase block mb-1.5">ACTIVE DISCOUNTS AVAILABLE:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['WELCOME10', 'HERITAGE20', 'STREETWEAR15'].map((code) => (
+                      <button
+                        key={code}
+                        onClick={() => { setCouponInput(code); }}
+                        className="px-2 py-0.5 border text-[9px] font-mono text-white rounded transition-all hover:border-white cursor-pointer"
+                        style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Standard' ? 'border-[#a3851a]' : 'border-[#1c1c18]/30'}`}>
-                            {shippingMethod === 'Standard' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Standard Delivery</span>
-                            <span className={`text-[9px] uppercase font-bold ${shippingMethod === 'Standard' ? 'text-[#a3851a]' : 'text-[#747878]'}`}>Delivery takes 5–7 Days</span>
-                          </div>
-                        </div>
-                        <span className="font-headline text-xl text-[#1c1c18]">Free</span>
-                      </div>
-
-                      {/* Express Option */}
-                      <div 
-                        className={`flex items-center justify-between p-5 border cursor-pointer transition-all ${shippingMethod === 'Express' ? 'border-[#a3851a] bg-[#a3851a]/5 shadow-inner' : 'border-[#1c1c18]/10 hover:border-[#a3851a]/50'}`}
-                        onClick={() => setShippingMethod('Express')}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${shippingMethod === 'Express' ? 'border-[#a3851a]' : 'border-[#1c1c18]/30'}`}>
-                            {shippingMethod === 'Express' && <div className="w-2 h-2 rounded-full bg-[#a3851a]" />}
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold uppercase tracking-widest text-[#1c1c18]">Express Delivery</span>
-                            <span className={`text-[9px] uppercase font-bold ${shippingMethod === 'Express' ? 'text-[#a3851a]' : 'text-[#747878]'}`}>Delivery takes  2–3 Days</span>
-                          </div>
-                        </div>
-                        <span className="font-headline text-xl text-[#1c1c18]">₹150</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between text-xs font-body pt-4">
-                      <span className="uppercase tracking-widest text-[#747878]">Shipping Fee</span>
-                      <span>₹{shippingFee}</span>
-                    </div>
-                    <div className="border-t border-[#1c1c18]/10 pt-4 flex justify-between items-baseline">
-                      <span className="text-[10px] uppercase tracking-widest font-bold">Total Payable</span>
-                      <span className="font-headline text-3xl text-[#a3851a]">₹{(subtotal + shippingFee).toLocaleString('en-IN')}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleProceedToAddress}
-                    className="w-full gold-satin text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-                  >
-                    <span className="material-symbols-outlined text-sm">location_on</span>
-                    Confirm Address
-                  </button>
-
-                  <Link
-                    href="/"
-                    className="block text-center mt-4 text-[9px] uppercase tracking-widest text-[#747878] hover:text-[#1c1c18] transition-colors"
-                  >
-                    ← Continue Shopping
-                  </Link>
-
-                  {/* Trust badges */}
-                  <div className="mt-8 pt-8 border-t border-[#1c1c18]/5 space-y-3">
-                    {[
-                      { icon: 'lock', label: '256-bit SSL Secured Checkout' },
-                      { icon: 'local_shipping', label: 'Free Express Delivery' },
-                      { icon: 'replay', label: '7-Day Easy Returns' },
-                    ].map((b) => (
-                      <div key={b.label} className="flex items-center gap-3 text-[#747878]">
-                        <span className="material-symbols-outlined text-sm text-[#a3851a]">{b.icon}</span>
-                        <span className="text-[9px] uppercase tracking-widest">{b.label}</span>
-                      </div>
+                        {code}
+                      </button>
                     ))}
                   </div>
                 </div>
+
+                {/* TOTAL BREAKDOWN */}
+                <div className="space-y-2 pt-4 border-t text-xs font-mono" style={{ borderColor: modeDetails.borderColor }}>
+                  <div className="flex justify-between text-white/70">
+                    <span>SUBTOTAL</span>
+                    <span>{formatPrice(subtotal)}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between font-bold" style={{ color: modeDetails.accentColor }}>
+                      <span>DISCOUNT APPLIED</span>
+                      <span>-{formatPrice(discountAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-white/70">
+                    <span>EXPRESS INSURED SHIPPING</span>
+                    <span>{shippingFee === 0 ? 'FREE' : formatPrice(shippingFee)}</span>
+                  </div>
+                  <div className="flex justify-between font-serif-editorial text-2xl font-bold text-white pt-3 border-t" style={{ borderColor: modeDetails.borderColor }}>
+                    <span>FINAL TOTAL</span>
+                    <span style={{ color: modeDetails.accentColor }}>{formatPrice(finalTotal)}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setStep('address')}
+                  disabled={cart.length === 0}
+                  className="w-full py-4 font-bold text-xs tracking-[0.25em] uppercase transition-all duration-300 shadow-lg rounded cursor-pointer"
+                  style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+                >
+                  CONTINUE TO SHIPPING ADDRESS →
+                </button>
               </div>
             </motion.div>
           )}
 
-          {/* ── STEP 2: ADDRESS CONFIRMATION ── */}
           {step === 'address' && (
             <motion.div
               key="address"
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              className="max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-3xl mx-auto border p-8 space-y-6 shadow-xl rounded-xl"
+              style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
             >
-              <h2 className="font-headline text-3xl text-[#1c1c18] mb-2">Delivery Address</h2>
-              <p className="text-[10px] uppercase tracking-widest text-[#747878] mb-10">Where shall we dispatch your order?</p>
+              <div className="flex justify-between items-center border-b pb-3" style={{ borderColor: modeDetails.borderColor }}>
+                <h2 className="font-serif-editorial text-3xl uppercase text-white">
+                  DISPATCH ADDRESS & DELIVERY FORM
+                </h2>
+                <button
+                  onClick={() => setStep('summary')}
+                  className="text-xs font-mono uppercase tracking-wider text-white/60 hover:text-white cursor-pointer"
+                >
+                  ← BACK
+                </button>
+              </div>
+
+              {/* DETAILED SHIPPING FORM */}
+              <div className="space-y-4 text-xs font-mono">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">FULL CLIENT NAME *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Rahul Sharma"
+                      value={addressForm.name}
+                      onChange={(e) => setAddressForm({ ...addressForm, name: e.target.value })}
+                      className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">PHONE NUMBER (FOR DELIVERY SMS/CALL) *</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="e.g. +91 9876543210"
+                      value={addressForm.phone}
+                      onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                      className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">EMAIL ADDRESS FOR DISPATCH RECEIPT *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="client@domain.com"
+                    value={addressForm.email}
+                    onChange={(e) => setAddressForm({ ...addressForm, email: e.target.value })}
+                    className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">FLAT / HOUSE NO / BUILDING NAME *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Flat 402, Pinnacle Heights"
+                      value={addressForm.flatNo}
+                      onChange={(e) => setAddressForm({ ...addressForm, flatNo: e.target.value })}
+                      className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">AREA / STREET / LOCALITY *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Indiranagar 100ft Road"
+                      value={addressForm.area}
+                      onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
+                      className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">PIN CODE (6 DIGITS) *</label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      placeholder="560038"
+                      value={addressForm.pincode}
+                      onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                      className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">CITY *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Bengaluru"
+                      value={addressForm.city}
+                      onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                      className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">STATE *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Karnataka"
+                      value={addressForm.state}
+                      onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                      className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">LANDMARK (OPTIONAL)</label>
+                  <input
+                    type="text"
+                    placeholder="Near Metro Station"
+                    value={addressForm.landmark}
+                    onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })}
+                    className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                  />
+                </div>
+
+                {/* SAVE ADDRESS AS DEFAULT CHECKBOX */}
+                <div className="pt-2 flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="saveDefault"
+                    checked={addressForm.saveAsDefault}
+                    onChange={(e) => setAddressForm({ ...addressForm, saveAsDefault: e.target.checked })}
+                    className="w-4 h-4 rounded cursor-pointer accent-[#B8892D]"
+                  />
+                  <label htmlFor="saveDefault" className="text-xs font-mono font-bold text-white cursor-pointer">
+                    Save this address as my default delivery address for future purchases
+                  </label>
+                </div>
+              </div>
 
               {paymentError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-red-50 border border-red-200 flex items-center gap-3"
-                >
-                  <span className="material-symbols-outlined text-red-500 text-sm">error</span>
-                  <p className="text-xs text-red-600 font-body">{paymentError}</p>
-                </motion.div>
+                <p className="text-xs text-red-400 font-mono p-3 border border-red-500/40 rounded bg-red-950/40">
+                  {paymentError}
+                </p>
               )}
 
-              {/* No address case */}
-              {!profile?.address ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white border border-amber-200 shadow-sm p-10 text-center"
+              <div className="flex justify-between pt-4 border-t" style={{ borderColor: modeDetails.borderColor }}>
+                <button
+                  onClick={() => setStep('summary')}
+                  className="px-6 py-3 border text-white text-xs font-mono uppercase rounded transition-all cursor-pointer"
+                  style={{ borderColor: modeDetails.borderColor }}
                 >
-                  <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="material-symbols-outlined text-3xl text-amber-500">location_off</span>
-                  </div>
-                  <h3 className="font-headline text-2xl text-[#1c1c18] mb-3">No Delivery Address Found</h3>
-                  <p className="font-body text-sm text-[#747878] mb-8 leading-relaxed">
-                    You haven't set a delivery address yet. Please add your address in your account profile so we know where to dispatch your order.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Link
-                      href="/profile/shipping-address"
-                      className="inline-flex items-center gap-2 bg-[#1c1c18] text-white py-4 px-8 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#a3851a] transition-all"
-                    >
-                      <span className="material-symbols-outlined text-sm">person</span>
-                      Go to Add Address
-                    </Link>
-                    <button
-                      onClick={async () => {
-                        // Re-fetch in case user just updated
-                        setLoading(true)
-                        const { user } = await getSessionUser()
-                        if (user) {
-                          const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-                          if (profileData?.address) {
-                            setProfile(prev => prev ? { ...prev, address: profileData.address } : prev)
-                          }
-                        }
-                        setLoading(false)
-                      }}
-                      className="inline-flex items-center gap-2 border border-[#1c1c18]/20 py-4 px-8 text-[10px] uppercase tracking-[0.2em] font-bold hover:bg-[#1c1c18]/5 transition-all"
-                    >
-                      <span className="material-symbols-outlined text-sm">refresh</span>
-                      Refresh
-                    </button>
-                  </div>
-                </motion.div>
-              ) : (
-                /* Address exists - confirm it */
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  ← BACK TO REVIEW
+                </button>
+
+                <button
+                  onClick={handlePay}
+                  className="px-8 py-3 font-bold text-xs tracking-[0.2em] uppercase transition-all rounded shadow-lg cursor-pointer flex items-center gap-2"
+                  style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
                 >
-                  {!addressConfirmed ? (
-                    <div className="bg-white border border-[#1c1c18]/5 shadow-sm p-10">
-                      <div className="flex items-start gap-4 mb-8">
-                        <div className="w-12 h-12 bg-[#fdf9f2] rounded-full flex items-center justify-center shrink-0 mt-1">
-                          <span className="material-symbols-outlined text-xl text-[#a3851a]">home</span>
-                        </div>
-                        <div>
-                          <p className="text-[9px] uppercase tracking-widest text-[#747878] mb-1">Delivering To</p>
-                          <h3 className="font-headline text-2xl text-[#1c1c18] mb-2">{profile.name}</h3>
-                          <p className="font-body text-sm text-[#747878] leading-relaxed">{profile.address}</p>
-                          {profile.phone && (
-                            <p className="font-body text-xs text-[#747878] mt-2">📞 {profile.phone}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="bg-[#fdf9f2] p-4 mb-8 border-l-2 border-[#a3851a]">
-                        <p className="text-[9px] uppercase tracking-widest text-[#a3851a] font-bold mb-1">Confirm Location</p>
-                        <p className="font-body text-xs text-[#747878]">Is the above address correct? Please confirm before proceeding to payment.</p>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <button
-                          onClick={() => setAddressConfirmed(true)}
-                          className="flex-1 gold-satin text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
-                        >
-                          <span className="material-symbols-outlined text-sm">check</span>
-                          Yes, This Is Correct
-                        </button>
-                        <Link
-                          href="/profile/shipping-address"
-                          className="flex-1 border border-[#1c1c18]/20 text-[#1c1c18] py-5 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#1c1c18]/5 transition-all flex items-center justify-center gap-3"
-                        >
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                          Change Address
-                        </Link>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Address confirmed - show pay button */
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <div className="bg-white border border-green-200 shadow-sm p-6 mb-8 flex items-center gap-4">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-green-600 text-sm">check_circle</span>
-                        </div>
-                        <div>
-                          <p className="text-[9px] uppercase tracking-widest text-green-600 font-bold">Address Confirmed</p>
-                          <p className="font-body text-sm text-[#747878] truncate">{profile.address}</p>
-                        </div>
-                        <button
-                          onClick={() => setAddressConfirmed(false)}
-                          className="ml-auto text-[9px] uppercase tracking-widest text-[#747878] hover:text-[#1c1c18] underline"
-                        >
-                          Change
-                        </button>
-                      </div>
-
-                      {/* Order total recap */}
-                      <div className="bg-white border border-[#1c1c18]/5 p-8 mb-8">
-                        <h3 className="font-headline text-xl text-[#1c1c18] mb-6">Payment Summary</h3>
-                        <div className="space-y-3 mb-6">
-                          {cart.map((item) => {
-                            const price = typeof item.price === 'string'
-                              ? parseFloat(item.price.replace('₹', '').replace(',', '').replace('$', ''))
-                              : item.price
-                            return (
-                              <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex justify-between items-start text-xs font-body text-[#747878] pb-2 border-b border-[#1c1c18]/5 mb-2 last:border-0 last:mb-0">
-                                <div>
-                                  <span className="block text-[#1c1c18] font-bold">{item.name} × {item.quantity}</span>
-                                  <span className="text-[9px] uppercase tracking-widest block mt-0.5">
-                                    {item.selectedSize && `Size: ${item.selectedSize}`} 
-                                    {item.selectedSize && item.selectedColor && ` • `}
-                                    {item.selectedColor && `Tone: ${item.selectedColor}`}
-                                  </span>
-                                </div>
-                                <span className="font-bold text-[#1c1c18]">₹{(price * item.quantity).toLocaleString('en-IN')}</span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                        <div className="border-t border-[#1c1c18]/10 pt-4 flex justify-between items-baseline">
-                          <span className="text-[10px] uppercase tracking-widest font-bold">Total Payable</span>
-                          <span className="font-headline text-3xl text-[#a3851a]">₹{subtotal.toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-
-                      {/* Order Timeline Notice */}
-                      <div className="bg-amber-50 border border-amber-100 p-5 mb-6 rounded-sm flex items-start gap-4 shadow-sm">
-                        <span className="material-symbols-outlined text-amber-500 text-xl shrink-0">info</span>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-widest text-amber-900 font-bold leading-relaxed">
-                            ✅ Order confirmation will be sent immediately to your email.<br/>
-                            🚚 Tracking details will be shared within 48-72 hours after order confirmation.
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handlePay}
-                        className="w-full gold-satin text-white py-6 font-body uppercase tracking-[0.3em] text-[11px] font-bold shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4"
-                      >
-                        <span className="material-symbols-outlined">payment</span>
-                        Pay ₹{(subtotal + shippingFee).toLocaleString('en-IN')} Securely
-                      </button>
-
-                      <p className="text-center text-[9px] text-[#747878] uppercase tracking-widest mt-4">
-                        🔒 Secured by Razorpay · 256-bit SSL
-                      </p>
-                    </motion.div>
-                  )}
-                </motion.div>
-              )}
+                  <span>PROCEED TO RAZORPAY ({formatPrice(finalTotal)})</span>
+                  <span>→</span>
+                </button>
+              </div>
             </motion.div>
           )}
 
-          {/* ── STEP 3: PAYING ── */}
           {step === 'paying' && (
             <motion.div
               key="paying"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-32 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-lg mx-auto border p-8 text-center space-y-6 shadow-2xl rounded-xl"
+              style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.accentColor }}
             >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                className="w-16 h-16 border-4 border-[#a3851a]/20 border-t-[#a3851a] rounded-full mb-8"
-              />
-              <h2 className="font-headline text-3xl text-[#1c1c18] mb-4">Awaiting Payment</h2>
-              <p className="font-body text-sm text-[#747878]">Please complete your payment in the Razorpay window.</p>
+              <div className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin mx-auto flex items-center justify-center" style={{ borderLeftColor: modeDetails.accentColor, borderRightColor: modeDetails.accentColor, borderBottomColor: modeDetails.accentColor, borderTopColor: 'transparent' }}>
+                <span className="material-symbols-outlined text-xl" style={{ color: modeDetails.accentColor }}>lock</span>
+              </div>
+              
+              <div>
+                <span className="text-[10px] font-mono tracking-widest uppercase font-bold block" style={{ color: modeDetails.accentColor }}>
+                  PAYMENT GATEWAY PROTOCOL
+                </span>
+                <h2 className="font-serif-editorial text-3xl uppercase text-white mt-1">
+                  RAZORPAY PAYMENT GATEWAY
+                </h2>
+                <p className="text-xs font-mono text-white/70 mt-2">
+                  Total Amount: <span className="font-bold text-white text-sm" style={{ color: modeDetails.accentColor }}>{formatPrice(finalTotal)}</span>
+                </p>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="space-y-3 pt-2">
+                <button
+                  onClick={() => {
+                    if (rzpInstance) {
+                      rzpInstance.open()
+                    } else {
+                      handlePay()
+                    }
+                  }}
+                  className="w-full py-4 font-bold text-xs tracking-[0.2em] uppercase rounded shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+                >
+                  <span className="material-symbols-outlined text-sm">payments</span>
+                  <span>OPEN RAZORPAY PAYMENT MODAL ({formatPrice(finalTotal)})</span>
+                </button>
+
+                <button
+                  onClick={() => setStep('address')}
+                  className="w-full py-3 border text-xs font-mono uppercase text-white/70 hover:text-white rounded transition-all cursor-pointer"
+                  style={{ borderColor: modeDetails.borderColor }}
+                >
+                  ← RETURN TO DISPATCH DETAILS
+                </button>
+              </div>
+
+              {paymentError && (
+                <p className="text-xs font-mono text-red-400 p-3 border border-red-500/40 rounded bg-red-950/40">
+                  {paymentError}
+                </p>
+              )}
             </motion.div>
           )}
 
-          {/* ── STEP 4: SUCCESS ── */}
           {step === 'success' && (
             <motion.div
               key="success"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center justify-center py-20 text-center max-w-lg mx-auto"
+              className="max-w-3xl mx-auto border p-6 sm:p-10 space-y-8 shadow-2xl rounded-2xl text-left font-body relative overflow-hidden"
+              style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.accentColor }}
             >
-              {/* Green checkmark at top */}
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.2 }}
-                className="relative w-28 h-28 mb-10"
-              >
-                <div className="absolute inset-0 bg-green-400/20 rounded-full animate-ping" />
-                <div className="relative w-28 h-28 bg-green-500 rounded-full flex items-center justify-center shadow-2xl">
-                  <span className="material-symbols-outlined text-white text-5xl">check</span>
-                </div>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                <span className="text-[9px] uppercase tracking-[0.4em] text-[#a3851a] block mb-3 font-bold">Payment Successful</span>
-                <h2 className="font-headline text-5xl lg:text-6xl text-[#1c1c18] mb-4">Thank You for Your Order!</h2>
-                <div className="space-y-2 mb-10">
-                  <p className="font-body text-sm text-[#747878]">
-                    Order ID: <span className="font-bold text-[#1c1c18] font-mono">{orderId}</span>
-                  </p>
-                  <p className="font-body text-sm text-[#747878]">
-                    Amount Paid: <span className="font-bold text-[#a3851a]">₹{(subtotal + shippingFee).toLocaleString('en-IN')}</span>
-                  </p>
-                </div>
-              </motion.div>
-
-              {/* Vertical timeline */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-                className="w-full text-left mb-12 space-y-0"
-              >
-                <h4 className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#a3851a] mb-6">Delivery Timeline</h4>
-                {[
-                  { label: "Order Confirmed", time: "completed", status: "done", icon: "check_circle" },
-                  { label: "Order Processing", time: "24 to 48 hours", status: "waiting", icon: "hourglass_empty" },
-                  { label: "Order Shipped", time: "Tracking sent to email", status: "pending", icon: "local_shipping" },
-                  { label: "Out for Delivery", time: "Arriving Soon", status: "pending", icon: "home" },
-                  { label: "Delivered", time: "Final Destination", status: "pending", icon: "task_alt" }
-                ].map((s, idx, arr) => (
-                  <div key={idx} className="relative pl-10 pb-8 last:pb-0">
-                    {/* Line */}
-                    {idx < arr.length - 1 && (
-                      <div className={`absolute left-[11px] top-7 w-[1px] h-full ${s.status === 'done' ? 'bg-green-500' : 'bg-[#1c1c18]/10'}`} />
-                    )}
-                    {/* Dot */}
-                    <div className={`absolute left-0 top-1 w-6 h-6 rounded-full flex items-center justify-center z-10 ${s.status === 'done' ? 'bg-green-100 text-green-600' : s.status === 'waiting' ? 'bg-amber-100 text-amber-600' : 'bg-[#1c1c18]/5 text-[#747878]/30'}`}>
-                      <span className="material-symbols-outlined text-sm">{s.icon}</span>
-                    </div>
-                    {/* Content */}
-                    <div>
-                      <p className={`text-xs font-bold uppercase tracking-widest ${s.status === 'done' ? 'text-green-600' : s.status === 'waiting' ? 'text-amber-600' : 'text-[#747878]'}`}>{s.label}</p>
-                      <p className="text-[10px] text-[#747878] uppercase opacity-60 tracking-wider mt-1">{s.time}</p>
-                    </div>
+              {/* TOP EMBEDDED RECEIPT HEADER */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-6 gap-4" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-md" style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}>
+                    <span className="material-symbols-outlined text-2xl font-bold">check_circle</span>
                   </div>
-                ))}
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 }}
-                className="flex flex-col gap-4 w-full"
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <button
-                    onClick={() => window.open(`https://wa.me/917569145624?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20my%20order%3A%20${orderId}`, '_blank')}
-                    className="flex-1 bg-green-600 text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:bg-green-700 transition-all flex items-center justify-center gap-3"
-                  >
-                    <span className="material-symbols-outlined text-sm">chat</span>
-                    WhatsApp Support
-                  </button>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="flex-1 bg-[#1c1c18] text-white py-5 font-body uppercase tracking-[0.3em] text-[10px] font-bold shadow-xl hover:bg-[#a3851a] transition-all flex items-center justify-center gap-3"
-                  >
-                    <span className="material-symbols-outlined text-sm">shopping_bag</span>
-                    Continue Shopping
-                  </button>
+                  <div>
+                    <span className="text-[10px] font-mono tracking-[0.3em] uppercase font-bold block" style={{ color: modeDetails.accentColor }}>
+                      OFFICIAL ATELIER ORDER RECEIPT
+                    </span>
+                    <h2 className="font-serif-editorial text-2xl sm:text-3xl text-white uppercase mt-0.5">
+                      ACQUISITION CONFIRMED
+                    </h2>
+                  </div>
                 </div>
                 
+                <div className="text-left sm:text-right font-mono text-xs">
+                  <span className="block text-[10px] text-white/50 uppercase">ORDER REFERENCE</span>
+                  <span className="font-bold text-white text-sm" style={{ color: modeDetails.accentColor }}>{orderId || 'ORD-SECURED'}</span>
+                  <span className="block text-[10px] text-white/50 mt-1">
+                    {completedOrder?.date || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+
+              {/* DISPATCH & CLIENT PROFILE DETAILS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-xl border font-mono text-xs" style={{ backgroundColor: `${modeDetails.themeBg}60`, borderColor: `${modeDetails.borderColor}30` }}>
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase tracking-wider font-bold block text-white/40">CLIENT INFORMATION</span>
+                  <p className="font-bold text-white text-sm">{completedOrder?.customerName || addressForm.name || 'Valued Client'}</p>
+                  {completedOrder?.email && <p className="text-white/70">{completedOrder.email}</p>}
+                  {completedOrder?.phone && <p className="text-white/70">{completedOrder.phone}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase tracking-wider font-bold block text-white/40">DISPATCH ADDRESS</span>
+                  <p className="text-white/80 leading-relaxed">
+                    {completedOrder?.address || `${addressForm.flatNo}, ${addressForm.area}, ${addressForm.city}, ${addressForm.state} - ${addressForm.pincode}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* ITEMIZED PRODUCTS BREAKDOWN TABLE */}
+              <div className="space-y-3">
+                <div className="flex justify-between text-[10px] font-mono uppercase tracking-widest text-white/50 border-b pb-2" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                  <span>ITEMIZED PRODUCTS</span>
+                  <span>VALUATION</span>
+                </div>
+
+                <div className="space-y-3">
+                  {completedOrder?.items && completedOrder.items.length > 0 ? (
+                    completedOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-4 p-3 rounded-lg border" style={{ backgroundColor: `${modeDetails.themeBg}40`, borderColor: `${modeDetails.borderColor}20` }}>
+                        <div className="flex items-center space-x-3">
+                          {item.image && (
+                            <div className="relative w-12 h-14 rounded overflow-hidden shrink-0 border" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                              <Image src={item.image} alt={item.name} fill className="object-cover" />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-serif-editorial text-lg text-white">{item.name}</h4>
+                            <p className="text-[10px] font-mono text-white/60">
+                              SIZE: <span className="text-white font-bold">{item.size || 'Standard'}</span> • TONE: <span className="text-white font-bold">{item.color || 'Default'}</span> • QTY: <span className="text-white font-bold">{item.quantity}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <span className="font-mono text-sm font-bold text-white">
+                          ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-xs font-mono text-white/70">
+                      Product items booked and dispatched to atelier.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* TOTAL VALUATION BREAKDOWN */}
+              <div className="border-t pt-4 space-y-2 font-mono text-xs" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                <div className="flex justify-between text-white/70">
+                  <span>SUBTOTAL</span>
+                  <span>₹{(completedOrder?.subtotal ?? subtotal).toLocaleString('en-IN')}</span>
+                </div>
+                {(completedOrder?.discountAmount ?? discountAmount) > 0 && (
+                  <div className="flex justify-between font-bold" style={{ color: modeDetails.accentColor }}>
+                    <span>PROMO DISCOUNT</span>
+                    <span>-₹{(completedOrder?.discountAmount ?? discountAmount).toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-white/70">
+                  <span>EXPRESS INSURED SHIPPING</span>
+                  <span>{(completedOrder?.shippingFee ?? shippingFee) === 0 ? 'FREE' : `₹${(completedOrder?.shippingFee ?? shippingFee).toLocaleString('en-IN')}`}</span>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t font-serif-editorial text-2xl text-white font-bold" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                  <span>TOTAL PAID</span>
+                  <span style={{ color: modeDetails.accentColor }}>
+                    ₹{(completedOrder?.finalTotal ?? finalTotal).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+
+              {/* AUTHORIZED CEO SIGNATURE BLOCK */}
+              <div className="pt-6 border-t space-y-3" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 p-4 rounded-xl border" style={{ backgroundColor: `${modeDetails.themeBg}80`, borderColor: modeDetails.accentColor }}>
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-mono uppercase tracking-[0.2em] font-bold block text-white/50">
+                      AUTHORIZED & ISSUED BY
+                    </span>
+                    <p className="font-serif-editorial italic text-xl text-amber-200" style={{ color: modeDetails.accentColor }}>
+                      Team Fo4
+                    </p>
+                    <p className="font-mono font-bold text-xs text-white">
+                      Team Fo4
+                    </p>
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-white/60">
+                      Friends of 4 Atelier
+                    </p>
+                  </div>
+
+                  <div className="border px-4 py-2 rounded text-center font-mono space-y-0.5" style={{ borderColor: `${modeDetails.accentColor}60`, backgroundColor: `${modeDetails.cardBg}` }}>
+                    <span className="text-[9px] font-bold block tracking-widest" style={{ color: modeDetails.accentColor }}>
+                      ✦ OFFICIAL ATELIER SEAL ✦
+                    </span>
+                    <span className="text-[8px] text-white/70 block uppercase">AUTHENTIC HERITAGE GUARANTEE</span>
+                    <span className="text-[7px] text-white/40 block">VARANASI & BENGALURU, INDIA</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ACTION BUTTONS: DOWNLOAD RECEIPT PDF & RETURN */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-2">
                 <button
-                  onClick={() => router.push('/account?tab=orders')}
-                  className="w-full border border-[#1c1c18]/10 text-[#1c1c18] py-5 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#1c1c18]/5 transition-all flex items-center justify-center gap-3"
+                  onClick={() => {
+                    const pdfPayload = completedOrder ? {
+                      order_id: completedOrder.orderId,
+                      created_at: new Date().toISOString(),
+                      customer_name: completedOrder.customerName,
+                      email: completedOrder.email,
+                      phone: completedOrder.phone,
+                      address: completedOrder.address,
+                      items: completedOrder.items,
+                      subtotal: completedOrder.subtotal,
+                      discountAmount: completedOrder.discountAmount,
+                      shippingFee: completedOrder.shippingFee,
+                      finalTotal: completedOrder.finalTotal,
+                      order_status: 'CONFIRMED'
+                    } : {
+                      order_id: orderId || 'ORD-SECURED',
+                      customer_name: addressForm.name || 'Valued Client',
+                      email: addressForm.email || '',
+                      phone: addressForm.phone || '',
+                      address: `${addressForm.flatNo}, ${addressForm.area}, ${addressForm.city}`,
+                      items: cart.map(i => ({ 
+                        name: i.name || i.title || 'Masterpiece', 
+                        size: i.selectedSize, 
+                        color: i.selectedColor, 
+                        quantity: i.quantity, 
+                        price: typeof i.price === 'number' ? i.price : i.rawPrice || parseFloat(String(i.price).replace(/[^0-9.]/g, '')) || 0 
+                      })),
+                      subtotal,
+                      discountAmount,
+                      shippingFee,
+                      finalTotal,
+                      order_status: 'CONFIRMED'
+                    }
+                    downloadInvoicePDF(pdfPayload as any)
+                  }}
+                  className="flex-1 py-4 font-bold text-xs tracking-[0.2em] uppercase rounded-lg shadow-xl transition-all duration-300 cursor-pointer flex items-center justify-center space-x-2"
+                  style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
                 >
-                  <span className="material-symbols-outlined text-sm">history</span>
-                  View Order Status in Account
+                  <span className="material-symbols-outlined text-sm font-bold">download</span>
+                  <span>DOWNLOAD OFFICIAL RECEIPT (PDF)</span>
                 </button>
-              </motion.div>
+
+                <Link
+                  href="/shop"
+                  className="px-6 py-4 border text-xs font-mono font-bold uppercase tracking-wider text-white text-center hover:bg-white/5 rounded-lg transition-all"
+                  style={{ borderColor: modeDetails.borderColor }}
+                >
+                  RETURN TO ARCHIVE COLLECTION
+                </Link>
+              </div>
             </motion.div>
           )}
-
         </AnimatePresence>
       </main>
 

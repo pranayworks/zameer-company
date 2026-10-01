@@ -1,618 +1,1387 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Header } from '@/components/header'
-import { Footer } from '@/components/footer'
-import { ProductCard } from '@/components/product-card'
+import { useParams, useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { products, Product } from '@/data/products'
 import { useCart } from '@/context/cart-context'
 import { useWishlist } from '@/context/wishlist-context'
-import { products } from '@/data/products'
+import { useMode, BrandMode } from '@/context/mode-context'
+import { Header } from '@/components/header'
+import { Footer } from '@/components/footer'
+import { ShareButtonDemo } from '@/components/animate-ui/components/community/share-button'
 import { supabase } from '@/lib/supabase'
-import { use } from 'react'
-import { useToast } from '@/context/toast-context'
-import Head from 'next/head'
-import { slugify } from '@/lib/utils'
 
-interface Product {
-  id: string
-  title: string
-  price: number | string
-  image: string
-  image2?: string
-  image3?: string
-  description: string
-  category: string
-  rating: number
-  reviews: number
-  stock?: number
-  colors?: { name: string, hex: string }[]
-  sizes?: string[]
-  fabric?: string[]
-  care?: string[]
-  fit?: string[]
-  video_url?: string
-  return_policy?: string
-}
-
-export default function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: rawId } = use(params)
-  const id = decodeURIComponent(rawId)
-  const [product, setProduct] = useState<Product | null>(null)
+export default function ProductDetailPage() {
+  const params = useParams()
+  const router = useRouter()
+  const productId = params?.id as string
+  
   const { addToCart } = useCart()
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
-  const { showToast } = useToast()
-  const [quantity, setQuantity] = useState(1)
+  const { toggleWishlist, isInWishlist } = useWishlist()
+  const { mode, modeDetails } = useMode()
+
+  const [dbProduct, setDbProduct] = useState<any | null>(null)
+  const [activeTab, setActiveTab] = useState<'photos' | '360' | 'reel'>('photos')
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
+  const [selectedSize, setSelectedSize] = useState<string>('M')
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false)
-  const [fitHeight, setFitHeight] = useState('')
-  const [fitChest, setFitChest] = useState('')
-  const [calculatedFit, setCalculatedFit] = useState<string | null>(null)
-  const [selectedSize, setSelectedSize] = useState<string | null>(null)
-  const [selectedColor, setSelectedColor] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<string | null>('fabric')
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
-  const [communityReviews, setCommunityReviews] = useState<any[]>([])
-  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false)
-  const [notifyEmail, setNotifyEmail] = useState('')
-  const [isSubmittingNotify, setIsSubmittingNotify] = useState(false)
-  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
+  const [openAccordion, setOpenAccordion] = useState<string | null>('fabric')
+  const [imageFit, setImageFit] = useState<'contain' | 'cover'>('contain')
+
+  // 360-DEGREE INTERACTIVE ROTATOR STATE
+  const [rotationAngle, setRotationAngle] = useState(0)
+  const [isAutoSpinning, setIsAutoSpinning] = useState(false)
+  const [isDragging360, setIsDragging360] = useState(false)
+  const dragStartX = useRef<number>(0)
+  const angleAtStart = useRef<number>(0)
+
+  // FULLSCREEN LIGHTBOX MODAL WITH ZOOM & ARROWS STATE
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [lightboxZoom, setLightboxZoom] = useState(1) // 1 = 100%, 1.5, 2, 2.5, 3
+
+  // SHIPROCKET PINCODE ESTIMATOR STATE
+  const [pincode, setPincode] = useState('')
+  const [pincodeResult, setPincodeResult] = useState<{ estimatedDate: string; service: string; codAvailable?: boolean } | null>(null)
+  const [checkingPincode, setCheckingPincode] = useState(false)
+  const [pincodeError, setPincodeError] = useState('')
+
+  // REVIEWS SYSTEM STATE
+  const [reviewsList, setReviewsList] = useState<any[]>([])
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  const [newReview, setNewReview] = useState({
+    name: '',
+    city: '',
+    rating: 5,
+    title: '',
+    comment: '',
+    image: '',
+  })
+
+  // Fetch product directly from Supabase if added via Admin Panel
+  useEffect(() => {
+    const fetchDbProduct = async () => {
+      if (!productId) return
+      try {
+        const { data } = await supabase.from('products').select('*').eq('id', productId).single()
+        if (data) {
+          const itemMode: BrandMode = data.mode || (
+            ['Men', 'Tees & Tops', 'Hoodies & Outerwear', 'Bottomwear'].includes(data.category) ? 'streetwear' :
+            ['Archive', 'Statement Archive'].includes(data.category) ? 'archive' : 'traditional'
+          )
+          setDbProduct({
+            id: String(data.id),
+            title: data.title || 'Atelier Masterpiece',
+            subtitle: data.subtitle || `${itemMode.toUpperCase()} SPECIFICATION`,
+            price: typeof data.price === 'number' ? `₹${data.price.toLocaleString('en-IN')}` : String(data.price),
+            rawPrice: typeof data.price === 'number' ? data.price : parseFloat(String(data.price).replace(/[^0-9.]/g, '')) || 0,
+            mode: itemMode,
+            category: data.category || 'Archive',
+            image: data.image || '/saree_1.png',
+            image2: data.image2,
+            image3: data.image3,
+            video_url: data.video_url,
+            return_policy: data.return_policy,
+            gallery: [data.image, data.image2, data.image3].filter(Boolean),
+            blueprintImage: data.blueprintImage || '/media__1775056878622.png',
+            description: data.description || '',
+            gsm: data.gsm || (itemMode === 'streetwear' ? '350 GSM' : undefined),
+            details: {
+              fabric: Array.isArray(data.fabric) ? data.fabric : [data.fabric || 'Pure Handloom Material'],
+              care: Array.isArray(data.care) ? data.care : ['Dry Clean Recommended'],
+              fit: Array.isArray(data.fit) ? data.fit : ['Archival Tailored Fit']
+            },
+            heritageStory: data.heritageStory || 'Handcrafted precision weaving derived from ancient architectural blueprints.',
+            unboxingPolicy: data.unboxingPolicy || 'Dispatched in signature rigid packaging with 24h unboxing guarantee.',
+            rating: data.rating || 5.0,
+            reviews: data.reviews || 16,
+            sizes: Array.isArray(data.sizes) && data.sizes.length > 0 ? data.sizes : ['S', 'M', 'L', 'XL'],
+            inStock: data.stock === undefined || data.stock > 0
+          })
+        }
+      } catch (e) {
+        console.warn("Db single product fetch skipped", e)
+      }
+    }
+    fetchDbProduct()
+  }, [productId])
+
+  // Resolve active product from DB or Static fallback
+  const staticProduct = products.find((p) => p.id === productId) || products[0]
+  const product = dbProduct || staticProduct
+  const productGallery = (product.gallery && product.gallery.length > 0) ? product.gallery : [product.image]
+
+  // Auto-Spin 360 effect
+  useEffect(() => {
+    let interval: any
+    if (isAutoSpinning && activeTab === '360') {
+      interval = setInterval(() => {
+        setRotationAngle(prev => (prev + 3) % 360)
+      }, 50)
+    }
+    return () => clearInterval(interval)
+  }, [isAutoSpinning, activeTab])
+
+  // Load product reviews from localStorage & Supabase
+  useEffect(() => {
+    const loadReviews = async () => {
+      let deletedIds: string[] = []
+      try {
+        deletedIds = JSON.parse(localStorage.getItem('fo4_deleted_review_ids') || '[]')
+      } catch {}
+
+      let local: any[] = []
+      try {
+        local = JSON.parse(localStorage.getItem('fo4_product_reviews') || '[]')
+        local = local.filter((r: any) => !deletedIds.includes(r.id))
+      } catch {}
+
+      if (local.length === 0) {
+        local = [
+          {
+            id: 'rev-1',
+            productId: String(product.id),
+            name: 'Aarav Sharma',
+            city: 'Bengaluru',
+            rating: 5,
+            title: 'Exquisite Heritage Craftsmanship!',
+            comment: 'The weight of the fabric and structural silhouette exceed expectations. Feels like museum quality.',
+            image: product.image || '/saree_1.png',
+            date: '2026-09-24',
+            verified: true
+          },
+          {
+            id: 'rev-2',
+            productId: String(product.id),
+            name: 'Meera Nair',
+            city: 'Kochi',
+            rating: 5,
+            title: 'Flawless Fit & Premium Packaging',
+            comment: 'Dispatched super fast with Shiprocket. Arrived in rigid box with unboxing certificate.',
+            date: '2026-09-20',
+            verified: true
+          }
+        ].filter(r => !deletedIds.includes(r.id))
+        try { localStorage.setItem('fo4_product_reviews', JSON.stringify(local)) } catch {}
+      }
+
+      try {
+        const { data } = await supabase.from('reviews').select('*').eq('product_id', String(product.id))
+        if (data && data.length > 0) {
+          const formatted = data
+            .filter(d => !deletedIds.includes(d.id))
+            .map(d => ({
+              id: d.id,
+              productId: String(d.product_id),
+              name: d.reviewer_name || 'Client',
+              city: d.reviewer_city || 'Verified Buyer',
+              rating: d.rating || 5,
+              title: d.title || 'Exceptional Piece',
+              comment: d.comment,
+              image: d.image_url,
+              date: d.created_at ? d.created_at.split('T')[0] : '2026-09-25',
+              verified: true
+            }))
+          const merged = [...local.filter(r => String(r.productId) === String(product.id))]
+          formatted.forEach(f => {
+            if (!merged.some(m => m.id === f.id)) merged.unshift(f)
+          })
+          setReviewsList(merged.filter(r => !deletedIds.includes(r.id)))
+        } else {
+          setReviewsList(local.filter(r => String(r.productId) === String(product.id) && !deletedIds.includes(r.id)))
+        }
+      } catch {
+        setReviewsList(local.filter(r => String(r.productId) === String(product.id) && !deletedIds.includes(r.id)))
+      }
+    }
+
+    if (product?.id) loadReviews()
+
+    const handleSync = () => {
+      if (product?.id) loadReviews()
+    }
+
+    window.addEventListener('storage', handleSync)
+    window.addEventListener('fo4_reviews_updated', handleSync)
+    return () => {
+      window.removeEventListener('storage', handleSync)
+      window.removeEventListener('fo4_reviews_updated', handleSync)
+    }
+  }, [product?.id])
 
   useEffect(() => {
-    fetchProductAndRelated()
-    trackRecentlyViewed(id)
-    loadRecentlyViewed()
-  }, [id])
+    if (product.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0])
+    }
+  }, [product])
 
-  const trackRecentlyViewed = (productId: string) => {
-    if (typeof window === 'undefined') return
-    const stored = JSON.parse(localStorage.getItem('atk_recent_viewed') || '[]') as string[]
-    const updated = [productId, ...stored.filter(i => i !== productId)].slice(0, 4)
-    localStorage.setItem('atk_recent_viewed', JSON.stringify(updated))
+  const isWishlisted = isInWishlist(product.id)
+
+  const handleAddToCart = (p: any = product, sz: string = selectedSize) => {
+    addToCart({
+      id: p.id,
+      title: p.title,
+      price: p.price,
+      rawPrice: p.rawPrice,
+      image: p.image,
+      selectedSize: sz,
+      quantity: 1
+    })
   }
 
-  const loadRecentlyViewed = async () => {
-    if (typeof window === 'undefined') return
-    const stored = JSON.parse(localStorage.getItem('atk_recent_viewed') || '[]') as string[]
-    const otherIds = stored.filter(i => i !== id)
-    if (otherIds.length === 0) return
-
-    const { data } = await supabase.from('products').select('*').in('id', otherIds).limit(4)
-    if (data) setRecentlyViewed(data)
+  const handleBuyNow = (p: any = product, sz: string = selectedSize) => {
+    handleAddToCart(p, sz)
+    router.push('/checkout')
   }
 
-  async function fetchProductAndRelated() {
-    setError(null)
-    const trimmedId = id.trim()
-    console.log(`Boutique: Retrieving archive for piece [${trimmedId}]...`)
+  const toggleAccordion = (id: string) => {
+    setOpenAccordion(openAccordion === id ? null : id)
+  }
+
+  // Handle Lightbox Modal Navigation
+  const openLightbox = (index: number = activeImageIndex) => {
+    setLightboxIndex(index)
+    setLightboxZoom(1)
+    setIsLightboxOpen(true)
+  }
+
+  const prevLightboxImage = () => {
+    setLightboxIndex(prev => (prev - 1 + productGallery.length) % productGallery.length)
+    setLightboxZoom(1)
+  }
+
+  const nextLightboxImage = () => {
+    setLightboxIndex(prev => (prev + 1) % productGallery.length)
+    setLightboxZoom(1)
+  }
+
+  // Handle 360 Dragging (Mouse & Mobile Touch)
+  const handleMouseDown360 = (e: React.MouseEvent) => {
+    setIsDragging360(true)
+    dragStartX.current = e.clientX
+    angleAtStart.current = rotationAngle
+  }
+
+  const handleMouseMove360 = (e: React.MouseEvent) => {
+    if (!isDragging360) return
+    const deltaX = e.clientX - dragStartX.current
+    const newAngle = (angleAtStart.current + Math.round(deltaX * 0.8)) % 360
+    setRotationAngle(newAngle < 0 ? newAngle + 360 : newAngle)
+  }
+
+  const handleTouchStart360 = (e: React.TouchEvent) => {
+    setIsDragging360(true)
+    if (e.touches.length > 0) {
+      dragStartX.current = e.touches[0].clientX
+      angleAtStart.current = rotationAngle
+    }
+  }
+
+  const handleTouchMove360 = (e: React.TouchEvent) => {
+    if (!isDragging360 || e.touches.length === 0) return
+    const deltaX = e.touches[0].clientX - dragStartX.current
+    const newAngle = (angleAtStart.current + Math.round(deltaX * 0.8)) % 360
+    setRotationAngle(newAngle < 0 ? newAngle + 360 : newAngle)
+  }
+
+  const handleMouseUp360 = () => {
+    setIsDragging360(false)
+  }
+
+  // Handle customer adding a review with optional product photo
+  const handleAddReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newReview.name || !newReview.comment) return
+
+    const reviewObj = {
+      id: `rev-${Date.now()}`,
+      productId: String(product.id),
+      name: newReview.name,
+      city: newReview.city || 'Verified Purchaser',
+      rating: Number(newReview.rating),
+      title: newReview.title || 'Exceptional Atelier Piece',
+      comment: newReview.comment,
+      image: newReview.image || undefined,
+      date: new Date().toISOString().split('T')[0],
+      verified: true,
+    }
+
+    const updated = [reviewObj, ...reviewsList]
+    setReviewsList(updated)
 
     try {
-      const decodedId = decodeURIComponent(trimmedId)
-      const normalizedSlug = slugify(decodedId)
-      const slugId = trimmedId.toLowerCase().replace(/ /g, '-')
-      const cleanId = trimmedId.replace(/%20/g, ' ')
+      const allLocal = JSON.parse(localStorage.getItem('fo4_product_reviews') || '[]')
+      allLocal.unshift(reviewObj)
+      localStorage.setItem('fo4_product_reviews', JSON.stringify(allLocal))
+    } catch {}
 
-      // First, try to find an exact match on ID or URL slug variants
-      let { data, error: pError } = await supabase
-        .from('products')
-        .select('*')
-        .or(`id.eq."${trimmedId}",id.eq."${decodedId}",id.eq."${normalizedSlug}",id.eq."${slugId}",id.eq."${cleanId}",title.eq."${decodedId}"`)
-        .limit(1)
+    try {
+      await supabase.from('reviews').insert([{
+        product_id: String(product.id),
+        reviewer_name: newReview.name,
+        reviewer_city: newReview.city,
+        rating: Number(newReview.rating),
+        title: newReview.title,
+        comment: newReview.comment,
+        image_url: newReview.image,
+      }])
+    } catch (e) {
+      console.warn("Supabase review insert error:", e)
+    }
 
-      // If no exact match, fallback to a careful `ilike` search just in case
-      if (!data || data.length === 0) {
-        const { data: fallbackData } = await supabase
-          .from('products')
-          .select('*')
-          .ilike('title', `%${decodedId}%`)
-          .limit(1)
-        
-        data = fallbackData
+    setIsReviewModalOpen(false)
+    setNewReview({ name: '', city: '', rating: 5, title: '', comment: '', image: '' })
+    alert('✓ Review & Product Photo successfully published!')
+  }
+
+  // Real-Time Shiprocket Pincode Calculator
+  const handleCheckPincode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pincode || pincode.length !== 6 || isNaN(Number(pincode))) {
+      setPincodeError('Please enter a valid 6-digit Indian Pincode.')
+      setPincodeResult(null)
+      return
+    }
+
+    setCheckingPincode(true)
+    setPincodeError('')
+
+    try {
+      const res = await fetch(`/api/shiprocket-estimate?pincode=${pincode}&weight=0.5`)
+      const data = await res.json()
+      if (data.success) {
+        setPincodeResult(data)
+      } else {
+        setPincodeError(data.error || 'Pincode serviceability check failed.')
       }
-
-      const p = data && data.length > 0 ? data[0] : null
-
-      if (pError || !p) {
-        console.error(`Boutique Archive: Retrieval failed for Piece [${trimmedId}]. Tried ID variants and Titles.`)
-        setError(`Masterpiece [${id}] not found in our current archives. Please verify the ID or title in your Admin Panel.`)
-        return
-      }
-
-      if (p) {
-        setProduct(p)
-        const { data: revs } = await supabase.from('reviews').select('*').eq('product_id', trimmedId).order('created_at', { ascending: false }).limit(4)
-        if (revs) setCommunityReviews(revs)
-
-        // Editorial Recommendations ("Complete the Look")
-        const recommendationCategories = p.category === 'Jewellery'
-          ? ['Sarees', 'Women', 'Men']
-          : ['Jewellery'];
-
-        const { data: related } = await supabase
-          .from('products')
-          .select('*')
-          .in('category', recommendationCategories)
-          .neq('id', trimmedId)
-          .limit(20)
-        
-        if (related) {
-          const shuffled = [...related].sort(() => 0.5 - Math.random()).slice(0, 6)
-          setRelatedProducts(shuffled)
-        }
-      }
-    } catch (err: any) {
-      setError("Atelier connection timed out. Reconnecting...")
+    } catch (err) {
+      setPincodeError('Network error checking Shiprocket serviceability.')
+    } finally {
+      setCheckingPincode(false)
     }
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#fdf9f2] flex flex-col items-center justify-center p-8 text-center font-body">
-        <h2 className="font-headline text-4xl mb-6">{error}</h2>
-        <Link href="/" className="bg-[#1c1c18] text-white px-8 py-4 text-[10px] uppercase tracking-widest font-bold">Return to Main Gallery</Link>
-      </div>
-    )
-  }
+  // Filter Related Products (You May Also Like)
+  const relatedProducts = products
+    .filter(p => p.id !== product.id && (p.category === product.category || p.mode === product.mode))
+    .slice(0, 4)
 
-  if (!product) return (
-    <div className="min-h-screen bg-[#fdf9f2]">
-      <Header />
-      <div className="pt-32 pb-24 px-8 md:px-24 max-w-[1920px] mx-auto animate-pulse"><div className="h-4 w-48 bg-[#1c1c18]/5 mb-12" /><div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24"><div className="aspect-[3/4] bg-[#1c1c18]/5" /><div className="space-y-8"><div className="h-20 w-3/4 bg-[#1c1c18]/5" /><div className="h-8 w-1/4 bg-[#1c1c18]/5" /><div className="h-32 w-full bg-[#1c1c18]/5" /><div className="grid grid-cols-4 gap-4 pt-12">{[1,2,3,4].map(i => <div key={i} className="h-12 bg-[#1c1c18]/5" />)}</div></div></div></div>
-      <Footer />
-    </div>
-  )
-
-  const allImages = [...(product.image?.split(',') || []), product.image2, product.image3].filter(Boolean) as string[];
-  const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : (product.category === 'Jewellery' ? ['One Size'] : ['XS', 'S', 'M', 'L', 'XL'])
-  
-  const handleShare = async () => {
-    const url = typeof window !== 'undefined' ? window.location.href : `https://friendsof4.in/product/${id}`
-    if (navigator.share) {
-      try { await navigator.share({ title: product.title, text: `Check out ${product.title} at Friends of 4 Atelier`, url: url }) } catch (err) {}
-    } else {
-      navigator.clipboard.writeText(url)
-      showToast('Link copied to clipboard!', 'success', 'content_copy')
-    }
-  }
-
-  const handleAddToCart = () => {
-    const hasSizes = product.sizes && product.sizes.length > 0;
-    if (hasSizes && !selectedSize) { alert('Please select a size'); return; }
-    if (product.category === 'Jewellery' && product.colors && product.colors.length > 0 && !selectedColor) { showToast('Please curate your preferred material tone', 'error', 'palette'); return; }
-    
-    let cartSize = selectedSize;
-    if (!hasSizes) {
-      if (product.category === 'Jewellery') cartSize = 'One Size';
-      else if (product.category === 'Sarees') cartSize = 'Standard 6-Yard Drape';
-      else cartSize = 'Standard';
-    }
-
-    const colorIndex = selectedColor && product.colors ? product.colors.findIndex(c => c.name === selectedColor) : -1;
-    const cartImage = colorIndex >= 0 && colorIndex < allImages.length ? allImages[colorIndex] : (allImages[0] || '');
-
-    addToCart({
-      id: product.id,
-      name: product.title,
-      price: product.price,
-      image: cartImage,
-      quantity: quantity,
-      selectedSize: cartSize as string,
-      selectedColor: selectedColor || undefined
-    })
-    showToast(`Masterpiece added to your archive.`, 'success', 'shopping_bag')
-  }
-
-  const sections = [
-    { id: 'fabric', title: 'Fabric & Composition', content: product.fabric || [] },
-    { id: 'care', title: 'Care Instructions', content: product.care || [] },
-    { id: 'fit', title: 'Fit & Measurements', content: product.fit || [] },
-  ]
+  // Map 360 rotation angle to gallery image frame index
+  const galleryFrameIndex = Math.floor((rotationAngle / 360) * productGallery.length) % productGallery.length
 
   return (
-    <div className="min-h-screen bg-[#fdf9f2]">
-      <Header activeCategory={product?.category} />
-      <main className="pt-32 pb-24 px-8 md:px-24 max-w-[1920px] mx-auto">
-        <nav className="mb-12 flex items-center gap-4 text-[10px] uppercase tracking-widest text-[#747878]">
-          <Link href="/" className="hover:text-[#1c1c18] transition-colors">Home</Link>
-          <span className="material-symbols-outlined text-[10px]">chevron_right</span>
-          <Link href={`/${product.category.toLowerCase()}`} className="hover:text-[#1c1c18] transition-colors">{product.category}</Link>
-          <span className="material-symbols-outlined text-[10px]">chevron_right</span>
-          <span className="text-[#1c1c18] font-semibold">{product.title}</span>
-        </nav>
+    <div 
+      className="min-h-screen text-[#F4F1EA] paper-texture flex flex-col justify-between transition-colors duration-700 ease-in-out"
+      style={{ backgroundColor: modeDetails.themeBg }}
+    >
+      <Header />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24">
-          <div className="space-y-8">
-            <div 
-              className="relative aspect-[3/4] bg-[#ebdcb9]/15 overflow-hidden shadow-2xl group"
-              style={{ position: 'relative' }}
-            >
-              {/* Prefetch/Preload other product images in background to remove switching lag */}
-              <div className="hidden" aria-hidden="true">
-                {allImages.map((img, idx) => (
-                  <img key={idx} src={img} alt="preload" />
-                ))}
-              </div>
-               <AnimatePresence mode='wait'>
-                   <motion.div key={currentImageIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute inset-0 cursor-zoom-in" style={{ position: 'absolute' }} onClick={() => { const currentImg = allImages[currentImageIndex]; setZoomedImage(currentImg && !failedImages[currentImg] ? currentImg : '/placeholder.jpg'); }} drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={(_, info) => { if (info.offset.x > 30) setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); else if (info.offset.x < -30) setCurrentImageIndex((prev) => (prev + 1) % allImages.length); }}>
-                     <Image 
-                       src={allImages[currentImageIndex] && !failedImages[allImages[currentImageIndex]] ? allImages[currentImageIndex] : '/placeholder.jpg'} 
-                       alt={`${product.title}`} 
-                       fill 
-                       className="object-cover group-hover:scale-105 transition-transform duration-1000 select-none pointer-events-none" 
-                       priority 
-                       onError={() => {
-                         if (allImages[currentImageIndex]) {
-                           setFailedImages(prev => ({ ...prev, [allImages[currentImageIndex]]: true }))
-                         }
-                       }}
-                     />
-                  </motion.div>
-                </AnimatePresence>
-                {allImages.length > 1 && (
-                  <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
-                    <button onClick={() => setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)} className="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#a3851a] hover:text-white transition-all"><span className="material-symbols-outlined">chevron_left</span></button>
-                    <button onClick={() => setCurrentImageIndex((prev) => (prev + 1) % allImages.length)} className="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#a3851a] hover:text-white transition-all"><span className="material-symbols-outlined">chevron_right</span></button>
-                  </div>
-                )}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">{allImages.map((_, idx) => <button key={idx} onClick={() => setCurrentImageIndex(idx)} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'bg-[#a3851a] w-6' : 'bg-[#1c1c18]/20'}`} />)}</div>
-            </div>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-              {allImages.map((img, idx) => (
-                <motion.div 
-                  key={idx}
-                  className={`aspect-square bg-[#ebdcb9]/15 relative overflow-hidden cursor-pointer group shadow-sm border transition-all ${idx === currentImageIndex ? 'border-[#a3851a] scale-[0.98]' : 'border-[#1c1c18]/10 hover:border-[#1c1c18]'}`} 
-                  style={{ position: 'relative' }}
-                  onClick={() => setCurrentImageIndex(idx)}
-                >
-                  <Image 
-                     src={img && !failedImages[img] ? img : '/placeholder.jpg'} 
-                     alt={`Thumbnail ${idx + 1}`} 
-                     fill 
-                     className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                     sizes="(max-width: 768px) 33vw, 25vw"
-                     onError={() => {
-                       if (img) {
-                         setFailedImages(prev => ({ ...prev, [img]: true }))
-                       }
-                     }}
-                   />
-                </motion.div>
-              ))}
-              {product.video_url && (
-                <motion.div 
-                  className="aspect-square bg-black relative overflow-hidden group shadow-md cursor-pointer border border-[#1c1c18]/10" 
-                  onClick={() => product.video_url && setZoomedImage(product.video_url)}
-                >
-                  <video 
-                    src={product.video_url} 
-                    className="w-full h-full object-cover opacity-60" 
-                    muted 
-                    loop 
-                    autoPlay 
-                    playsInline
-                  />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20">
-                    <span className="material-symbols-outlined text-[#a3851a] text-2xl">play_circle</span>
-                    <span className="text-[8px] uppercase font-bold text-white bg-[#1c1c18]/60 px-1 py-0.5 mt-1">Reel</span>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </div>
+      <main className="pt-32 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1">
+        
+        {/* BACK NAVIGATION BUTTON */}
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-xs uppercase tracking-widest font-mono font-bold transition-all hover:opacity-80 cursor-pointer"
+            style={{ color: modeDetails.accentColor }}
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            Back to Collection
+          </button>
 
-          <div className="flex flex-col">
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-              <span className="font-body text-[10px] uppercase tracking-[0.3em] text-[#a3851a] mb-4 block">Handcrafted Atelier</span>
-              <h1 className="font-headline text-5xl md:text-7xl mb-6 tracking-tighter text-[#1c1c18]">{product.title}</h1>
-              <p className="font-headline text-3xl mb-8 text-[#1c1c18]/80">₹{typeof product.price === 'number' ? product.price.toLocaleString() : product.price}</p>
-              <div className="w-full h-[1px] bg-[#1c1c18]/10 mb-8" />
-              <p className="font-body text-[#747878] leading-relaxed mb-12 max-w-lg">{product.description}</p>
-
-              {product.sizes && product.sizes.length > 0 && (
-                <div className="mb-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878]">Select Size</span>
-                    <button 
-                      onClick={() => setIsSizeGuideOpen(true)}
-                      className="font-body text-[9px] uppercase tracking-widest text-[#a3851a] font-bold border-b border-[#a3851a] pb-0.5 hover:text-[#1c1c18] hover:border-[#1c1c18] transition-colors"
-                    >
-                      Size Guide & Fit Finder
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-4">{product.sizes.map((size) => <button key={size} onClick={() => setSelectedSize(size)} className={`h-12 px-6 border transition-all ${selectedSize === size ? 'border-[#a3851a] bg-[#a3851a] text-white font-bold' : 'border-[#1c1c18]/20 hover:border-[#1c1c18]'} font-body text-xs uppercase tracking-widest`}>{size}</button>)}</div>
-                </div>
-              )}
-
-              {product.colors && product.colors.length > 0 && (
-                <div className="mb-12">
-                   <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] mb-4 block">{product.category === 'Jewellery' ? 'Material Tone (Required):' : 'Select Tone (Optional):'} {selectedColor || 'None'}</span>
-                   <div className="flex flex-wrap gap-4">{product.colors.map((c, index) => <button key={c.name} onClick={() => { setSelectedColor(c.name); if (index < allImages.length) { setCurrentImageIndex(index); } }} className={`w-10 h-10 rounded-full border-2 p-0.5 transition-all ${selectedColor === c.name ? 'border-[#a3851a] scale-110' : 'border-transparent'}`}><div className="w-full h-full rounded-full shadow-inner" style={{ backgroundColor: c.hex }} /></button>)}</div>
-                </div>
-              )}
-
-              <div className="flex items-center gap-12 mb-12">
-                <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878]">Quantity</span>
-                <div className="flex items-center gap-6 border-b border-[#1c1c18]/20 pb-2"><button onClick={() => setQuantity(Math.max(1, quantity - 1))}><span className="material-symbols-outlined text-sm">remove</span></button><span className="font-body text-sm min-w-[24px] text-center">{quantity.toString().padStart(2, '0')}</span><button onClick={() => setQuantity(quantity + 1)}><span className="material-symbols-outlined text-sm">add</span></button></div>
-              </div>
-
-               <div className="flex flex-col gap-4 mb-2">
-                 <div className="flex gap-3 md:gap-4 h-14 md:h-16">
-                    <button onClick={handleAddToCart} disabled={product.stock === 0} className={`flex-1 h-full ${product.stock === 0 ? 'bg-[#1c1c18]/20 text-[#1c1c18]/40' : 'gold-satin text-white shadow-2xl hover:scale-[1.02] active:scale-[0.98]'} font-body uppercase tracking-[0.2em] md:tracking-[0.3em] font-bold text-[9px] md:text-[10px] transition-all`}>{product.stock === 0 ? 'Archive Depleted' : 'Add To Bag'}</button>
-                    <button onClick={() => product && (isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id))} className={`w-14 md:w-16 h-full flex items-center justify-center shrink-0 border border-[#1c1c18]/10 transition-all active:scale-95 ${product && isInWishlist(product.id) ? 'bg-red-50 text-red-500' : 'hover:bg-[#1c1c18] hover:text-white'}`}><span className="material-symbols-outlined text-xl md:text-2xl">favorite</span></button>
-                    <button onClick={handleShare} className="w-14 md:w-16 h-full flex items-center justify-center shrink-0 border border-[#1c1c18]/10 hover:bg-[#a3851a] hover:text-white transition-all active:scale-95"><span className="material-symbols-outlined text-xl md:text-2xl">ios_share</span></button>
-                 </div>
-               </div>
-
-               {/* Shipping info box */}
-               <div className="bg-blue-50/80 border border-blue-100 p-5 mt-4 mb-12 flex items-start gap-4 rounded-sm shadow-sm">
-                 <span className="material-symbols-outlined text-blue-500 text-xl shrink-0">local_shipping</span>
-                 <div>
-                   <p className="text-[10px] uppercase tracking-widest text-[#1c1c18] font-black leading-relaxed">📦 Usually shipped within 24-48 hours.</p>
-                   <p className="text-[9px] uppercase tracking-widest text-[#747878] mt-1 font-bold leading-relaxed">Tracking details sent to your email within 48-72 hours of shipment.</p>
-                 </div>
-               </div>
-
-              <div className="space-y-2 border-t border-[#1c1c18]/10 pt-12">{sections.map((s) => <div key={s.id} className="border-b border-[#1c1c18]/5 pb-4"><button onClick={() => setActiveSection(activeSection === s.id ? null : s.id)} className="w-full flex justify-between items-center py-4 text-left"><span className="font-body text-[10px] uppercase font-semibold">{s.title}</span><span className="material-symbols-outlined text-sm">expand_more</span></button><AnimatePresence>{activeSection === s.id && <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden"><ul className="pb-6 space-y-2">{s.content.map((item, i) => <li key={i} className="text-xs text-[#747878] pl-4 relative"><span className="absolute left-0 top-1.5 w-1 h-1 rounded-full bg-[#a3851a]" />{item}</li>)}</ul></motion.div>}</AnimatePresence></div>)}</div>
-            </motion.div>
+          <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#D6CEBE]/70 flex items-center space-x-2">
+            <Link href="/" className="hover:opacity-80">HOME</Link>
+            <span>/</span>
+            <Link href="/shop" className="hover:opacity-80">COLLECTION</Link>
+            <span>/</span>
+            <span className="font-bold text-white line-clamp-1 max-w-[150px] sm:max-w-none">{product.title}</span>
           </div>
         </div>
 
-        {/* Some More Collection Related Products Section */}
-        {relatedProducts.length > 0 && (
-          <div className="mt-24 border-t border-[#1c1c18]/10 pt-16">
-            <div className="mb-12 text-center lg:text-left">
-              <span className="font-body text-[10px] uppercase tracking-[0.3em] text-[#a3851a] mb-2 block">
-                Editorial Styling
-              </span>
-              <h2 className="font-headline text-4xl lg:text-5xl text-[#1c1c18] uppercase tracking-tight">
-                Complete The Look
-              </h2>
-            </div>
+        {/* MASTERPIECE GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* LEFT COLUMN: STICKY MULTI-ANGLE GALLERY & 360 VIEWER */}
+          <div className="lg:col-span-7 space-y-4 lg:sticky lg:top-28">
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {relatedProducts.map((item, index) => (
-                <ProductCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  price={typeof item.price === 'number' ? `₹${item.price.toLocaleString('en-IN')}` : String(item.price)}
-                  image={item.image}
-                  rating={item.rating || 5.0}
-                  reviews={item.reviews || 0}
-                  index={index}
-                  stock={item.stock}
+            {/* VIEW TAB SELECTOR: 01 GALLERY | 02 360° VIEW | 03 CINEMATIC REEL */}
+            <div className="flex border p-1 rounded-lg gap-1" style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}>
+              <button
+                onClick={() => setActiveTab('photos')}
+                className={`flex-1 py-2 text-[10px] sm:text-[11px] tracking-[0.12em] uppercase transition-all rounded ${modeDetails.fontClass}`}
+                style={{
+                  backgroundColor: activeTab === 'photos' ? modeDetails.accentColor : 'transparent',
+                  color: activeTab === 'photos' ? modeDetails.themeBg : '#D6CEBE',
+                  fontWeight: activeTab === 'photos' ? 700 : 400
+                }}
+              >
+                01. GALLERY ({productGallery.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab('360')}
+                className={`flex-1 py-2 text-[10px] sm:text-[11px] tracking-[0.12em] uppercase transition-all rounded flex items-center justify-center gap-1 ${modeDetails.fontClass}`}
+                style={{
+                  backgroundColor: activeTab === '360' ? modeDetails.accentColor : 'transparent',
+                  color: activeTab === '360' ? modeDetails.themeBg : '#D6CEBE',
+                  fontWeight: activeTab === '360' ? 700 : 400
+                }}
+              >
+                <span className="material-symbols-outlined text-xs">360</span>
+                <span>02. 360° VIEW</span>
+              </button>
+              
+              {product.video_url && (
+                <button
+                  onClick={() => setActiveTab('reel')}
+                  className={`flex-1 py-2 text-[10px] sm:text-[11px] tracking-[0.12em] uppercase transition-all rounded ${modeDetails.fontClass}`}
+                  style={{
+                    backgroundColor: activeTab === 'reel' ? modeDetails.accentColor : 'transparent',
+                    color: activeTab === 'reel' ? modeDetails.themeBg : '#D6CEBE',
+                    fontWeight: activeTab === 'reel' ? 700 : 400
+                  }}
+                >
+                  03. REEL
+                </button>
+              )}
+            </div>
+
+            {/* MAIN DISPLAY AREA */}
+            <div className="relative w-full h-[400px] sm:h-[480px] border overflow-hidden shadow-2xl rounded-lg group" style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}>
+              
+              <AnimatePresence mode="wait">
+                {activeTab === 'photos' ? (
+                  <motion.div
+                    key={`photo-${activeImageIndex}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative w-full h-full p-2 flex items-center justify-center cursor-pointer"
+                    onClick={() => openLightbox(activeImageIndex)}
+                  >
+                    <Image
+                      src={productGallery[activeImageIndex] || '/placeholder.jpg'}
+                      alt={product.title}
+                      fill
+                      priority
+                      className={imageFit === 'contain' ? 'object-contain p-2' : 'object-cover object-top'}
+                    />
+
+                    {/* HOVER EXPAND POPUP INSTRUCTION */}
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="px-4 py-2 bg-black/80 text-white rounded-full font-mono text-xs uppercase tracking-widest border border-white/30 flex items-center gap-2 backdrop-blur-md">
+                        <span className="material-symbols-outlined text-sm">open_in_full</span>
+                        <span>CLICK FOR FULLSCREEN LIGHTBOX & ZOOM</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : activeTab === '360' ? (
+                  /* 360 DEGREE INTERACTIVE ROTATOR VIEW - HD CRISP ZERO-BLUR RENDERING */
+                  <motion.div
+                    key="360-view"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="relative w-full h-full flex flex-col items-center justify-center select-none cursor-grab active:cursor-grabbing touch-pan-y"
+                    onMouseDown={handleMouseDown360}
+                    onMouseMove={handleMouseMove360}
+                    onMouseUp={handleMouseUp360}
+                    onMouseLeave={handleMouseUp360}
+                    onTouchStart={handleTouchStart360}
+                    onTouchMove={handleTouchMove360}
+                    onTouchEnd={handleMouseUp360}
+                  >
+                    <div className="relative w-full h-full p-4 flex items-center justify-center overflow-hidden">
+                      {/* CRISP ULTRA-HD UN-DISTORTED IMAGE CONTAINER */}
+                      {(() => {
+                        const totalFrames = productGallery.length
+                        const frameIdx = totalFrames > 1 ? Math.floor((rotationAngle / 360) * totalFrames) % totalFrames : 0
+                        const activeImage = productGallery[frameIdx] || product.image
+                        const lightSheenOffset = (rotationAngle / 360) * 100
+
+                        return (
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            {/* NATIVE HIGH-DPI CRISP IMAGE DISPLAY - NO 3D MATRIX WARP BLUR */}
+                            <div className="relative w-full h-full flex items-center justify-center">
+                              <Image
+                                src={activeImage}
+                                alt={`360 Degree View Frame - ${rotationAngle}°`}
+                                fill
+                                priority
+                                unoptimized
+                                className="object-contain p-2 transition-transform duration-75"
+                                style={{
+                                  imageRendering: 'crisp-edges',
+                                  WebkitFontSmoothing: 'antialiased'
+                                }}
+                              />
+
+                              {/* SMOOTH SPECULAR REFLECTION LIGHTING OVERLAY */}
+                              <div
+                                className="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay"
+                                style={{
+                                  background: `linear-gradient(115deg, transparent ${Math.max(0, lightSheenOffset - 30)}%, rgba(255,255,255,0.8) ${lightSheenOffset}%, transparent ${Math.min(100, lightSheenOffset + 30)}%)`
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* 360 OVERLAY STATUS & CONTROLS */}
+                      <div className="absolute top-4 left-4 z-10 font-mono text-[10px] bg-black/85 px-3.5 py-1.5 rounded-full border border-amber-500/40 flex items-center gap-2 shadow-lg backdrop-blur-md">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                        <span style={{ color: modeDetails.accentColor }} className="font-bold">
+                          360° AXIS: {rotationAngle}°
+                        </span>
+                        <span className="text-[9px] text-emerald-400 font-bold border-l pl-2 border-white/20">
+                          HD CRISP
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-black/90 p-2 rounded-full border border-white/20 backdrop-blur-md shadow-2xl">
+                        <button
+                          type="button"
+                          onClick={() => setRotationAngle(prev => (prev - 15 + 360) % 360)}
+                          className="p-1.5 text-xs text-white hover:text-amber-400 font-mono cursor-pointer"
+                          title="-15° Left"
+                        >
+                          ◄ -15°
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsAutoSpinning(!isAutoSpinning)}
+                          className={`px-3 py-1 text-[10px] font-mono font-bold uppercase rounded-full border transition-all cursor-pointer ${
+                            isAutoSpinning ? 'bg-amber-400 text-black border-amber-400 shadow-md' : 'bg-white/10 text-white border-white/30'
+                          }`}
+                        >
+                          {isAutoSpinning ? '⏸ PAUSE ROTATION' : '▶ AUTO-SPIN 360°'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setRotationAngle(prev => (prev + 15) % 360)}
+                          className="p-1.5 text-xs text-white hover:text-amber-400 font-mono cursor-pointer"
+                          title="+15° Right"
+                        >
+                          +15° ►
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => { setRotationAngle(0); setIsAutoSpinning(false) }}
+                          className="px-2 py-1 text-[9px] font-mono text-white/70 hover:text-white cursor-pointer"
+                        >
+                          RESET
+                        </button>
+                      </div>
+
+                      <div className="absolute top-4 right-4 z-10 text-[9px] font-mono bg-black/80 px-3 py-1.5 rounded-full border border-white/20 text-white/90 shadow">
+                        SWIPE / DRAG HORIZONTALLY TO ROTATE 360°
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  /* CINEMATIC REEL VIEW */
+                  <motion.div
+                    key="reel-view"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="relative w-full h-full bg-black flex items-center justify-center"
+                  >
+                    <video
+                      src={product.video_url}
+                      controls
+                      autoPlay
+                      loop
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* MODE STAMP */}
+              <div className={`absolute top-3 left-3 text-[9px] tracking-[0.15em] px-2.5 py-0.5 uppercase font-bold rounded ${modeDetails.fontClass}`} style={{ backgroundColor: modeDetails.themeBg, color: modeDetails.accentColor, border: `1px solid ${modeDetails.borderColor}` }}>
+                {product.mode || mode} MODE
+              </div>
+
+              {/* IMAGE FIT VIEW TOGGLE BUTTON */}
+              {activeTab === 'photos' && (
+                <div className="absolute bottom-3 right-3 z-10 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openLightbox(activeImageIndex)}
+                    className="px-2.5 py-1 text-[9px] font-mono uppercase font-bold rounded border backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer bg-black/80 text-white border-amber-400/50 hover:border-amber-400 shadow-lg"
+                  >
+                    <span className="material-symbols-outlined text-xs">zoom_in</span>
+                    <span>LIGHTBOX POPUP</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setImageFit(imageFit === 'contain' ? 'cover' : 'contain')}
+                    className="px-2.5 py-1 text-[9px] font-mono uppercase font-bold rounded border backdrop-blur-md transition-all flex items-center gap-1 cursor-pointer bg-black/70 text-white border-white/30 hover:border-white shadow-lg"
+                  >
+                    <span className="material-symbols-outlined text-xs">
+                      {imageFit === 'contain' ? 'zoom_out_map' : 'fit_screen'}
+                    </span>
+                    <span>{imageFit === 'contain' ? 'FIT: CONTAIN' : 'FIT: COVER'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* THUMBNAIL GALLERY STRIP */}
+            {activeTab === 'photos' && productGallery.length > 1 && (
+              <div className="flex space-x-3 overflow-x-auto pb-2">
+                {productGallery.map((imgUrl: string, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className="relative w-20 h-24 flex-shrink-0 border-2 overflow-hidden transition-all rounded bg-black/40 p-1 cursor-pointer group"
+                    style={{
+                      borderColor: activeImageIndex === idx ? modeDetails.accentColor : modeDetails.borderColor,
+                      opacity: activeImageIndex === idx ? 1 : 0.6
+                    }}
+                  >
+                    <Image src={imgUrl} alt={`View ${idx}`} fill className="object-contain p-1" />
+                    <div className="absolute inset-0 bg-amber-400/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN: PRODUCT PURCHASING & SPECS ACCORDION */}
+          <div className="lg:col-span-5 space-y-5 p-5 border shadow-xl rounded-lg" style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}>
+            
+            {/* TITLE & PRICE */}
+            <div className="border-b pb-4 space-y-1.5" style={{ borderColor: modeDetails.borderColor }}>
+              <div className="flex justify-between items-start">
+                <span className={`text-[9px] uppercase tracking-[0.2em] font-bold ${modeDetails.fontClass}`} style={{ color: modeDetails.accentColor }}>
+                  {product.category} {product.gsm ? `• ${product.gsm}` : ''}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <ShareButtonDemo size="sm" />
+                  <button
+                    onClick={() => toggleWishlist(product.id)}
+                    className="hover:opacity-80 transition-colors p-1 text-[#F4F1EA]"
+                    aria-label="Wishlist"
+                  >
+                    <span className="material-symbols-outlined text-xl" style={{ color: isWishlisted ? modeDetails.accentColor : '#F4F1EA' }}>
+                      {isWishlisted ? 'favorite' : 'favorite_border'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* HEADING */}
+              <h1 className={`${modeDetails.fontClass || 'font-serif-editorial'} text-xl sm:text-2xl tracking-[0.03em] text-[#F4F1EA] font-bold`}>
+                {product.title}
+              </h1>
+
+              {product.subtitle && (
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#D6CEBE]/70">
+                  {product.subtitle}
+                </p>
+              )}
+
+              <div className="pt-1.5 flex items-baseline justify-between">
+                <span className="font-mono text-xl font-bold" style={{ color: modeDetails.accentColor }}>
+                  {product.price}
+                </span>
+                <span className="text-[9px] font-mono px-2 py-0.5 border rounded" style={{ backgroundColor: 'rgba(0,0,0,0.4)', color: modeDetails.accentColor, borderColor: modeDetails.borderColor }}>
+                  IN STOCK • READY TO SHIP
+                </span>
+              </div>
+            </div>
+
+            {/* DESCRIPTION */}
+            <p className="text-[11px] text-[#D6CEBE]/80 leading-relaxed font-light">
+              {product.description}
+            </p>
+
+            {/* PILL SIZE SELECTOR */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-[11px] font-mono">
+                <span className="text-[#F4F1EA] font-bold">SELECT SIZE:</span>
+                <button
+                  onClick={() => setIsSizeGuideOpen(true)}
+                  className="underline hover:opacity-80 transition-colors text-[10px]"
+                  style={{ color: modeDetails.accentColor }}
+                >
+                  SIZE GUIDE & MEASUREMENTS
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {(product.sizes || ['S', 'M', 'L', 'XL']).map((size: string) => (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    className={`px-3.5 py-1.5 text-[11px] border transition-all rounded-full cursor-pointer ${modeDetails.fontClass}`}
+                    style={{
+                      backgroundColor: selectedSize === size ? modeDetails.accentColor : 'transparent',
+                      color: selectedSize === size ? modeDetails.themeBg : '#F4F1EA',
+                      borderColor: selectedSize === size ? modeDetails.accentColor : modeDetails.borderColor,
+                      fontWeight: selectedSize === size ? 700 : 400
+                    }}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* PRIMARY ADD TO BAG & BUY NOW BUTTONS */}
+            <div className="space-y-2">
+              <button
+                onClick={() => handleAddToCart()}
+                className={`w-full py-3 font-bold text-[11px] tracking-[0.18em] uppercase transition-all duration-300 shadow-lg rounded hover:brightness-110 cursor-pointer ${modeDetails.fontClass}`}
+                style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+              >
+                ADD TO BAG — {product.price}
+              </button>
+
+              <button
+                onClick={() => handleBuyNow()}
+                className={`w-full py-3 font-bold text-[11px] tracking-[0.18em] uppercase transition-all duration-300 shadow-lg rounded border hover:bg-white/10 cursor-pointer flex items-center justify-center gap-2 ${modeDetails.fontClass}`}
+                style={{ borderColor: modeDetails.accentColor, color: modeDetails.accentColor }}
+              >
+                <span className="material-symbols-outlined text-sm">bolt</span>
+                <span>BUY NOW — DIRECT CHECKOUT</span>
+              </button>
+            </div>
+
+            {/* SHIPROCKET PINCODE ESTIMATOR WIDGET */}
+            <div className="p-3 border rounded-lg space-y-2 text-[10px]" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+              <div className="flex items-center gap-2 font-mono font-bold uppercase text-[10px]" style={{ color: modeDetails.accentColor }}>
+                <span className="material-symbols-outlined text-xs">local_shipping</span>
+                <span>SHIPROCKET PINCODE ESTIMATOR</span>
+              </div>
+              <form onSubmit={handleCheckPincode} className="flex gap-2">
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  placeholder="ENTER PINCODE"
+                  className="flex-1 bg-transparent border px-2.5 py-1.5 text-[11px] font-mono uppercase text-white placeholder-white/40 focus:outline-none rounded"
+                  style={{ borderColor: modeDetails.borderColor }}
                 />
+                <button
+                  type="submit"
+                  disabled={checkingPincode}
+                  className="px-3 py-1.5 font-bold text-[10px] font-mono uppercase tracking-wider rounded transition-all cursor-pointer"
+                  style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+                >
+                  {checkingPincode ? '...' : 'CHECK'}
+                </button>
+              </form>
+              {pincodeError && <p className="text-[9px] font-mono text-red-400">{pincodeError}</p>}
+              {pincodeResult && (
+                <div className="p-2 border text-[10px] font-mono space-y-0.5 rounded bg-green-950/20 border-green-500/40 text-green-300">
+                  <p className="font-bold">✓ Delivers by {pincodeResult.estimatedDate}</p>
+                  <p className="opacity-80">{pincodeResult.service}</p>
+                </div>
+              )}
+            </div>
+
+            {/* ACCORDION SECTIONS */}
+            <div className="border-t pt-3 space-y-2 divide-y" style={{ borderColor: modeDetails.borderColor }}>
+              
+              {/* FABRIC & GSM SPECS */}
+              <div className="pt-2">
+                <button
+                  onClick={() => toggleAccordion('fabric')}
+                  className={`w-full flex justify-between items-center text-[11px] font-bold text-[#F4F1EA] uppercase py-1 cursor-pointer ${modeDetails.fontClass}`}
+                >
+                  <span>[FABRIC & GSM SPECS]</span>
+                  <span>{openAccordion === 'fabric' ? '-' : '+'}</span>
+                </button>
+                {openAccordion === 'fabric' && (
+                  <div className="mt-2 text-[10px] text-[#D6CEBE]/80 space-y-1.5 font-mono p-2.5 border rounded" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+                    {product.details?.gsmSpec && <p className="font-bold" style={{ color: modeDetails.accentColor }}>WEIGHT: {product.details.gsmSpec}</p>}
+                    <p className="font-semibold text-[#F4F1EA]">MATERIAL COMPOSITION:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {(product.details?.fabric || ['100% Premium Cotton / Handloom Silk']).map((f: string, i: number) => <li key={i}>{f}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* FIT & CARE INSTRUCTIONS */}
+              <div className="pt-2">
+                <button
+                  onClick={() => toggleAccordion('fit')}
+                  className={`w-full flex justify-between items-center text-[11px] font-bold text-[#F4F1EA] uppercase py-1 cursor-pointer ${modeDetails.fontClass}`}
+                >
+                  <span>[FIT & CARE INSTRUCTIONS]</span>
+                  <span>{openAccordion === 'fit' ? '-' : '+'}</span>
+                </button>
+                {openAccordion === 'fit' && (
+                  <div className="mt-2 text-[10px] text-[#D6CEBE]/80 space-y-1.5 font-mono p-2.5 border rounded" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+                    <p className="font-semibold text-[#F4F1EA]">FIT & MEASUREMENTS:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {(product.details?.fit || ['Relaxed Archival Fit']).map((f: string, i: number) => <li key={i}>{f}</li>)}
+                    </ul>
+                    <p className="font-semibold text-[#F4F1EA] pt-1">CARE INSTRUCTIONS:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {(product.details?.care || ['Dry Clean Recommended']).map((c: string, i: number) => <li key={i}>{c}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* THE HERITAGE STORY */}
+              <div className="pt-2">
+                <button
+                  onClick={() => toggleAccordion('story')}
+                  className={`w-full flex justify-between items-center text-[11px] font-bold text-[#F4F1EA] uppercase py-1 cursor-pointer ${modeDetails.fontClass}`}
+                >
+                  <span>[THE HERITAGE STORY]</span>
+                  <span>{openAccordion === 'story' ? '-' : '+'}</span>
+                </button>
+                {openAccordion === 'story' && (
+                  <div className="mt-2 text-[10px] text-[#D6CEBE]/80 leading-relaxed font-light p-2.5 border rounded" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+                    <p>{product.heritageStory}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* RETURN & UNBOXING POLICY */}
+              <div className="pt-2">
+                <button
+                  onClick={() => toggleAccordion('shipping')}
+                  className={`w-full flex justify-between items-center text-[11px] font-bold text-[#F4F1EA] uppercase py-1 cursor-pointer ${modeDetails.fontClass}`}
+                >
+                  <span>[RETURN & 24H UNBOXING POLICY]</span>
+                  <span>{openAccordion === 'shipping' ? '-' : '+'}</span>
+                </button>
+                {openAccordion === 'shipping' && (
+                  <div className="mt-2 text-[10px] text-[#D6CEBE]/80 space-y-1.5 font-mono p-2.5 border rounded" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+                    <p>{product.return_policy || product.unboxingPolicy || '7-day boutique return policy with 24-hour unboxing video inspection guarantee.'}</p>
+                    <p className="text-[9px] font-bold" style={{ color: modeDetails.accentColor }}>
+                      ⚡ INSURED COURIER FULFILLMENT VIA SHIPROCKET
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RELATED PRODUCTS RECOMMENDATION GRID ("YOU MAY ALSO LIKE") */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-16 pt-12 border-t space-y-6" style={{ borderColor: `${modeDetails.borderColor}50` }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[9px] font-mono tracking-[0.2em] uppercase font-bold block" style={{ color: modeDetails.accentColor }}>
+                  ATELIER SELECTIONS
+                </span>
+                <h2 className={`${modeDetails.fontClass || 'font-serif-editorial'} text-xl sm:text-2xl uppercase text-white font-bold mt-1`}>
+                  YOU MAY ALSO LIKE — RECOMMENDED GARMENTS
+                </h2>
+              </div>
+              <Link href="/shop" className="text-xs font-mono uppercase underline hover:opacity-80" style={{ color: modeDetails.accentColor }}>
+                VIEW ALL COLLECTIONS →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((rel) => (
+                <div
+                  key={rel.id}
+                  className="border rounded-xl p-4 flex flex-col justify-between group transition-transform hover:-translate-y-1 shadow-lg"
+                  style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+                >
+                  <div>
+                    <div className="relative w-full h-64 border rounded-lg overflow-hidden mb-3 bg-black/30">
+                      <Image
+                        src={rel.image}
+                        alt={rel.title}
+                        fill
+                        className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <span className="absolute top-2 left-2 text-[8px] font-mono uppercase px-2 py-0.5 rounded bg-black/80 text-amber-400 font-bold border border-amber-400/40">
+                        {rel.category}
+                      </span>
+                    </div>
+
+                    <h3 className="font-mono text-xs font-bold text-white line-clamp-1 group-hover:text-amber-400 transition-colors">
+                      {rel.title}
+                    </h3>
+                    <p className="text-[10px] font-mono text-[#D6CEBE]/70 line-clamp-1 mt-0.5">
+                      {rel.subtitle || rel.category}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t mt-3 flex items-center justify-between" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                    <span className="font-mono font-bold text-sm" style={{ color: modeDetails.accentColor }}>
+                      {rel.price}
+                    </span>
+                    <Link
+                      href={`/product/${rel.id}`}
+                      className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase rounded border transition-all hover:bg-amber-400 hover:text-black"
+                      style={{ borderColor: modeDetails.accentColor, color: modeDetails.accentColor }}
+                    >
+                      EXPLORE
+                    </Link>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         )}
-      </main>
-      
-      {/* Size Guide & Fit Finder Drawer */}
-      <AnimatePresence>
-        {isSizeGuideOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { setIsSizeGuideOpen(false); setCalculatedFit(null); }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-lg z-[100]"
-            />
 
-            {/* Slide-out Drawer Container */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 h-[100dvh] w-full max-w-lg bg-[#fdf9f2]/90 backdrop-blur-2xl border-l border-white/20 z-[101] shadow-[0_0_50px_rgba(0,0,0,0.35)] flex flex-col font-body"
+        {/* CUSTOMER REVIEWS & VERIFIED PHOTOS SECTION */}
+        <div className="mt-16 pt-8 border-t space-y-6" style={{ borderColor: `${modeDetails.borderColor}50` }}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <span className={`text-[9px] font-mono tracking-[0.2em] uppercase font-bold block`} style={{ color: modeDetails.accentColor }}>
+                VERIFIED CLIENT FEEDBACK & ATELIER REVIEWS
+              </span>
+              <h2 className={`${modeDetails.fontClass || 'font-serif-editorial'} text-xl sm:text-2xl uppercase text-white font-bold mt-1`}>
+                CLIENT REVIEWS & CUSTOMER PHOTOS ({reviewsList.length})
+              </h2>
+            </div>
+
+            <button
+              onClick={() => setIsReviewModalOpen(true)}
+              className="px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg border transition-all cursor-pointer flex items-center gap-2"
+              style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg, borderColor: modeDetails.accentColor }}
             >
-              {/* Header */}
-              <div className="p-8 border-b border-[#1c1c18]/5 flex justify-between items-center bg-white/30 backdrop-blur-md shrink-0">
-                <div>
-                  <h2 className="font-headline text-2xl tracking-tighter">Size Guide & Fit Finder</h2>
-                  <p className="font-body text-[10px] text-[#a3851a] uppercase tracking-widest mt-1">Curate your perfect fit</p>
+              <span className="material-symbols-outlined text-xs">rate_review</span>
+              <span>WRITE A REVIEW & UPLOAD PHOTO</span>
+            </button>
+          </div>
+
+          {/* RATING OVERVIEW BAR */}
+          <div className="p-4 border rounded-xl grid grid-cols-1 md:grid-cols-12 gap-4 items-center" style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}>
+            <div className="md:col-span-4 text-center border-r md:border-r" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+              <span className="font-serif-editorial text-3xl font-bold text-white">4.9</span>
+              <div className="flex justify-center text-amber-400 my-0.5 text-xs">
+                {'★'.repeat(5)}
+              </div>
+              <p className="text-[10px] font-mono text-[#D6CEBE]/70">Based on {reviewsList.length} verified customer acquisitions</p>
+            </div>
+
+            <div className="md:col-span-8 space-y-2 font-mono text-xs">
+              {[
+                { stars: '5 Stars', pct: '92%', count: reviewsList.filter(r => r.rating === 5).length || reviewsList.length },
+                { stars: '4 Stars', pct: '8%', count: reviewsList.filter(r => r.rating === 4).length },
+                { stars: '3 Stars', pct: '0%', count: 0 },
+              ].map(bar => (
+                <div key={bar.stars} className="flex items-center gap-3">
+                  <span className="w-16 text-[10px] uppercase text-[#D6CEBE]">{bar.stars}</span>
+                  <div className="flex-1 h-2 bg-black/40 rounded-full overflow-hidden border" style={{ borderColor: `${modeDetails.borderColor}30` }}>
+                    <div className="h-full rounded-full" style={{ width: bar.pct, backgroundColor: modeDetails.accentColor }} />
+                  </div>
+                  <span className="w-8 text-right text-[10px] text-[#D6CEBE] font-bold">{bar.count}</span>
                 </div>
+              ))}
+            </div>
+          </div>
+
+          {/* REVIEWS GRID LIST */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {reviewsList.map((rev) => (
+              <div
+                key={rev.id}
+                className="p-6 border rounded-xl space-y-4 shadow-lg flex flex-col justify-between"
+                style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+              >
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-serif-editorial text-lg text-white font-bold">{rev.name}</span>
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold uppercase">
+                          ✓ Verified Purchaser
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-mono text-[#D6CEBE]/60">{rev.city} • {rev.date}</p>
+                    </div>
+
+                    <div className="text-amber-400 text-sm">
+                      {'★'.repeat(rev.rating || 5)}{'☆'.repeat(5 - (rev.rating || 5))}
+                    </div>
+                  </div>
+
+                  <h3 className="font-mono text-sm font-bold text-white">{rev.title}</h3>
+                  <p className="text-xs text-[#D6CEBE]/80 leading-relaxed font-light">{rev.comment}</p>
+                </div>
+
+                {/* CUSTOMER UPLOADED PHOTO THUMBNAIL */}
+                {rev.image && (
+                  <div className="pt-3 border-t" style={{ borderColor: `${modeDetails.borderColor}30` }}>
+                    <p className="text-[9px] font-mono text-[#D6CEBE]/60 uppercase mb-2 font-bold">CLIENT PHOTO ATTACHMENT:</p>
+                    <button
+                      onClick={() => setExpandedImage(rev.image)}
+                      className="relative w-28 h-28 border-2 rounded-lg overflow-hidden transition-transform hover:scale-105 cursor-pointer"
+                      style={{ borderColor: modeDetails.accentColor }}
+                    >
+                      <Image src={rev.image} alt="Customer Photo" fill className="object-cover" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="material-symbols-outlined text-white text-xl">zoom_in</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+
+      {/* FULLSCREEN POPUP LIGHTBOX MODAL WITH ZOOM & ARROWS */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-6 select-none">
+            
+            {/* LIGHTBOX TOP HEADER CONTROLS */}
+            <div className="flex items-center justify-between border-b pb-4 border-white/20 z-10">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+                  ATELIER LIGHTBOX (IMAGE {lightboxIndex + 1} OF {productGallery.length})
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-white/10 rounded text-white/80">
+                  ZOOM: {Math.round(lightboxZoom * 100)}%
+                </span>
+              </div>
+
+              {/* ZOOM & CLOSE ACTION BUTTONS */}
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => { setIsSizeGuideOpen(false); setCalculatedFit(null); }}
-                  className="material-symbols-outlined text-[#1c1b1b] hover:rotate-90 transition-transform duration-500"
+                  type="button"
+                  onClick={() => setLightboxZoom(prev => Math.min(prev + 0.5, 3.5))}
+                  className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer font-mono text-xs"
+                  title="Zoom In (+)"
                 >
-                  close
+                  <span className="material-symbols-outlined text-sm">zoom_in</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLightboxZoom(prev => Math.max(prev - 0.5, 1))}
+                  className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer font-mono text-xs"
+                  title="Zoom Out (-)"
+                >
+                  <span className="material-symbols-outlined text-sm">zoom_out</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLightboxZoom(1)}
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 font-mono text-xs font-bold"
+                  title="Reset Zoom"
+                >
+                  100%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsLightboxOpen(false)}
+                  className="p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg border border-red-400 transition-all cursor-pointer ml-4"
+                  title="Close Lightbox (Esc)"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
                 </button>
               </div>
+            </div>
 
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-8 space-y-10">
-                
-                {/* 1. Interactive Fit Finder Calculator */}
-                <div className="bg-white border border-[#1c1c18]/5 p-6 shadow-sm">
-                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#a3851a] font-bold block mb-4">🔮 Smart Fit Finder</span>
-                  <p className="text-[11px] text-[#747878] leading-relaxed mb-6">
-                    Enter your measurements below and our smart calculator will recommend the ideal size.
-                  </p>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-widest text-[#747878] font-bold block">Height (cm)</label>
-                      <input 
-                        type="number" 
-                        value={fitHeight} 
-                        onChange={(e) => setFitHeight(e.target.value)} 
-                        placeholder="e.g. 175" 
-                        className="w-full bg-[#fdf9f2] border border-[#1c1c18]/10 p-3 text-xs outline-none focus:border-[#a3851a] text-[#1c1c18]"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-widest text-[#747878] font-bold block">Chest/Bust (inches)</label>
-                      <input 
-                        type="number" 
-                        value={fitChest} 
-                        onChange={(e) => setFitChest(e.target.value)} 
-                        placeholder="e.g. 38" 
-                        className="w-full bg-[#fdf9f2] border border-[#1c1c18]/10 p-3 text-xs outline-none focus:border-[#a3851a] text-[#1c1c18]"
-                      />
-                    </div>
-                  </div>
+            {/* LIGHTBOX MAIN DISPLAY AREA WITH SIDE ARROWS */}
+            <div className="relative flex-1 flex items-center justify-center my-4 overflow-hidden">
+              
+              {/* PREVIOUS ARROW BUTTON */}
+              {productGallery.length > 1 && (
+                <button
+                  type="button"
+                  onClick={prevLightboxImage}
+                  className="absolute left-2 sm:left-6 z-20 p-3 sm:p-4 bg-black/80 hover:bg-amber-400 hover:text-black text-white rounded-full border border-white/30 backdrop-blur-md transition-all shadow-2xl cursor-pointer"
+                  title="Previous Image"
+                >
+                  <span className="material-symbols-outlined text-2xl sm:text-3xl">chevron_left</span>
+                </button>
+              )}
 
+              {/* CENTER ZOOMABLE IMAGE */}
+              <motion.div
+                key={`lightbox-${lightboxIndex}`}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: lightboxZoom, opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="relative w-full h-full flex items-center justify-center"
+              >
+                <Image
+                  src={productGallery[lightboxIndex] || product.image}
+                  alt={`${product.title} Lightbox View`}
+                  fill
+                  className="object-contain p-4 transition-transform duration-200"
+                />
+              </motion.div>
+
+              {/* NEXT ARROW BUTTON */}
+              {productGallery.length > 1 && (
+                <button
+                  type="button"
+                  onClick={nextLightboxImage}
+                  className="absolute right-2 sm:right-6 z-20 p-3 sm:p-4 bg-black/80 hover:bg-amber-400 hover:text-black text-white rounded-full border border-white/30 backdrop-blur-md transition-all shadow-2xl cursor-pointer"
+                  title="Next Image"
+                >
+                  <span className="material-symbols-outlined text-2xl sm:text-3xl">chevron_right</span>
+                </button>
+              )}
+            </div>
+
+            {/* LIGHTBOX BOTTOM THUMBNAIL STRIP */}
+            {productGallery.length > 1 && (
+              <div className="flex justify-center items-center gap-3 overflow-x-auto pt-4 border-t border-white/20 z-10">
+                {productGallery.map((imgUrl: string, idx: number) => (
                   <button
-                    onClick={() => {
-                      const h = parseFloat(fitHeight)
-                      const c = parseFloat(fitChest)
-                      if (!h || !c) {
-                        alert("Please fill in both height and chest measurements.");
-                        return;
-                      }
-                      
-                      let recommended = 'M';
-                      if (product.category === 'Men') {
-                        if (c <= 37) recommended = '38R (S)';
-                        else if (c <= 39) recommended = '40R (M)';
-                        else if (c <= 41) recommended = '42R (L)';
-                        else recommended = '44R (XL)';
-                      } else { // Women/Sarees/General
-                        if (c <= 34) recommended = 'S';
-                        else if (c <= 37) recommended = 'M';
-                        else if (c <= 40) recommended = 'L';
-                        else recommended = 'XL';
-                      }
-                      setCalculatedFit(recommended);
+                    key={idx}
+                    onClick={() => { setLightboxIndex(idx); setLightboxZoom(1) }}
+                    className="relative w-16 h-20 border-2 rounded overflow-hidden transition-all bg-black/50 cursor-pointer"
+                    style={{
+                      borderColor: lightboxIndex === idx ? '#F59E0B' : 'rgba(255,255,255,0.3)',
+                      opacity: lightboxIndex === idx ? 1 : 0.5
                     }}
-                    className="w-full bg-[#1c1c18] text-white py-4 font-body uppercase tracking-[0.2em] text-[10px] font-bold hover:bg-[#a3851a] transition-all shadow-md"
                   >
-                    Calculate Recommended Fit
+                    <Image src={imgUrl} alt={`Thumbnail ${idx}`} fill className="object-contain p-1" />
                   </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </AnimatePresence>
 
-                  {calculatedFit && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }} 
-                      animate={{ opacity: 1, y: 0 }} 
-                      className="mt-6 p-4 bg-[#a3851a]/5 border border-[#a3851a]/20 text-center"
-                    >
-                      <span className="text-[9px] uppercase tracking-widest text-[#747878] block">Your Suggested Size</span>
-                      <span className="font-headline text-3xl text-[#a3851a] font-bold block mt-1">{calculatedFit}</span>
-                      <button 
-                        onClick={() => {
-                          const cleanSize = calculatedFit.includes('(') ? calculatedFit.split('(')[1].replace(')', '') : calculatedFit;
-                          setSelectedSize(cleanSize);
-                          setIsSizeGuideOpen(false);
-                          setCalculatedFit(null);
-                          showToast(`Size ${cleanSize} selected!`, 'success', 'check_circle');
-                        }}
-                        className="text-[9px] uppercase tracking-widest text-[#1c1c18] border-b border-[#1c1c18] font-bold pb-0.5 mt-3 hover:text-[#a3851a] hover:border-[#a3851a] transition-colors"
-                      >
-                        Apply Size Select
-                      </button>
-                    </motion.div>
-                  )}
-                </div>
+      {/* WRITE REVIEW MODAL WITH PHOTO UPLOAD */}
+      <AnimatePresence>
+        {isReviewModalOpen && (
+          <div className="fixed inset-0 z-[130] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="border p-8 max-w-lg w-full text-[#F4F1EA] space-y-6 shadow-2xl relative rounded-2xl"
+              style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.accentColor }}
+            >
+              <button
+                onClick={() => setIsReviewModalOpen(false)}
+                className="absolute top-4 right-4 text-[#D6CEBE] hover:text-[#F4F1EA]"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
 
-                {/* 2. Official Measurement Chart */}
-                <div className="space-y-4">
-                  <span className="font-body text-[10px] uppercase tracking-[0.2em] text-[#747878] font-bold block">📊 Measurement Matrix ({product.category})</span>
-                  <div className="border border-[#1c1c18]/10 bg-white overflow-hidden shadow-sm">
-                    {product.category === 'Men' ? (
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-[#1c1c18]/5 font-bold border-b border-[#1c1c18]/10 text-[9px] uppercase tracking-wider text-[#747878]">
-                            <th className="p-4">Size Tag</th>
-                            <th className="p-4">Chest (in)</th>
-                            <th className="p-4">Waist (in)</th>
-                            <th className="p-4">Sleeve (in)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#1c1c18]/5 font-body text-[#1c1c18]">
-                          {['38R (S)', '40R (M)', '42R (L)', '44R (XL)'].map((tag, i) => (
-                            <tr key={tag} className="hover:bg-[#fdf9f2] transition-colors">
-                              <td className="p-4 font-bold">{tag}</td>
-                              <td className="p-4">{36 + i*2} - {37 + i*2}</td>
-                              <td className="p-4">{30 + i*2} - {31 + i*2}</td>
-                              <td className="p-4">{32.5 + i*0.5}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : product.category === 'Jewellery' ? (
-                      <div className="p-6 text-xs text-[#747878] leading-relaxed">
-                        💍 All luxury jewellery pieces in the Atelier catalog are handcrafted to standard sizes. 
-                        Chokers include adjustable silk dori string backings to fit all neck types perfectly. 
-                        Jhumkas and rings are standard sizing.
-                      </div>
-                    ) : product.category === 'Sarees' ? (
-                      <div className="p-6 text-xs text-[#747878] leading-relaxed">
-                        🧣 Sarees are woven as one size fits all.
-                        Includes 6 meters of premium fabric drape and comes with an unstitched matching blouse piece (80cm) to allow personalized tailoring.
-                      </div>
-                    ) : (
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-[#1c1c18]/5 font-bold border-b border-[#1c1c18]/10 text-[9px] uppercase tracking-wider text-[#747878]">
-                            <th className="p-4">Size</th>
-                            <th className="p-4">Bust (in)</th>
-                            <th className="p-4">Waist (in)</th>
-                            <th className="p-4">Hips (in)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#1c1c18]/5 font-body text-[#1c1c18]">
-                          {[['XS', '32-33', '24-25', '34-35'], ['S', '34-35', '26-27', '36-37'], ['M', '36-37', '28-29', '38-39'], ['L', '38-40', '30-32', '40-42'], ['XL', '41-43', '33-35', '43-45']].map(([sz, b, w, h]) => (
-                            <tr key={sz} className="hover:bg-[#fdf9f2] transition-colors">
-                              <td className="p-4 font-bold">{sz}</td>
-                              <td className="p-4">{b}</td>
-                              <td className="p-4">{w}</td>
-                              <td className="p-4">{h}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest font-bold" style={{ color: modeDetails.accentColor }}>
+                  ATELIER VERIFIED REVIEW PROTOCOL
+                </span>
+                <h3 className={`${modeDetails.fontClass || 'font-serif-editorial'} text-2xl uppercase tracking-[0.05em] text-white font-bold mt-1`}>
+                  REVIEW FOR: {product.title}
+                </h3>
+              </div>
+
+              <form onSubmit={handleAddReview} className="space-y-4 font-mono text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-[#D6CEBE] mb-1">YOUR NAME *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Aarav Sharma"
+                      value={newReview.name}
+                      onChange={e => setNewReview({ ...newReview, name: e.target.value })}
+                      className="w-full border p-3 text-white rounded focus:outline-none"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-[#D6CEBE] mb-1">CITY / LOCATION</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Bengaluru"
+                      value={newReview.city}
+                      onChange={e => setNewReview({ ...newReview, city: e.target.value })}
+                      className="w-full border p-3 text-white rounded focus:outline-none"
+                      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                    />
                   </div>
                 </div>
 
-                {/* 3. Luxury Styling Tip */}
-                <div className="border-t border-[#1c1c18]/10 pt-6 text-[10px] leading-relaxed uppercase tracking-wider text-[#747878]">
-                  🌿 <strong>Tip:</strong> If you are between sizes, we recommend selecting the larger size for a relaxed drape, or custom tailoring it locally to match your exact silhouette.
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-[#D6CEBE] mb-1">STAR RATING *</label>
+                  <select
+                    value={newReview.rating}
+                    onChange={e => setNewReview({ ...newReview, rating: Number(e.target.value) })}
+                    className="w-full border p-3 text-white rounded focus:outline-none cursor-pointer"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                  >
+                    <option value={5}>★★★★★ 5 Stars — Masterpiece Execution</option>
+                    <option value={4}>★★★★☆ 4 Stars — Very Good</option>
+                    <option value={3}>★★★☆☆ 3 Stars — Average</option>
+                  </select>
                 </div>
 
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-[#D6CEBE] mb-1">REVIEW TITLE</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Exceptional Tailored Silhouette"
+                    value={newReview.title}
+                    onChange={e => setNewReview({ ...newReview, title: e.target.value })}
+                    className="w-full border p-3 text-white rounded focus:outline-none"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-[#D6CEBE] mb-1">DETAILED REVIEW *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Describe the fabric weight, fit, stitching, and unboxing experience..."
+                    value={newReview.comment}
+                    onChange={e => setNewReview({ ...newReview, comment: e.target.value })}
+                    className="w-full border p-3 text-white rounded focus:outline-none"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                  />
+                </div>
+
+                {/* CUSTOMER PRODUCT PHOTO UPLOAD */}
+                <div className="p-4 border rounded-xl space-y-2" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+                  <label className="block text-[10px] font-bold uppercase" style={{ color: modeDetails.accentColor }}>
+                    UPLOAD PRODUCT PHOTO (OPTIONAL)
+                  </label>
+                  <p className="text-[10px] text-[#D6CEBE]/60">Share how the garment fits or photos of the unboxing to inspire others.</p>
+                  
+                  <input
+                    type="text"
+                    placeholder="Photo URL link or upload file below..."
+                    value={newReview.image}
+                    onChange={e => setNewReview({ ...newReview, image: e.target.value })}
+                    className="w-full border p-2 text-white text-[11px] rounded mb-2"
+                    style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+                  />
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onloadend = () => setNewReview({ ...newReview, image: reader.result as string })
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                    className="text-[10px] text-[#D6CEBE]"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 py-3.5 font-bold font-mono uppercase tracking-widest text-xs rounded-lg shadow-lg cursor-pointer"
+                    style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+                  >
+                    PUBLISH REVIEW & PHOTO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewModalOpen(false)}
+                    className="py-3.5 px-6 border uppercase text-xs font-mono tracking-widest rounded-lg cursor-pointer"
+                    style={{ borderColor: modeDetails.borderColor, color: '#D6CEBE' }}
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* EXPANDED CUSTOMER PHOTO LIGHTBOX MODAL */}
+      <AnimatePresence>
+        {expandedImage && (
+          <div className="fixed inset-0 z-[150] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-3xl w-full h-[80vh] rounded-2xl overflow-hidden border shadow-2xl"
+              style={{ borderColor: modeDetails.accentColor }}
+            >
+              <button
+                onClick={() => setExpandedImage(null)}
+                className="absolute top-4 right-4 z-10 p-2 bg-black/70 rounded-full text-white hover:bg-black cursor-pointer"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+              <Image src={expandedImage} alt="Expanded Customer Review Photo" fill className="object-contain" />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SIZE GUIDE MODAL */}
+      <AnimatePresence>
+        {isSizeGuideOpen && (
+          <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="p-8 max-w-lg w-full text-[#F4F1EA] space-y-6 shadow-2xl relative rounded-lg border"
+              style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+            >
+              <button
+                onClick={() => setIsSizeGuideOpen(false)}
+                className="absolute top-4 right-4 text-[#D6CEBE] hover:text-[#F4F1EA]"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+              <h3 className={`${modeDetails.fontClass || 'font-serif-editorial'} text-2xl uppercase tracking-[0.1em] font-bold`}>
+                SIZE & MEASUREMENT SCHEMATIC
+              </h3>
+              <p className="text-xs text-[#D6CEBE]/70 font-mono">
+                All garments feature our signature {mode} proportions.
+              </p>
+              <div className="overflow-x-auto font-mono text-xs">
+                <table className="w-full border-collapse border" style={{ borderColor: modeDetails.borderColor }}>
+                  <thead>
+                    <tr style={{ backgroundColor: modeDetails.cardBg, color: modeDetails.accentColor }}>
+                      <th className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>SIZE</th>
+                      <th className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>CHEST (IN)</th>
+                      <th className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>SHOULDER (IN)</th>
+                      <th className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>LENGTH (IN)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-center" style={{ backgroundColor: modeDetails.themeBg }}>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>XS</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>40"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>20.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>27.5"</td></tr>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>S</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>42"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>21.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>28.5"</td></tr>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>M</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>44"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>22.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>29.5"</td></tr>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>L</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>46"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>23.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>30.5"</td></tr>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>XL</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>48"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>24.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>31.5"</td></tr>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>XXL</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>50"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>25.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>32.5"</td></tr>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>3XL</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>52"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>26.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>33.5"</td></tr>
+                    <tr><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>4XL</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>54"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>27.5"</td><td className="p-2 border" style={{ borderColor: modeDetails.borderColor }}>34.5"</td></tr>
+                  </tbody>
+                </table>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
 
       <Footer />
-
-      <AnimatePresence>
-        {zoomedImage && (() => {
-          const isVideo = product.video_url && zoomedImage === product.video_url;
-          return (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setZoomedImage(null)} className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] cursor-zoom-out" />
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-4 md:inset-12 z-[101] flex items-center justify-center pointer-events-none">
-                <div className="relative w-full h-full pointer-events-auto flex items-center justify-center">
-                  {isVideo ? (
-                    <video 
-                      src={zoomedImage} 
-                      className="max-w-full max-h-full object-contain" 
-                      controls 
-                      autoPlay 
-                      playsInline
-                    />
-                  ) : (
-                    <Image src={zoomedImage} alt="Zoom" fill className="object-contain" quality={100} />
-                  )}
-                  <button onClick={() => setZoomedImage(null)} className="absolute top-4 right-4 w-12 h-12 bg-white/10 rounded-full text-white flex items-center justify-center hover:bg-white hover:text-black transition-all"><span className="material-symbols-outlined">close</span></button>
-                </div>
-              </motion.div>
-            </>
-          );
-        })()}
-      </AnimatePresence>
     </div>
   )
 }

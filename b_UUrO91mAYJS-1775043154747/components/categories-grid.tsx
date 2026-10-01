@@ -15,22 +15,15 @@ const categories = [
   },
   {
     label: 'Men',
-    span: 'md:col-span-1',
+    span: 'md:col-span-2',
     image: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775435764/WhatsApp_Image_2026-04-05_at_11.59.05_PM_do85la.jpg',
     href: '/men'
   },
   {
     label: 'Women',
-    span: 'md:col-span-1',
+    span: 'md:col-span-2',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9VoBDh4cqMX3bZppNViUM94vSy6jLOVdkVE4uP9o61H6_Jp9hnVHvP5WDMTOBuCgRC9Y_GQ_QnRk0qH01bxvBfzXjo4-xNrKGEYT_UwksRnae3jkRIrbbAfR-hMei1Yr_zsM6qcsdI74X1v_BYQbOAAVwEE5tHBOqsvqRE-o8PmDBih9hWGLIIDryhTWnVLP-1068D6R_LAZunU_CTbamyFS9uUaAd-wpbppk0bnHCxG-k0f5uuITPxkdetAn22c8mpQzwcbBHl8J',
     href: '/women'
-  },
-
-  {
-    label: 'Jewellery',
-    span: 'md:col-span-2',
-    image: 'https://res.cloudinary.com/dqgqdszk2/image/upload/q_auto/f_auto/v1775435771/WhatsApp_Image_2026-04-05_at_9.50.14_PM_dg9fjw.jpg',
-    href: '/jewellery'
   },
 ]
 
@@ -73,16 +66,16 @@ export function CategoriesGrid() {
       </motion.div>
 
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 md:gap-6 h-auto md:h-[900px]"
+        className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 md:gap-6 h-auto md:h-[650px]"
         variants={containerVariants}
         initial="hidden"
         animate={inView ? 'visible' : 'hidden'}
       >
-        {categories.map((category, index) => (
+        {categories.map((category) => (
           <Link 
             key={category.label} 
             href={category.href}
-            className={`${category.span} group relative overflow-hidden bg-[#e6e2db] cursor-pointer block h-[380px] md:h-full`}
+            className={`${category.span} group relative overflow-hidden bg-[#e6e2db] cursor-pointer block h-[380px] md:h-full rounded-lg`}
           >
             <motion.div
               className="w-full h-full relative"

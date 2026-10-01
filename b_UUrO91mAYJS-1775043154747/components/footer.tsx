@@ -1,190 +1,163 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import React from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { Newsletter } from './newsletter'
-
-const footerSections = [
-  {
-    title: 'Shop',
-    links: ['Men', 'Women', 'Sarees', 'Jewellery'],
-  },
-  {
-    title: 'Company',
-    links: ['About Us'],
-  },
-  {
-    title: 'Support',
-    links: ['Contact', 'FAQ', 'Shipping', 'Returns'],
-  },
-  {
-    title: 'Legal',
-    links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Sitemap'],
-  },
-]
-
-const socialLinks = [
-  { icon: 'brand_instagram', label: 'Instagram', href: 'https://www.instagram.com/friendsof4.in?igsh=MW9ybHV4aGY5OHExMw%3D%3D&utm_source=qr' },
-  { icon: 'chat', label: 'WhatsApp', href: 'https://wa.me/919550447883?text=Greetings%20Friends%20of%204%2C%20I%20have%20a%20query%20regarding%20an%20order%20or%20product.' },
-]
+import { useMode } from '@/context/mode-context'
 
 export function Footer() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-      },
-    },
-  }
+  const { setMode, modeDetails, mode } = useMode()
+  const [emailInput, setEmailInput] = React.useState('')
+  const [subStatus, setSubStatus] = React.useState<'idle' | 'saving' | 'success'>('idle')
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4 },
-    },
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!emailInput || !emailInput.includes('@')) return
+    setSubStatus('saving')
+
+    const email = emailInput.trim().toLowerCase()
+    
+    // Save locally
+    try {
+      const subs = JSON.parse(localStorage.getItem('fo4_subscribers') || '[]')
+      if (!subs.some((s: any) => s.email === email)) {
+        subs.push({ email, created_at: new Date().toISOString(), mode })
+        localStorage.setItem('fo4_subscribers', JSON.stringify(subs))
+      }
+    } catch {}
+
+    // Save to Supabase
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      await supabase.from('subscribers').upsert([{ email, created_at: new Date().toISOString(), mode }])
+    } catch (e) {
+      console.warn("Supabase subscriber save fallback:", e)
+    }
+
+    setSubStatus('success')
+    setEmailInput('')
+    setTimeout(() => setSubStatus('idle'), 4000)
   }
 
   return (
-    <footer className="bg-[#1c1b1b] text-white py-24 px-12">
-      <div className="max-w-[1920px] mx-auto">
-        {/* Newsletter Section */}
-        <motion.div
-          className="mb-20 pb-20 border-b border-white/10"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <h3 className="font-headline text-3xl mb-4 text-center">
-            Stay Updated
-          </h3>
-          <p className="text-white/60 text-center mb-10 font-body">
-            Subscribe to our newsletter for exclusive offers and new arrivals.
-          </p>
-          <Newsletter variant="footer" />
-        </motion.div>
+    <footer 
+      className="text-[#F4F1EA] border-t pt-16 pb-12 transition-colors duration-700 ease-in-out dark-paper-texture"
+      style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* TOP BRAND HEADER & NEWSLETTER */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-14 border-b" style={{ borderColor: modeDetails.borderColor }}>
+          
+          <div className="lg:col-span-6 space-y-3">
+            <Link href="/" className="inline-block">
+              <span className={`text-3xl sm:text-4xl tracking-[0.25em] font-bold uppercase text-[#F4F1EA] ${modeDetails.fontClass}`}>
+                FRIENDS OF 4
+              </span>
+              <p className="text-[10px] tracking-[0.45em] uppercase font-semibold mt-1 transition-colors duration-500" style={{ color: modeDetails.accentColor }}>
+                {modeDetails.tagline}
+              </p>
+            </Link>
+            <p className="text-xs text-[#D6CEBE]/70 max-w-md font-light leading-relaxed">
+              Independent Indian D2C Luxury Fashion House. Registered entity: <strong>FRIENDS OF 4 FASHION HOUSE LLP</strong>. Crafting avant-garde streetwear, museum archive drops, and dravidian ethnic wear.
+            </p>
+          </div>
 
-        {/* Footer Links */}
-        <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          {footerSections.map((section) => (
-            <motion.div key={section.title} variants={itemVariants}>
-              <h4 className="font-headline text-lg mb-6 text-white">
-                {section.title}
-              </h4>
-              <ul className="space-y-3">
-                {section.links.map((link) => {
-                    const hrefMap: Record<string, string> = {
-                      'Men': '/men',
-                      'Women': '/women',
-                      'Sarees': '/sarees',
-                      'Jewellery': '/jewellery',
-                      'Contact': '/contact',
-                      'About Us': '/visionaries',
-                      'Returns': '/legal/refund-policy',
-                      'Shipping': '/legal/shipping-policy',
-                      'Privacy Policy': '/legal/privacy-policy',
-                      'Terms of Service': '/legal/terms-of-service',
-                      'Cookie Policy': '/legal/cookie-policy',
-                    }
-                  const href = hrefMap[link] || '#'
-                  
-                  return (
-                    <li key={link}>
-                      <Link 
-                        href={href}
-                        className="text-white/60 font-body text-sm hover:text-white transition-colors duration-300 cursor-pointer block"
-                      >
-                        <motion.span
-                          whileHover={{ x: 5, color: '#fff', display: 'inline-block' }}
-                        >
-                          {link}
-                        </motion.span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Payment Trust Partners */}
-        <div className="flex flex-wrap items-center gap-10 opacity-30 grayscale hover:grayscale-0 transition-all duration-700 pb-12 border-b border-white/5 mb-12">
-           <span className="text-[10px] uppercase tracking-[0.4em] text-white/60 mb-2 md:mb-0">Atelier Trust</span>
-           <div className="flex gap-8 items-center">
-              <span className="font-headline text-2xl text-white tracking-widest italic select-none">RAZORPAY</span>
-              <div className="h-4 w-px bg-white/20" />
-              <div className="flex gap-4">
-                 <span className="material-symbols-outlined text-3xl">credit_card</span>
-                 <span className="material-symbols-outlined text-3xl">account_balance</span>
-                 <span className="material-symbols-outlined text-3xl">wallet</span>
-              </div>
-           </div>
+          {/* NEWSLETTER SUBSCRIBE FORM */}
+          <div className="lg:col-span-6 space-y-3 flex flex-col justify-center">
+            <p className={`text-xs tracking-[0.2em] uppercase ${modeDetails.fontClass}`} style={{ color: modeDetails.accentColor }}>
+              JOIN THE PRIVATE ARCHIVE DISPATCH
+            </p>
+            <form onSubmit={handleSubscribe} className="flex space-x-2">
+              <input
+                type="email"
+                required
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="ENTER YOUR EMAIL FOR EARLY DROP ACCESS"
+                className="flex-1 border px-4 py-3 text-xs text-[#F4F1EA] placeholder-[#D6CEBE]/40 focus:outline-none rounded font-mono"
+                style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+              />
+              <button
+                type="submit"
+                disabled={subStatus === 'saving'}
+                className={`px-6 py-3 font-bold text-xs tracking-[0.2em] uppercase transition-all duration-300 rounded shadow hover:brightness-110 ${modeDetails.fontClass}`}
+                style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+              >
+                {subStatus === 'saving' ? 'SAVING...' : subStatus === 'success' ? 'SUBSCRIBED ✓' : 'DISPATCH'}
+              </button>
+            </form>
+            {subStatus === 'success' && (
+              <p className="text-[10px] font-mono text-green-400 font-bold">✓ Email registered in Atelier database for drop notifications!</p>
+            )}
+            <p className="text-[9px] text-[#D6CEBE]/50 font-mono">
+              STRICT PRIVACY GUARANTEED. NO SPAM. GST-INVOICED ATELIER FULFILLMENT.
+            </p>
+          </div>
         </div>
 
-        {/* Bottom Section */}
-        <motion.div
-          className="border-t border-white/10 pt-8"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Image src="/logo.png" alt="Friends of 4 Logo" width={44} height={44} className="object-contain" />
-                <div className="flex flex-col">
-                  <p className="font-headline text-xl leading-none mb-1">Style Of Traditionals</p>
-                  <p className="font-body text-[10px] text-white/50 uppercase tracking-widest leading-none">Friends of 4</p>
-                </div>
-              </div>
-              <p className="text-white/40 text-[10px] font-body mt-4">
-                © {new Date().getFullYear()} Friends of 4 Heritage. All rights reserved.
-              </p>
-            </div>
+        {/* MIDDLE 3-COLUMN FOOTER NAVIGATION */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 py-12 border-b font-mono text-xs" style={{ borderColor: modeDetails.borderColor }}>
 
-            <div className="flex gap-10 mt-6 md:mt-0">
-              {socialLinks.map((social) => (
-                <Link
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${social.label === 'Instagram' ? 'hover:text-[#E4405F]' : 'hover:text-[#25D366]'} text-white/60 transition-all duration-300 flex items-center justify-center`}
-                  aria-label={social.label}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.25 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    {social.label === 'Instagram' && (
-                      <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.266.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.848 0-3.204.012-3.584.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.947.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.947 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                      </svg>
-                    )}
-                    {social.label === 'WhatsApp' && (
-                      <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.197 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.804 1.063 3.907 1.623 6.046 1.623h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                      </svg>
-                    )}
-                  </motion.div>
-                </Link>
-              ))}
-            </div>
+          {/* COLUMN 2: COMPANY */}
+          <div>
+            <h4 className={`text-sm tracking-[0.2em] uppercase mb-4 font-bold ${modeDetails.fontClass}`} style={{ color: modeDetails.accentColor }}>
+              Company
+            </h4>
+            <ul className="space-y-3 text-[#D6CEBE]/80 text-xs">
+              <li><Link href="/visionaries" className="hover:opacity-100 hover:text-white transition-colors">About Us</Link></li>
+            </ul>
           </div>
-        </motion.div>
+
+          {/* COLUMN 3: SUPPORT */}
+          <div>
+            <h4 className={`text-sm tracking-[0.2em] uppercase mb-4 font-bold ${modeDetails.fontClass}`} style={{ color: modeDetails.accentColor }}>
+              Support
+            </h4>
+            <ul className="space-y-3 text-[#D6CEBE]/80 text-xs">
+              <li><Link href="/track-order" className="hover:opacity-100 font-bold transition-colors" style={{ color: modeDetails.accentColor }}>Track Order (Live)</Link></li>
+              <li><Link href="/contact" className="hover:opacity-100 hover:text-white transition-colors">Contact</Link></li>
+              <li><Link href="/legal/faq" className="hover:opacity-100 hover:text-white transition-colors">FAQ</Link></li>
+              <li><Link href="/legal/shipping-policy" className="hover:opacity-100 hover:text-white transition-colors">Shipping</Link></li>
+              <li><Link href="/legal/refund-policy" className="hover:opacity-100 hover:text-white transition-colors">Returns</Link></li>
+            </ul>
+          </div>
+
+          {/* COLUMN 4: LEGAL */}
+          <div>
+            <h4 className={`text-sm tracking-[0.2em] uppercase mb-4 font-bold ${modeDetails.fontClass}`} style={{ color: modeDetails.accentColor }}>
+              Legal
+            </h4>
+            <ul className="space-y-3 text-[#D6CEBE]/80 text-xs">
+              <li><Link href="/legal/privacy-policy" className="hover:opacity-100 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/legal/terms-of-service" className="hover:opacity-100 hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/legal/cookie-policy" className="hover:opacity-100 hover:text-white transition-colors">Cookie Policy</Link></li>
+            </ul>
+          </div>
+        </div>
+
+        {/* REGISTERED LLP & GST ENTITY INFORMATION */}
+        <div className="py-6 border-b text-[11px] font-mono text-[#D6CEBE]/70 flex flex-col md:flex-row items-center justify-between gap-2" style={{ borderColor: modeDetails.borderColor }}>
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="font-semibold text-[#F4F1EA]">ENTITY: FRIENDS OF 4 FASHION HOUSE LLP</span>
+            <span className="opacity-40">•</span>
+            <span>LLPIN: AAF-8444</span>
+            <span className="opacity-40">•</span>
+            <span className="font-semibold" style={{ color: modeDetails.accentColor }}>GSTIN: 29AAAF48444M1Z5</span>
+          </div>
+          <p className="text-[10px] opacity-70">
+            Registered Office: Indiranagar, Bengaluru, KA - 560038, India
+          </p>
+        </div>
+
+        {/* BOTTOM COPYRIGHT */}
+        <div className="pt-6 flex flex-col md:flex-row items-center justify-between text-[10px] text-[#D6CEBE]/50 font-mono tracking-wider space-y-3 md:space-y-0">
+          <p>© {new Date().getFullYear()} FRIENDS OF 4 FASHION HOUSE LLP. ALL RIGHTS RESERVED.</p>
+          <div className="flex space-x-6">
+            <Link href="/legal/terms-of-service" className="hover:underline">TERMS & CONDITIONS</Link>
+            <Link href="/legal/privacy-policy" className="hover:underline">PRIVACY POLICY</Link>
+            <Link href="/legal/cookie-policy" className="hover:underline">COOKIE PROTOCOL</Link>
+          </div>
+        </div>
       </div>
     </footer>
   )

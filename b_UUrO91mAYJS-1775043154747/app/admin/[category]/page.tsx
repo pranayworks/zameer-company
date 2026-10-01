@@ -570,14 +570,13 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                       <div>
                         <label className="font-body text-[10px] uppercase tracking-widest text-[#747878] mb-2 block">Category</label>
                         <select
-                          value={formData.category}
+                          value={formData.category || displayName}
                           onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                          className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none appearance-none"
+                          className="w-full bg-white border-b border-[#1c1c18]/20 p-4 focus:border-[#a3851a] outline-none cursor-pointer"
                         >
-                          <option>Men</option>
-                          <option>Women</option>
-                          <option>Sarees</option>
-                          <option>Jewellery</option>
+                          {CATEGORIES.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
                         </select>
                       </div>
 
@@ -735,7 +734,7 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
                           <label className="flex items-center gap-2 cursor-pointer group">
                             <span className="text-[9px] uppercase tracking-widest text-[#747878] group-hover:text-[#1c1c18] transition-colors">{formData.sizes && formData.sizes.length > 0 ? 'Sizes Enabled' : 'Enable Sizes'}</span>
                             <div 
-                              onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : (category === 'Jewellery' ? ['One Size'] : ['Standard']) }))}
+                              onClick={() => setFormData((prev: Partial<Product>) => ({ ...prev, sizes: prev.sizes && prev.sizes.length > 0 ? [] : ['Standard'] }))}
                               className={`w-8 h-4 rounded-full transition-all relative ${formData.sizes && formData.sizes.length > 0 ? 'bg-[#a3851a]' : 'bg-[#1c1c18]/10'}`}
                             >
                               <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${formData.sizes && formData.sizes.length > 0 ? 'right-0.5' : 'left-0.5'}`} />

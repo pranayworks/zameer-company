@@ -1,201 +1,171 @@
 'use client'
 
-import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { products } from '@/data/products'
+import { useMode } from '@/context/mode-context'
 
 interface SearchOverlayProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const suggestedSearches = [
-  'Handloom Sarees',
-  'Signature Jewellery',
-  'Bridal Collection',
-  'Bespoke Tailoring'
+const STORE_FILTERS = [
+  'Tees & Tops',
+  'Hoodies & Outerwear',
+  'Oversized Fits',
+  'Long Sleeve',
+  'Collar & Shirts',
+  'Statement Archive',
+  'Kurtas & Chudidhars',
+  'Architectural Sarees'
 ]
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
+  const { modeDetails } = useMode()
   const [query, setQuery] = useState('')
-  const [liveProducts, setLiveProducts] = useState<any[]>([])
-  const [placeholderIndex, setPlaceholderIndex] = useState(0)
-
-  const placeholders = [
-    'Search for Sarees...',
-    'Search for Men...',
-    'Search for Jewellery...',
-
-    'Search for Women..'
-  ]
 
   useEffect(() => {
-    if (isOpen) {
-      const interval = setInterval(() => {
-        setPlaceholderIndex((prev) => (prev + 1) % placeholders.length)
-      }, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    async function fetchAll() {
-      const { data } = await supabase.from('products').select('*')
-      if (data) setLiveProducts(data)
-    }
-    if (isOpen) fetchAll()
-  }, [isOpen])
-
-  const filteredResults = query.length > 2
-    ? liveProducts.filter(p =>
-      p.title?.toLowerCase().includes(query.toLowerCase()) ||
-      p.category?.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 5)
-    : []
-
-  // Handle ESC and Scroll Lock
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-
-    const handleEsc = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
-    window.addEventListener('keydown', handleEsc)
-    return () => {
-      window.removeEventListener('keydown', handleEsc)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen, onClose])
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  const results = query.trim() === '' ? [] : products.filter(p =>
+    p.title.toLowerCase().includes(query.toLowerCase()) ||
+    p.mode.toLowerCase().includes(query.toLowerCase()) ||
+    p.category.toLowerCase().includes(query.toLowerCase()) ||
+    p.description.toLowerCase().includes(query.toLowerCase())
+  )
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Dark Backdrop */}
+        <div className="fixed inset-0 z-[120] flex items-start justify-center pt-24 px-4">
+          {/* BACKDROP */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[110] bg-[#0b0c10]/80 backdrop-blur-md cursor-pointer"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md"
           />
 
-          {/* Sliding Search Panel */}
+          {/* SLEEK FLOATING SEARCH BOX */}
           <motion.div
-            initial={{ y: '-100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '-100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 left-0 right-0 z-[120] bg-[#fdf9f2] shadow-2xl flex flex-col"
+            initial={{ opacity: 0, y: -20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.98 }}
+            className="relative w-full max-w-xl text-[#F4F1EA] border shadow-2xl overflow-hidden rounded-lg dark-paper-texture z-10 transition-colors duration-700"
+            style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.accentColor }}
           >
-            {/* Header */}
-            <div className="flex justify-between items-center p-12 max-w-[1920px] mx-auto w-full">
-              <span className="font-headline text-lg italic opacity-40">Friends of 4 / Search</span>
+            {/* SEARCH INPUT STRIP */}
+            <div className="flex items-center px-4 py-3.5 border-b" style={{ borderColor: modeDetails.borderColor }}>
+              <span className="material-symbols-outlined text-xl mr-3" style={{ color: modeDetails.accentColor }}>
+                search
+              </span>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+                placeholder="Search tees, hoodies, sarees, oversized fits..."
+                className="w-full bg-transparent text-sm text-[#F4F1EA] placeholder-[#D6CEBE]/50 focus:outline-none font-mono"
+              />
               <button
                 onClick={onClose}
-                className="material-symbols-outlined text-4xl hover:text-[#a3851a] transition-colors"
+                className="p-1 text-[#D6CEBE] hover:opacity-80 transition-colors ml-2 cursor-pointer"
               >
-                close
+                <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
 
-            {/* Search Body */}
-            <div className="flex flex-col items-center justify-center px-12 py-12 md:py-20 relative">
-              <motion.div
-                className="w-full max-w-4xl relative"
-                initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-              >
-                <input
-                  autoFocus
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={placeholders[placeholderIndex]}
-                  className="w-full bg-transparent border-b-2 border-[#1c1c18] pb-8 text-5xl md:text-8xl font-headline outline-none placeholder:opacity-20 focus:border-[#a3851a] transition-all"
-                />
-                <span className="material-symbols-outlined absolute right-0 top-1/2 -translate-y-1/2 text-5xl md:text-6xl text-[#1c1c18]/20">
-                  search
-                </span>
+            {/* STORE FILTER TAGS & RESULTS LIST */}
+            <div className="max-h-96 overflow-y-auto p-4 space-y-4" style={{ borderColor: modeDetails.borderColor }}>
+              {query.trim() === '' ? (
+                <div className="space-y-4 text-xs font-mono">
+                  <div>
+                    <p className="uppercase tracking-widest font-bold mb-2 text-[10px]" style={{ color: modeDetails.accentColor }}>
+                      FEATURED CATEGORY FILTERS
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {STORE_FILTERS.map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setQuery(filter)}
+                          className="px-3 py-1.5 border text-[10px] text-[#F4F1EA] rounded-full transition-all hover:border-amber-400 cursor-pointer"
+                          style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                {/* Live Results Dropdown */}
-                <AnimatePresence>
-                  {query.length > 2 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute top-full left-0 right-0 bg-white shadow-2xl mt-4 p-8 z-50 border border-[#1c1c18]/5"
+                  <div className="pt-2 border-t" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                    <p className="uppercase tracking-widest font-bold mb-2 text-[10px] text-[#D6CEBE]">
+                      ALL ATELIER PRODUCTS ({products.length})
+                    </p>
+                    <div className="space-y-2">
+                      {products.slice(0, 5).map((p) => (
+                        <Link
+                          key={p.id}
+                          href={`/product/${p.id}`}
+                          onClick={onClose}
+                          className="flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors border"
+                          style={{ borderColor: modeDetails.borderColor }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-8 h-8 rounded border overflow-hidden" style={{ borderColor: modeDetails.borderColor }}>
+                              <Image src={p.image} alt={p.title} fill className="object-contain" />
+                            </div>
+                            <span className="text-white font-bold">{p.title}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-amber-400">{p.price}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : results.length === 0 ? (
+                <div className="text-center py-8 text-xs text-[#D6CEBE]/60 font-mono">
+                  No matching pieces found for "{query}".
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-mono uppercase font-bold text-[#D6CEBE]/70 mb-2">
+                    {results.length} MATCHING PIECES FOUND
+                  </p>
+                  {results.map((product) => (
+                    <Link
+                      key={product.id}
+                      href={`/product/${product.id}`}
+                      onClick={onClose}
+                      className="flex items-center space-x-4 group p-2.5 transition-all rounded hover:brightness-110 border"
+                      style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
                     >
-                      {filteredResults.length > 0 ? (
-                        <div className="space-y-6">
-                          {filteredResults.map((product) => (
-                            <Link
-                              key={product.id}
-                              href={`/product/${product.id}`}
-                              onClick={onClose}
-                              className="flex items-center gap-6 group p-4 hover:bg-[#fdf9f2] transition-colors"
-                            >
-                              <div className="w-20 h-24 relative overflow-hidden flex-shrink-0 bg-[#f1ede6]">
-                                <Image
-                                  src={product.image}
-                                  alt={product.title}
-                                  fill
-                                  className="object-cover transition-transform group-hover:scale-110"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <span className="font-body text-[10px] uppercase tracking-widest text-[#a3851a] mb-1 block">{product.category}</span>
-                                <h4 className="font-headline text-2xl text-[#1c1c18] group-hover:text-[#a3851a] transition-colors">{product.title}</h4>
-                                <span className="font-body text-xs text-[#747878]">₹{product.price?.toLocaleString()}</span>
-                              </div>
-                              <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
-                            </Link>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="py-12 text-center">
-                          <p className="font-body text-sm text-[#747878]">No masterpieces found for &quot;{query}&quot;</p>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-
-              {/* Suggestions */}
-              <motion.div
-                className="mt-16 text-center max-w-2xl"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <h4 className="font-body uppercase tracking-[0.4em] text-[10px] text-[#747878] mb-8">Suggested Search</h4>
-                <div className="flex flex-wrap justify-center gap-6">
-                  {suggestedSearches.map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => setQuery(tag)}
-                      className="px-6 py-2 border border-[#1c1c18]/10 rounded-full font-body text-xs hover:bg-[#1c1c18] hover:text-white transition-all"
-                    >
-                      {tag}
-                    </button>
+                      <div className="relative w-12 h-14 border overflow-hidden flex-shrink-0 rounded" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+                        <Image src={product.image} alt={product.title} fill className="object-contain p-1" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-serif-editorial text-base text-[#F4F1EA] transition-colors group-hover:text-amber-400">
+                          {product.title}
+                        </h4>
+                        <p className="text-[10px] font-mono uppercase font-semibold" style={{ color: modeDetails.accentColor }}>
+                          {product.category} • {product.mode} • {product.price}
+                        </p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
-              </motion.div>
+              )}
             </div>
-
-            {/* Aesthetic Background Detail */}
-            <div className="absolute inset-0 -z-10 bg-[url('/chanderi_tunic.png')] opacity-[0.03] mix-blend-multiply pointer-events-none" />
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   )

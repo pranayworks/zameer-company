@@ -10,144 +10,7 @@ import { Footer } from '@/components/footer'
 import { useCart } from '@/context/cart-context'
 import { useWishlist } from '@/context/wishlist-context'
 import { supabase, getSessionUser } from '@/lib/supabase'
-
-const downloadInvoicePDF = async (order: any) => {
-  if (typeof window === 'undefined') return;
-  // @ts-ignore
-  const { default: jsPDF } = await import('jspdf/dist/jspdf.umd.min.js')
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-
-  const W = 210
-  const gold = [163, 133, 26] as [number, number, number]
-  const dark = [28, 28, 24] as [number, number, number]
-  const grey = [116, 120, 120] as [number, number, number]
-  const light = [253, 249, 242] as [number, number, number]
-
-  doc.setFillColor(...light)
-  doc.rect(0, 0, W, 297, 'F')
-  doc.setFillColor(...gold)
-  doc.rect(0, 0, W, 24, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.setTextColor(255, 255, 255)
-  doc.text('FRIENDS OF 4', 20, 15)
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
-  doc.text('HERITAGE INVOICE', W - 20, 15, { align: 'right' })
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(22)
-  doc.setTextColor(...dark)
-  doc.text(`ORD-${order.order_id || order.id}`, 20, 42)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(...grey)
-  const date = order.created_at ? new Date(order.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString('en-IN')
-  doc.text(`PLACED ON ${date}`, 20, 50)
-  doc.setDrawColor(...gold)
-  doc.setLineWidth(0.6)
-  doc.line(20, 56, W - 20, 56)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.setTextColor(...grey)
-  doc.text('CUSTOMER PROFILE', 20, 67)
-  doc.text('SHIPPING ADDRESS', 90, 67)
-  doc.text('FULFILLMENT STATUS', W - 20, 67, { align: 'right' })
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(...dark)
-  doc.text(order.customer_name || 'Customer', 20, 75)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(...grey)
-  if (order.email) doc.text(order.email, 20, 81)
-  if (order.phone) doc.text(order.phone, 20, 86)
-  const shippingMatchHeader = order.address?.match(/\[(.*) Delivery: ₹(\d+)\]/)
-  const cleanAddressHeader = order.address ? order.address.replace(/\s\[.* Delivery: ₹\d+\]/, '') : (order.address || 'Address not provided')
-  const addressLines = doc.splitTextToSize(cleanAddressHeader, 60)
-  doc.setTextColor(...grey)
-  doc.text(addressLines, 90, 75)
-  doc.setFillColor(...gold)
-  doc.roundedRect(W - 55, 69, 35, 8, 2, 2, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.setTextColor(255, 255, 255)
-  doc.text(order.order_status || 'Preparing', W - 37.5, 74.2, { align: 'center' })
-  doc.setDrawColor(220, 220, 215)
-  doc.setLineWidth(0.3)
-  doc.line(20, 100, W - 20, 100)
-  doc.setTextColor(...grey)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.text('ACQUIRED MASTERPIECE', 20, 110)
-  doc.text('VALUATION', W - 20, 110, { align: 'right' })
-  doc.setFillColor(255, 255, 255)
-  doc.roundedRect(18, 114, W - 36, 42, 3, 3, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.setTextColor(...dark)
-  const itemName = order.product_name || 'Product'
-  const itemTitleLines = doc.splitTextToSize(itemName, 65)
-  doc.text(itemTitleLines, 28, 125)
-  
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(...grey)
-  const details = [order.size && `Size: ${order.size}`, order.color && `Color: ${order.color}`].filter(Boolean).join('   •   ')
-  // Adjust Y based on how many lines the title took
-  const detailsY = 125 + (itemTitleLines.length * 6)
-  if (details) doc.text(details, 28, detailsY)
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.setTextColor(...gold)
-  doc.text(`Rs. ${(order.price || 0).toLocaleString('en-IN')}`, W - 28, 130, { align: 'right' })
-  
-  doc.setFillColor(34, 197, 94)
-  doc.roundedRect(28, detailsY + 6, 28, 7, 2, 2, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(6)
-  doc.setTextColor(255, 255, 255)
-  doc.text('PAYMENT VERIFIED', 28 + 14, detailsY + 10.5, { align: 'center' })
-
-  const shippingMatch = order.address?.match(/\[(.*) Delivery: (?:Rs\.|₹)\s*(\d+)\]/)
-  const sMethod = shippingMatch ? shippingMatch[1] : null
-  const sFee = shippingMatch ? parseInt(shippingMatch[2]) : 0
-  const boxY = 162
-  doc.setFillColor(...dark)
-  doc.roundedRect(18, boxY, W - 36, 32, 3, 3, 'F')
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(255, 255, 255)
-  doc.text('SUBTOTAL', 28, boxY + 8)
-  doc.text(`Rs. ${(order.price || 0).toLocaleString('en-IN')}`, W - 28, boxY + 8, { align: 'right' })
-  if (sMethod) {
-    doc.text(`SHIPPING (${sMethod.toUpperCase()})`, 28, boxY + 14)
-    doc.text(`Rs. ${sFee.toLocaleString('en-IN')}`, W - 28, boxY + 14, { align: 'right' })
-  }
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.setTextColor(...gold)
-  doc.text('TOTAL VOLUME', 28, boxY + 24)
-  const totalAmount = (order.price || 0) + sFee
-  doc.text(`Rs. ${totalAmount.toLocaleString('en-IN')}`, W - 28, boxY + 24, { align: 'right' })
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  doc.setTextColor(180, 180, 180)
-  doc.text(sMethod === 'Express' ? 'Express Boutique Delivery' : 'Standard Atelier Delivery', 28, boxY + 28)
-  doc.setFont('helvetica', 'italic')
-  doc.setFontSize(9)
-  doc.setTextColor(...grey)
-  doc.text('"May this tradition walk with you."', W / 2, 240, { align: 'center' })
-  doc.setFillColor(...dark)
-  doc.rect(0, 273, W, 24, 'F')
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  doc.setTextColor(150, 150, 150)
-  doc.text('friends-of-4.com', 20, 283)
-  doc.text('This is a computer-generated invoice and does not require a signature.', W / 2, 283, { align: 'center' })
-  doc.text(`INV-${order.order_id || order.id}`, W - 20, 283, { align: 'right' })
-  doc.save(`FriendsOf4_Invoice_${order.order_id || order.id}.pdf`)
-}
+import { downloadInvoicePDF } from '@/lib/admin-helpers'
 
 const tabs = [
   { id: 'profile', label: 'Profile Details', icon: 'person' },
@@ -196,6 +59,43 @@ function AccountContent() {
     const fetchUser = async () => {
       const { user, error: authError } = await getSessionUser();
       if (authError || !user) {
+        // Check localStorage fallback for active user session (e.g. Google OAuth or local session)
+        if (typeof window !== 'undefined') {
+          const localEmail = localStorage.getItem('currentUserEmail');
+          if (localEmail) {
+            const dbStr = localStorage.getItem('usersDb');
+            const usersDb = dbStr ? JSON.parse(dbStr) : {};
+            const localUser = usersDb[localEmail];
+            setUserProfile({
+              fullName: localUser?.fullName || 'Valued Client',
+              email: localEmail,
+              phone: localUser?.phone || '',
+              address: localUser?.address || '',
+              tier: localUser?.tier || 'Gold Tier Member',
+              userId: 'user_' + localEmail,
+              loyalty_points: 100,
+              customer_segment: 'Regular'
+            });
+            setEditData({
+              name: localUser?.fullName || '',
+              phone: localUser?.phone || '',
+              address: localUser?.address || ''
+            });
+
+            // Fetch any orders associated with this email
+            const { data: orders } = await supabase
+              .from('orders')
+              .select('*')
+              .eq('email', localEmail)
+              .order('created_at', { ascending: false });
+            if (orders) setDbOrders(orders);
+
+            const { authorized } = await import('@/lib/admin-helpers').then(m => m.checkAdminAuth());
+            setIsAdmin(authorized);
+            return;
+          }
+        }
+
         router.push('/login');
         return;
       }

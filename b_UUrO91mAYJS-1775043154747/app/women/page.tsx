@@ -2,22 +2,24 @@
 
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
-import { useRef } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useRef, useState, useEffect } from 'react'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
-
-import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useMode } from '@/context/mode-context'
 
 export default function WomenPage() {
+  const router = useRouter()
+  const { modeDetails } = useMode()
   const [womenProducts, setWomenProducts] = useState<any[]>([])
-  
   const [sortBy, setSortBy] = useState('newest')
   
   useEffect(() => {
     async function fetchWomenProducts() {
-      let query = supabase.from('products').select('*').eq('category', 'Women')
+      let query = supabase.from('products').select('*').or('category.eq.Women,category.eq.Architectural Sarees,category.eq.Kurtas & Chudidhars')
       if (sortBy === 'price-low') query = query.order('price', { ascending: true })
       else if (sortBy === 'price-high') query = query.order('price', { ascending: false })
       else query = query.order('created_at', { ascending: false })
@@ -27,6 +29,7 @@ export default function WomenPage() {
     }
     fetchWomenProducts()
   }, [sortBy])
+
   const heroRef = useRef(null)
   const productsRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
@@ -42,11 +45,29 @@ export default function WomenPage() {
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
 
   return (
-    <main className="w-full bg-[#fdf9f2]">
+    <main className="w-full transition-colors duration-700" style={{ backgroundColor: modeDetails.themeBg, color: '#F4F1EA' }}>
       <Header />
 
+      {/* BACK BUTTON STRIP */}
+      <div className="pt-28 max-w-[1920px] mx-auto px-6 md:px-12 flex items-center justify-between">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest transition-opacity hover:opacity-80 cursor-pointer"
+          style={{ color: modeDetails.accentColor }}
+        >
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          Back
+        </button>
+
+        <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D6CEBE]/70 flex items-center space-x-2">
+          <Link href="/" className="hover:opacity-80">HOME</Link>
+          <span>/</span>
+          <span className="font-bold text-white">WOMEN&apos;S ATELIER</span>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <section ref={heroRef} className="relative h-[100vh] w-full overflow-hidden flex flex-col justify-center pt-24">
+      <section ref={heroRef} className="relative h-[85vh] w-full overflow-hidden flex flex-col justify-center pt-12">
         <motion.div style={{ y }} className="absolute inset-0 z-0">
           <Image
             src="/women_hero_silk_1775057460998.png"
@@ -55,30 +76,30 @@ export default function WomenPage() {
             className="object-cover object-center"
             priority
           />
-          <div className="absolute inset-0 bg-white/5" />
+          <div className="absolute inset-0 bg-black/40" />
         </motion.div>
 
         <div className="relative z-10 max-w-[1920px] mx-auto w-full px-6 md:px-24 flex justify-end">
           <motion.div 
             style={{ opacity }}
-            className="bg-white/40 backdrop-blur-md p-8 md:p-16 border border-white/50 shadow-2xl w-full md:w-1/2 lg:w-2/5"
+            className="bg-black/60 backdrop-blur-md p-8 md:p-12 border border-white/20 shadow-2xl w-full md:w-1/2 lg:w-2/5 rounded-xl text-white"
             initial={{ opacity: 0, x: 80 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="font-body uppercase tracking-[0.6em] text-[8px] md:text-[10px] text-[#1c1c18] mb-6 block font-bold">
+            <span className="font-body uppercase tracking-[0.6em] text-[8px] md:text-[10px] text-amber-400 mb-4 block font-bold">
               Autumn / Winter &apos;24
             </span>
-            <h1 className="font-headline text-[50px] sm:text-[70px] md:text-8xl lg:text-9xl text-[#1c1c18] leading-[0.85] mb-10 tracking-tighter">
+            <h1 className="font-headline text-[40px] sm:text-[60px] md:text-7xl text-white leading-[0.85] mb-6 tracking-tighter">
               Timeless <br /> Femininity
             </h1>
-            <p className="font-body text-[#1c1c18] text-sm mb-12 max-w-sm leading-relaxed font-semibold">
+            <p className="font-body text-white/80 text-xs mb-8 max-w-sm leading-relaxed font-normal">
               A curated selection of luxury womenswear where heritage craft meets minimalist silhouettes for the modern woman.
             </p>
             <motion.button 
               onClick={scrollToProducts}
-              className="bg-[#735c00] text-white px-14 py-6 font-body uppercase tracking-[0.3em] text-[10px]"
-              whileHover={{ scale: 1.05, backgroundColor: '#1c1c18' }}
+              className="bg-[#a3851a] text-white px-10 py-4 font-body uppercase tracking-[0.3em] text-[10px] font-bold rounded cursor-pointer"
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               Explore Collection
@@ -87,28 +108,26 @@ export default function WomenPage() {
         </div>
       </section>
 
-
-
       {/* Product Grid */}
-      <section ref={productsRef} className="max-w-[1920px] mx-auto px-12 py-32">
+      <section ref={productsRef} className="max-w-[1920px] mx-auto px-6 md:px-12 py-20">
         {/* Filter/Sort Header */}
-        <div className="flex justify-between items-center mb-16 border-b border-[#1c1c18]/10 pb-8">
-           <span className="font-body text-[10px] uppercase tracking-widest text-[#747878]">{womenProducts.length} Masterpieces Found</span>
-           <div className="flex items-center gap-6">
-              <span className="font-body text-[10px] uppercase tracking-widest text-[#1c1c18] font-bold">Curate By:</span>
+        <div className="flex justify-between items-center mb-12 border-b border-white/10 pb-6">
+           <span className="font-body text-[10px] uppercase tracking-widest text-[#D6CEBE]">{womenProducts.length} Masterpieces Found</span>
+           <div className="flex items-center gap-4">
+              <span className="font-body text-[10px] uppercase tracking-widest text-white font-bold">Curate By:</span>
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent border-none font-body text-[10px] uppercase tracking-widest text-[#a3851a] focus:ring-0 cursor-pointer outline-none font-black"
+                className="bg-black/60 border border-white/20 px-3 py-1.5 rounded font-body text-[10px] uppercase tracking-widest text-[#a3851a] focus:ring-0 cursor-pointer outline-none font-bold"
               >
-                <option value="newest" className="text-[#1c1c18]">New Arrivals</option>
-                <option value="price-low" className="text-[#1c1c18]">Price: Low to High</option>
-                <option value="price-high" className="text-[#1c1c18]">Price: High to Low</option>
+                <option value="newest" className="bg-black text-white">New Arrivals</option>
+                <option value="price-low" className="bg-black text-white">Price: Low to High</option>
+                <option value="price-high" className="bg-black text-white">Price: High to Low</option>
               </select>
            </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
           {womenProducts.map((product, index) => (
             <ProductCard 
               key={product.id}
@@ -123,101 +142,6 @@ export default function WomenPage() {
             />
           ))}
         </div>
-      </section>
-
-      {/* The Lookbook Section */}
-      <section className="py-40 bg-[#1c1c18]">
-        <div className="max-w-[1920px] mx-auto px-12">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
-            <div>
-              <span className="font-body uppercase tracking-[0.6em] text-[10px] text-[#a3851a] mb-6 block">
-                Visual Stories
-              </span>
-              <h2 className="font-headline text-6xl text-[#fdf9f2] tracking-tighter">
-                The Lookbook: <br /> Modern Heritage
-              </h2>
-            </div>
-            <motion.button 
-              className="border-b border-[#a3851a] text-[#a3851a] pb-2 font-body uppercase tracking-widest text-[10px] hover:text-[#fdf9f2] hover:border-[#fdf9f2] transition-colors"
-              whileHover={{ x: 10 }}
-            >
-              View Full Lookbook
-            </motion.button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <motion.div 
-              className="lg:col-span-2 aspect-[16/9] relative overflow-hidden group"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.2 }}
-              viewport={{ once: true }}
-            >
-              <Image
-                src="/women_lookbook_editorial_1775057578055.png"
-                alt="Modern Heritage Editorial"
-                fill
-                className="object-cover transition-transform duration-[2s] group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/20" />
-              <div className="absolute bottom-12 left-12">
-                <span className="text-white/60 text-[9px] uppercase tracking-[0.3em] mb-3 block">Autumn &apos;24 / Look 01</span>
-                <h3 className="text-white font-headline text-3xl">Architectural Drape</h3>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="aspect-[4/5] relative overflow-hidden group"
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1.2, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <Image
-                src="/women_floral_wrap_1775057559234.png"
-                alt="Detail Editorial"
-                fill
-                className="object-cover transition-transform duration-[2s] group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/10" />
-              <div className="absolute bottom-12 left-12">
-                <span className="text-white/60 text-[9px] uppercase tracking-[0.3em] mb-3 block">Autumn &apos;24 / Detail</span>
-                <h3 className="text-white font-headline text-3xl">Handcrafted Textures</h3>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Inner Circle Section */}
-      <section className="py-40 bg-[#fdf9f2] text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <div className="w-12 h-12 border border-[#a3851a] mx-auto mb-10 flex items-center justify-center">
-             <span className="material-symbols-outlined text-[#a3851a] text-xl">mail</span>
-          </div>
-          <h2 className="font-headline text-5xl text-[#1c1c18] mb-8">Join the Inner Circle</h2>
-          <p className="font-body text-[#747878] text-sm mb-12 max-w-sm mx-auto leading-relaxed">
-            Subscribe for early access to collection drops, exclusive editorial content, and invitations to private atelier events.
-          </p>
-          <div className="max-w-md mx-auto relative group">
-            <input 
-              type="email" 
-              placeholder="Your email address" 
-              className="w-full bg-transparent border-b border-[#1c1c18]/20 py-4 px-2 font-body text-sm outline-none focus:border-[#a3851a] transition-all"
-            />
-            <button 
-              type="submit" 
-              className="absolute right-0 top-1/2 -translate-y-1/2 font-body uppercase tracking-[0.2em] text-[9px] font-bold text-[#1c1c18]"
-            >
-              Submit
-            </button>
-          </div>
-        </motion.div>
       </section>
 
       <Footer />

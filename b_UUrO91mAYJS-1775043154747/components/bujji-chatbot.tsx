@@ -22,13 +22,24 @@ export function BujjiChatbot() {
   const router = useRouter()
   const { mode, setMode, modeDetails } = useMode()
 
+  const [mounted, setMounted] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const [showTooltip, setShowTooltip] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [productsList, setProductsList] = useState<Product[]>([])
   const [ordersList, setOrdersList] = useState<Order[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Hydration safety mount effect
+  useEffect(() => {
+    setMounted(true)
+    const timer = setTimeout(() => {
+      setShowTooltip(true)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Initial welcome message from Bujji
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -36,7 +47,7 @@ export function BujjiChatbot() {
       id: 'msg-1',
       sender: 'bot',
       text: "Hey! 👋 I'm Bujji, your Friends of 4 Atelier AI Companion. How can I assist your luxury experience today?",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: 'Just now',
       options: [
         { label: '🛍️ Browse Collections / Need a Product', action: 'browse_collections' },
         { label: '📦 Order Query / Track Order', action: 'track_order_prompt' },
@@ -49,6 +60,7 @@ export function BujjiChatbot() {
 
   // Load products and orders on mount
   useEffect(() => {
+    if (!mounted) return
     const loadData = async () => {
       try {
         const [prods, ords] = await Promise.all([fetchAllProducts(), fetchAllOrders()])
@@ -59,14 +71,16 @@ export function BujjiChatbot() {
       }
     }
     loadData()
-  }, [])
+  }, [mounted])
 
   // Auto-scroll chat to latest message
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && mounted) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, isOpen, isTyping])
+  }, [messages, isOpen, isTyping, mounted])
+
+  if (!mounted) return null
 
   const addBotMessage = (
     text: string,
@@ -333,13 +347,44 @@ export function BujjiChatbot() {
   return (
     <>
       {/* FLOATING TRIGGER ROBOT BUTTON */}
-      <div className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 pointer-events-auto">
+      <div className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-[99999] pointer-events-auto flex items-center gap-3">
+        {/* UNREAD PROMPT TOOLTIP */}
+        <AnimatePresence>
+          {!isOpen && showTooltip && (
+            <motion.div
+              initial={{ opacity: 0, x: 10, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              onClick={() => {
+                setIsOpen(true)
+                setIsMinimized(false)
+                setShowTooltip(false)
+              }}
+              className="bg-[#1E1E1E] text-white border text-xs px-3.5 py-2 rounded-2xl shadow-2xl flex items-center gap-2 cursor-pointer font-mono font-bold"
+              style={{ borderColor: modeDetails.accentColor }}
+            >
+              <span>Hey! I&apos;m Bujji 👋</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowTooltip(false)
+                }}
+                className="text-white/40 hover:text-white ml-1"
+              >
+                ✕
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence>
           {!isOpen && (
             <motion.button
               onClick={() => {
                 setIsOpen(true)
                 setIsMinimized(false)
+                setShowTooltip(false)
               }}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -391,7 +436,7 @@ export function BujjiChatbot() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[160] w-[92vw] sm:w-[410px] ${
+            className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[99999] w-[92vw] sm:w-[410px] ${
               isMinimized ? 'h-[70px]' : 'h-[580px] max-h-[85vh]'
             } rounded-2xl shadow-2xl border flex flex-col overflow-hidden transition-all duration-300 font-body`}
             style={{

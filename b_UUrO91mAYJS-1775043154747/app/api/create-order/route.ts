@@ -33,26 +33,31 @@ export async function POST(req: NextRequest) {
           isRealKey: true,
         })
       } catch (err: any) {
-        console.warn("Razorpay API order creation fallback:", err)
+        console.warn("Razorpay API order creation warning:", err)
+        return NextResponse.json({
+          error: err?.message || err?.description || 'Razorpay order creation failed on server',
+          orderId: null,
+          amount: Math.round(amount * 100),
+          currency,
+          key: key_id,
+          isRealKey: false,
+        }, { status: 400 })
       }
     }
 
-    // Return client-compatible Razorpay payment order descriptor
     return NextResponse.json({
-      orderId: `order_${Date.now().toString().slice(-10)}`,
+      error: 'Razorpay secret key not configured on server',
+      orderId: null,
       amount: Math.round(amount * 100),
       currency,
       key: key_id,
       isRealKey: false,
-    })
+    }, { status: 400 })
   } catch (error: any) {
     return NextResponse.json({
-      orderId: `order_${Date.now().toString().slice(-10)}`,
-      amount: 100,
-      currency: 'INR',
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Tha2BWyYXOJUkD',
+      error: error?.message || 'Server error during order creation',
       isRealKey: false,
-    })
+    }, { status: 500 })
   }
 }
 

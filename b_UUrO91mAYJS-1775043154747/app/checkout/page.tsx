@@ -386,7 +386,7 @@ export default function CheckoutPage() {
       currency: 'INR',
       name: 'Friends of 4 Atelier',
       description: `${totalItems} Archival Piece${totalItems > 1 ? 's' : ''}`,
-      ...(razorpayOrderId && !razorpayOrderId.startsWith('order_') ? { order_id: razorpayOrderId } : {}),
+      ...(razorpayOrderId && razorpayOrderId.startsWith('order_') ? { order_id: razorpayOrderId } : {}),
       prefill: {
         name: addressForm.name,
         email: addressForm.email,

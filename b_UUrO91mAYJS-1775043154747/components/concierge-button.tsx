@@ -21,7 +21,7 @@ export function ConciergeButton() {
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.06, y: -2 }}
       whileTap={{ scale: 0.95 }}
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-full shadow-2xl backdrop-blur-md border transition-all duration-300 group"
+      className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-full shadow-2xl backdrop-blur-md border transition-all duration-300 group"
       style={{
         backgroundColor: `${modeDetails.cardBg}E6`,
         borderColor: modeDetails.accentColor,

@@ -82,8 +82,8 @@ export default function AdminOrdersPage() {
     const init = async () => {
       const { authorized, email: userEmail } = await checkAdminAuth()
       if (!authorized) { 
-        alert(`Atelier Access Denied: \n\nAccount [${userEmail || 'Unknown'}] is not authorized.`)
-        router.push('/'); return 
+        alert(`Atelier Access Denied: \n\nPlease log in to access the Admin Orders Pipeline.`)
+        router.push('/admin'); return 
       }
       setIsAuthorized(true)
       loadOrders()

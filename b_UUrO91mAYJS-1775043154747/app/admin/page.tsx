@@ -71,6 +71,47 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'inventory' | 'reviews' | 'orders' | 'coupons' | 'activity' | 'subscribers'>('inventory')
 
+  // Admin Login Screen state & Auth handlers
+  const [adminUsername, setAdminUsername] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loginError, setLoginError] = useState('')
+
+  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoginError('')
+    const userTrim = adminUsername.trim().toLowerCase()
+    const passTrim = adminPassword.trim()
+
+    const validAdmins = [
+      'chocos@2026',
+      'mamidipranay07@gmail.com',
+      'friendsof4.support@gmail.com',
+      'zameerzmr177@gmail.com',
+      'zameer.company@gmail.com'
+    ]
+
+    const isUserValid = validAdmins.some(adm => adm.toLowerCase() === userTrim)
+    const isPassValid = (passTrim === 'chocos@2026') || (userTrim === 'chocos@2026' && passTrim === 'chocos@2026')
+
+    if (isUserValid && isPassValid) {
+      localStorage.setItem('fo4_admin_logged_in', 'true')
+      localStorage.setItem('fo4_admin_username', userTrim)
+      setIsAuthorized(true)
+      loadData()
+    } else {
+      setLoginError('Invalid Administrator Username or Password. Please check your credentials.')
+    }
+  }
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('fo4_admin_logged_in')
+    localStorage.removeItem('fo4_admin_username')
+    setIsAuthorized(false)
+    setAdminUsername('')
+    setAdminPassword('')
+  }
+
   // Product creation / edit modal state
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -468,6 +509,112 @@ export default function AdminDashboard() {
     )
   }
 
+  if (isAuthorized === false) {
+    return (
+      <div className="min-h-screen flex flex-col justify-between transition-colors duration-700 font-body" style={{ backgroundColor: modeDetails.themeBg, color: '#F4F1EA' }}>
+        <Header />
+
+        <main className="pt-32 pb-24 max-w-md mx-auto px-4 w-full flex-1 flex flex-col justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-8 rounded-2xl shadow-2xl border space-y-6 relative overflow-hidden"
+            style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.accentColor }}
+          >
+            {/* AMBIENT GLOW & SECURITY BADGE */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center border shadow-xl mb-4" style={{ backgroundColor: `${modeDetails.accentColor}20`, borderColor: modeDetails.accentColor, color: modeDetails.accentColor }}>
+                <span className="material-symbols-outlined text-3xl">admin_panel_settings</span>
+              </div>
+
+              <span className="text-[10px] font-mono tracking-[0.3em] uppercase font-bold" style={{ color: modeDetails.accentColor }}>
+                RESTRICTED ACCESS PORTAL
+              </span>
+              <h1 className="font-serif-editorial text-3xl uppercase tracking-wider text-white">
+                MASTER ADMIN ACCESS
+              </h1>
+              <p className="text-xs font-mono text-[#D6CEBE]/70">
+                Please enter your registered Atelier Username & Password to unlock the Command Center.
+              </p>
+            </div>
+
+            {loginError && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-3 border rounded-xl bg-red-950/80 border-red-500/60 text-red-200 text-xs font-mono flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base shrink-0">error</span>
+                <span>{loginError}</span>
+              </motion.div>
+            )}
+
+            <form onSubmit={handleAdminLoginSubmit} className="space-y-4 font-mono text-xs">
+              <div>
+                <label className="block mb-1.5 uppercase text-[10px] font-bold text-[#D6CEBE]">ADMINISTRATOR USERNAME / EMAIL *</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-3 text-base text-[#D6CEBE]/50">person</span>
+                  <input
+                    type="text"
+                    required
+                    value={adminUsername}
+                    onChange={e => setAdminUsername(e.target.value)}
+                    placeholder="e.g. chocos@2026"
+                    className="w-full border p-3 pl-10 text-white rounded-xl focus:outline-none transition-all font-mono"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: `${modeDetails.borderColor}80` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1.5 uppercase text-[10px] font-bold text-[#D6CEBE]">MASTER PASSWORD *</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-3 text-base text-[#D6CEBE]/50">lock</span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={adminPassword}
+                    onChange={e => setAdminPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full border p-3 pl-10 pr-10 text-white rounded-xl focus:outline-none transition-all font-mono"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: `${modeDetails.borderColor}80` }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-[#D6CEBE]/60 hover:text-white"
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      {showPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 font-bold font-mono uppercase tracking-widest text-xs transition-all rounded-xl shadow-xl cursor-pointer flex items-center justify-center gap-2 hover:brightness-110 mt-2"
+                style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+              >
+                <span className="material-symbols-outlined text-[18px]">key</span>
+                <span>UNLOCK ADMIN COMMAND CENTER</span>
+              </button>
+            </form>
+
+            <div className="pt-4 border-t text-center text-[10px] font-mono text-[#D6CEBE]/60 space-y-1" style={{ borderColor: `${modeDetails.borderColor}30` }}>
+              <p>Master Credentials: <strong className="text-white">chocos@2026</strong></p>
+              <p>Friends of 4 Atelier • Official Management Security</p>
+            </div>
+          </motion.div>
+        </main>
+
+        <Footer />
+      </div>
+    )
+  }
+
   const adminModeOptions: { id: BrandMode; label: string }[] = [
     { id: 'streetwear', label: 'STREETWEAR ADMIN' },
     { id: 'archive', label: 'LUXURY ARCHIVE ADMIN' },
@@ -486,7 +633,7 @@ export default function AdminDashboard() {
 
       <main className="pt-32 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1">
         
-        {/* BACK BUTTON */}
+        {/* BACK BUTTON & LOGOUT */}
         <div className="mb-6 flex items-center justify-between">
           <button
             onClick={() => router.push('/')}
@@ -497,8 +644,18 @@ export default function AdminDashboard() {
             Back to Website
           </button>
           
-          <div className="text-[10px] font-mono uppercase tracking-widest text-[#D6CEBE]/70">
-            ADMINISTRATOR ACTIVE • {mode.toUpperCase()} MODE
+          <div className="flex items-center gap-4">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[#D6CEBE]/70 hidden sm:block">
+              ADMINISTRATOR ACTIVE • {mode.toUpperCase()} MODE
+            </div>
+            <button
+              onClick={handleAdminLogout}
+              className="px-3 py-1.5 bg-red-950/80 border border-red-500/50 text-red-200 text-[10px] font-mono uppercase font-bold tracking-widest rounded-lg hover:bg-red-900 transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Lock Admin Session"
+            >
+              <span className="material-symbols-outlined text-xs">lock</span>
+              <span>LOGOUT ADMIN</span>
+            </button>
           </div>
         </div>
 

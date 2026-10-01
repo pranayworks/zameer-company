@@ -43,8 +43,8 @@ export default function AdminCategoryPage({ params }: { params: Promise<{ catego
     const init = async () => {
       const { authorized, email: userEmail } = await checkAdminAuth()
       if (!authorized) {
-        alert(`Atelier Access Denied: \n\nAccount [${userEmail || 'Unknown'}] is not authorized to modify the Atelier Collections.`)
-        router.push('/')
+        alert(`Atelier Access Denied: \n\nPlease log in to access Atelier Collections.`)
+        router.push('/admin')
         return
       }
       setIsAuthorized(true)

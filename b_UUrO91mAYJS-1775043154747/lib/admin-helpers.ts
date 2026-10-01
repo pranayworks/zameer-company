@@ -92,28 +92,13 @@ export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 
 export async function checkAdminAuth(): Promise<{ authorized: boolean; email?: string }> {
   try {
-    const adminUser = (process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'chocos@2026').toLowerCase().trim()
-
-    if (typeof window !== 'undefined' && localStorage.getItem('fo4_admin_bypass') === 'true') {
-      return { authorized: true, email: adminUser }
-    }
-    const { user } = await getSessionUser()
-    const localEmail = typeof window !== 'undefined' ? localStorage.getItem('currentUserEmail') : null
-    const userEmail = (user?.email || localEmail || '').toLowerCase().trim()
-
-    if (userEmail === adminUser || userEmail === 'chocos@2026' || ADMIN_EMAILS.some(e => e.toLowerCase().trim() === userEmail)) {
-      return { authorized: true, email: userEmail }
-    }
-
     if (typeof window !== 'undefined' && localStorage.getItem('fo4_admin_logged_in') === 'true') {
+      const adminUser = localStorage.getItem('fo4_admin_username') || 'chocos@2026'
       return { authorized: true, email: adminUser }
     }
-    
-    // Allow access in development or fallback
-    return { authorized: true, email: userEmail || adminUser }
+    return { authorized: false }
   } catch (err) {
-    console.warn("Auth check fallback to admin mode:", err)
-    return { authorized: true, email: process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'chocos@2026' }
+    return { authorized: false }
   }
 }
 

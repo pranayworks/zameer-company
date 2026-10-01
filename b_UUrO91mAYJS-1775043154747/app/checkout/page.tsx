@@ -239,6 +239,61 @@ export default function CheckoutPage() {
     loadRazorpaySDK()
   }, [])
 
+  const handleDirectCODOrder = async () => {
+    if (!addressForm.name || !addressForm.phone || !addressForm.flatNo || !addressForm.pincode) {
+      setPaymentError('Please fill in all mandatory dispatch address details (Name, Phone, Flat/Building, Pin Code).')
+      return
+    }
+
+    setPaymentError('')
+    setStep('paying')
+
+    const fullFormattedAddress = `${addressForm.flatNo}, ${addressForm.area}${addressForm.landmark ? ', Landmark: ' + addressForm.landmark : ''}, ${addressForm.city}, ${addressForm.state} - ${addressForm.pincode} [COD / Direct Order]`
+    
+    if (addressForm.saveAsDefault && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('fo4_saved_default_address', JSON.stringify(addressForm))
+      } catch {}
+    }
+
+    const customerProfile = {
+      name: addressForm.name,
+      email: addressForm.email,
+      phone: addressForm.phone,
+      address: fullFormattedAddress,
+      userId: 'guest'
+    }
+
+    const paymentId = `COD-${Date.now().toString().slice(-6)}`
+    setOrderId(paymentId)
+
+    const snapshotItems = cart.map(item => ({
+      name: item.name || item.title || 'Archival Piece',
+      size: item.selectedSize || 'Standard',
+      color: item.selectedColor || 'Default',
+      quantity: item.quantity,
+      price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 4800,
+      image: item.image
+    }))
+
+    setCompletedOrder({
+      orderId: paymentId,
+      date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      items: snapshotItems,
+      customerName: addressForm.name || 'Valued Client',
+      email: addressForm.email || '',
+      phone: addressForm.phone || '',
+      address: fullFormattedAddress,
+      subtotal,
+      discountAmount,
+      shippingFee,
+      finalTotal
+    })
+
+    await placeOrder(shippingMethod, shippingFee, customerProfile)
+    setStep('success')
+  }
+
   const handlePay = async () => {
     if (!addressForm.name || !addressForm.phone || !addressForm.flatNo || !addressForm.pincode) {
       setPaymentError('Please fill in all mandatory dispatch address details (Name, Phone, Flat/Building, Pin Code).')
@@ -299,7 +354,7 @@ export default function CheckoutPage() {
     const sdkLoaded = await loadRazorpaySDK()
     if (!sdkLoaded || !window.Razorpay) {
       setStep('address')
-      setPaymentError('Could not load Razorpay payment SDK. Please check your internet connection and try again.')
+      setPaymentError('Could not load Razorpay payment SDK. You can complete your order using Cash on Delivery (COD) below.')
       return
     }
 
@@ -324,7 +379,12 @@ export default function CheckoutPage() {
 
     if (!orderData || !orderData.orderId) {
       setStep('address')
-      setPaymentError(`Payment Gateway Error: ${orderData?.error || 'Unable to authenticate order with Razorpay. Please check API keys.'}`)
+      const rawError = orderData?.error || 'Authentication failed'
+      if (rawError.toLowerCase().includes('auth') || rawError.toLowerCase().includes('key')) {
+        setPaymentError(`Razorpay API Error: ${rawError}. Check your Razorpay Key ID & Key Secret in .env.local (Ensure both belong to same Test or Live mode). Or click "PLACE ORDER VIA CASH ON DELIVERY (COD)" below to complete your acquisition!`)
+      } else {
+        setPaymentError(`Payment Gateway Error: ${rawError}`)
+      }
       return
     }
 
@@ -816,23 +876,33 @@ export default function CheckoutPage() {
                 </p>
               )}
 
-              <div className="flex justify-between pt-4 border-t" style={{ borderColor: modeDetails.borderColor }}>
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t" style={{ borderColor: modeDetails.borderColor }}>
                 <button
                   onClick={() => setStep('summary')}
-                  className="px-6 py-3 border text-white text-xs font-mono uppercase rounded transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3 border text-white text-xs font-mono uppercase rounded transition-all cursor-pointer"
                   style={{ borderColor: modeDetails.borderColor }}
                 >
                   ← BACK TO REVIEW
                 </button>
 
-                <button
-                  onClick={handlePay}
-                  className="px-8 py-3 font-bold text-xs tracking-[0.2em] uppercase transition-all rounded shadow-lg cursor-pointer flex items-center gap-2"
-                  style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
-                >
-                  <span>PROCEED TO RAZORPAY ({formatPrice(finalTotal)})</span>
-                  <span>→</span>
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={handleDirectCODOrder}
+                    className="px-6 py-3 font-mono font-bold text-xs tracking-wider uppercase transition-all rounded border border-amber-500/50 bg-amber-950/80 text-amber-200 hover:bg-amber-900 cursor-pointer flex items-center justify-center gap-2 shadow"
+                  >
+                    <span className="material-symbols-outlined text-sm">payments</span>
+                    <span>CASH ON DELIVERY / DIRECT BOOKING ({formatPrice(finalTotal)})</span>
+                  </button>
+
+                  <button
+                    onClick={handlePay}
+                    className="px-8 py-3 font-bold text-xs tracking-[0.2em] uppercase transition-all rounded shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                    style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+                  >
+                    <span>PROCEED TO RAZORPAY ({formatPrice(finalTotal)})</span>
+                    <span>→</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}

@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, ShieldCheck, Mail, Lock, Phone, KeyRound, Sparkles, ArrowRight, CheckCircle2, Flame } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2, Flame } from 'lucide-react'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { supabase } from '@/lib/supabase'
@@ -17,8 +16,6 @@ const heroImages = [
   '/images/login_hero.png',
 ]
 
-type AuthTab = 'password' | 'otp'
-
 export default function LoginPage() {
   const router = useRouter()
 
@@ -29,7 +26,6 @@ export default function LoginPage() {
     return target || '/account'
   }
 
-  const [authTab, setAuthTab] = useState<AuthTab>('password')
   const [currentImageIdx, setCurrentImageIdx] = useState(0)
 
   // Password Login State
@@ -37,14 +33,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
-
-  // OTP Login State
-  const [otpTarget, setOtpTarget] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
-  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', ''])
-  const [resendTimer, setResendTimer] = useState(30)
-  const [canResend, setCanResend] = useState(false)
-  const [otpToken, setOtpToken] = useState('')
 
   // Reset Password State
   const [isForgotMode, setIsForgotMode] = useState(false)
@@ -62,19 +50,6 @@ export default function LoginPage() {
     }, 5000)
     return () => clearInterval(timer)
   }, [])
-
-  // Resend OTP countdown timer
-  useEffect(() => {
-    let interval: any
-    if (otpSent && resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1)
-      }, 1000)
-    } else if (resendTimer === 0) {
-      setCanResend(true)
-    }
-    return () => clearInterval(interval)
-  }, [otpSent, resendTimer])
 
   // Google OAuth Login
   const handleGoogleLogin = async () => {
@@ -215,100 +190,6 @@ export default function LoginPage() {
     }
   }
 
-  // Send SMS / Email OTP
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!acceptedTerms) {
-      setErrorMsg('Please review and accept our Terms of Service & Privacy Policy before requesting OTP.')
-      return
-    }
-    const target = otpTarget.trim()
-    if (!target) {
-      setErrorMsg('Please enter your email address or 10-digit mobile number.')
-      return
-    }
-
-    setLoading(true)
-    setErrorMsg('')
-    try {
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target }),
-      })
-      const data = await res.json()
-
-      if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Failed to dispatch OTP code. Please check your entry.')
-        return
-      }
-
-      setOtpToken(data.token)
-      setOtpSent(true)
-      setResendTimer(30)
-      setCanResend(false)
-      setSuccessMsg(data.message || `A 6-digit OTP code has been dispatched to ${target}.`)
-    } catch (e: any) {
-      setErrorMsg('Failed to send OTP code. Please verify network connection or try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Verify SMS / Email OTP
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const pinCode = otpDigits.join('')
-    if (pinCode.length < 6) {
-      setErrorMsg('Please enter the complete 6-digit OTP code.')
-      return
-    }
-
-    setLoading(true)
-    setErrorMsg('')
-
-    try {
-      const target = otpTarget.trim()
-
-      const res = await fetch('/api/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target, otp: pinCode, token: otpToken }),
-      })
-      const data = await res.json()
-
-      if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Incorrect or expired OTP code. Please check your inbox.')
-        return
-      }
-
-      // OTP Verified successfully!
-      const isEmail = target.includes('@')
-      const cleanPhone = target.replace(/[^0-9]/g, '').slice(-10)
-      const userEmail = isEmail ? target.toLowerCase() : `${cleanPhone}@friendsof4.com`
-      const userPhone = isEmail ? '+91 9876543210' : `+91 ${cleanPhone}`
-
-      const dbStr = localStorage.getItem('usersDb')
-      const usersDb = dbStr ? JSON.parse(dbStr) : {}
-
-      usersDb[userEmail] = {
-        fullName: 'OTP Verified Member',
-        phone: userPhone,
-        email: userEmail,
-        tier: 'Gold Tier Member',
-        authProvider: 'otp'
-      }
-      localStorage.setItem('usersDb', JSON.stringify(usersDb))
-      localStorage.setItem('currentUserEmail', userEmail)
-
-      router.push(getRedirectTarget())
-    } catch (err: any) {
-      setErrorMsg('Failed to verify OTP code. Please retry.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // Reset Password Request
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -333,19 +214,6 @@ export default function LoginPage() {
       setForgotSuccess(true)
     } finally {
       setLoading(false)
-    }
-  }
-
-  // Handle OTP 6-digit input box navigation
-  const handleOtpDigitChange = (index: number, val: string) => {
-    const cleanVal = val.replace(/[^0-9]/g, '').slice(-1)
-    const newDigits = [...otpDigits]
-    newDigits[index] = cleanVal
-    setOtpDigits(newDigits)
-
-    if (cleanVal && index < 5) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`)
-      if (nextInput) nextInput.focus()
     }
   }
 
@@ -413,41 +281,12 @@ export default function LoginPage() {
               <p className="text-xs font-mono text-red-200/70 mt-1">
                 {isForgotMode 
                   ? 'Enter your email to receive a secure link to update your password.' 
-                  : 'Select your preferred sign-in method to access your account.'}
+                  : 'Enter your credentials to access your account.'}
               </p>
             </div>
 
             {!isForgotMode && (
               <>
-                {/* METHOD SWITCHER TABS: GRADIENT CRIMSON */}
-                <div className="flex border border-[#800000] rounded-xl p-1 font-mono text-xs bg-[#100002]/90 shadow-inner">
-                  <button
-                    type="button"
-                    onClick={() => { setAuthTab('password'); setErrorMsg(''); setSuccessMsg(''); }}
-                    className={`flex-1 py-2.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center justify-center space-x-2 cursor-pointer ${
-                      authTab === 'password' 
-                        ? 'bg-gradient-to-r from-[#FF0000] via-[#C00000] to-[#800000] text-white shadow-[0_0_15px_rgba(255,0,0,0.5)]' 
-                        : 'text-red-200/60 hover:text-white'
-                    }`}
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>PASSWORD SIGN IN</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => { setAuthTab('otp'); setErrorMsg(''); setSuccessMsg(''); }}
-                    className={`flex-1 py-2.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center justify-center space-x-2 cursor-pointer ${
-                      authTab === 'otp' 
-                        ? 'bg-gradient-to-r from-[#FF0000] via-[#C00000] to-[#800000] text-white shadow-[0_0_15px_rgba(255,0,0,0.5)]' 
-                        : 'text-red-200/60 hover:text-white'
-                    }`}
-                  >
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>OTP CODE SIGN IN</span>
-                  </button>
-                </div>
-
                 {/* QUICK GOOGLE OAUTH BUTTON */}
                 <button
                   type="button"
@@ -467,14 +306,14 @@ export default function LoginPage() {
                 <div className="relative flex items-center justify-center my-2">
                   <div className="absolute w-full border-t border-[#660000]/60" />
                   <span className="relative px-3 text-[9px] font-mono uppercase tracking-[0.3em] text-red-200/50 bg-[#120003]">
-                    OR ENTER DETAILS BELOW
+                    OR ENTER PASSWORD DETAILS BELOW
                   </span>
                 </div>
               </>
             )}
 
-            {/* TAB 1: PASSWORD LOGIN FORM */}
-            {!isForgotMode && authTab === 'password' && (
+            {/* PASSWORD LOGIN FORM */}
+            {!isForgotMode && (
               <form onSubmit={handlePasswordSubmit} className="space-y-4 font-mono text-xs">
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-red-200/80 mb-1">EMAIL ADDRESS *</label>
@@ -557,137 +396,6 @@ export default function LoginPage() {
                   )}
                 </button>
               </form>
-            )}
-
-            {/* TAB 2: OTP SIGN IN FORM */}
-            {!isForgotMode && authTab === 'otp' && (
-              <div className="space-y-4 font-mono text-xs">
-                {!otpSent ? (
-                  <form onSubmit={handleSendOtp} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase text-red-200/80 mb-1">EMAIL OR MOBILE NUMBER (10 DIGITS) *</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          required
-                          value={otpTarget}
-                          onChange={(e) => setOtpTarget(e.target.value)}
-                          placeholder="client@domain.com or 9876543210"
-                          className="w-full border border-[#800000] bg-[#140003]/80 p-3.5 pl-10 text-white placeholder-red-200/30 focus:outline-none focus:border-[#FF0000] rounded-xl transition-all"
-                        />
-                        <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400/60" />
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="terms-otp"
-                        checked={acceptedTerms}
-                        onChange={(e) => setAcceptedTerms(e.target.checked)}
-                        className="w-4 h-4 mt-0.5 rounded cursor-pointer accent-[#FF0000]"
-                      />
-                      <label htmlFor="terms-otp" className="text-[10px] font-mono text-red-200/70 leading-relaxed cursor-pointer">
-                        I review and agree to the <Link href="/legal/terms-of-service" className="underline font-bold text-white hover:text-[#FF4D4D]">Terms of Service</Link> and <Link href="/legal/privacy-policy" className="underline font-bold text-white hover:text-[#FF4D4D]">Privacy Policy</Link> of Friends of 4 Atelier.
-                      </label>
-                    </div>
-
-                    {errorMsg && (
-                      <p className="text-xs text-red-300 p-3 border border-red-500/60 rounded-xl bg-red-950/60">
-                        {errorMsg}
-                      </p>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full py-4 font-bold text-xs tracking-[0.25em] uppercase transition-all duration-300 rounded-xl shadow-[0_0_25px_rgba(255,0,0,0.4)] cursor-pointer flex items-center justify-center space-x-2 bg-gradient-to-r from-[#FF0000] via-[#CC0000] to-[#800000] hover:from-[#FF2626] hover:to-[#A60000] text-white"
-                    >
-                      {loading ? (
-                        <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          <span>SEND 6-DIGIT OTP CODE</span>
-                          <KeyRound className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleVerifyOtp} className="space-y-6">
-                    {successMsg && (
-                      <p className="text-xs text-emerald-300 p-3 border border-emerald-500/40 rounded-xl bg-emerald-950/40 font-mono text-center">
-                        ✓ {successMsg}
-                      </p>
-                    )}
-
-                    <div className="space-y-2 text-center">
-                      <label className="block text-[10px] font-bold uppercase text-red-200/80">ENTER 6-DIGIT OTP CODE</label>
-                      <div className="flex justify-center space-x-2 sm:space-x-3">
-                        {otpDigits.map((digit, idx) => (
-                          <input
-                            key={idx}
-                            id={`otp-input-${idx}`}
-                            type="text"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Backspace' && !digit && idx > 0) {
-                                const prev = document.getElementById(`otp-input-${idx - 1}`)
-                                if (prev) prev.focus()
-                              }
-                            }}
-                            className="w-10 h-12 sm:w-12 sm:h-14 border border-[#800000] bg-[#140003]/80 text-center font-mono text-xl font-bold text-white focus:outline-none focus:border-[#FF0000] rounded-xl"
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center text-[10px] font-mono">
-                      <span className="text-red-200/60">
-                        {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Did not receive code?'}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={!canResend}
-                        onClick={handleSendOtp}
-                        className="font-bold text-[#FF4D4D] hover:underline disabled:opacity-40 cursor-pointer"
-                      >
-                        RESEND OTP NOW
-                      </button>
-                    </div>
-
-                    {errorMsg && (
-                      <p className="text-xs text-red-300 p-3 border border-red-500/60 rounded-xl bg-red-950/60">
-                        {errorMsg}
-                      </p>
-                    )}
-
-                    <div className="flex space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setOtpSent(false)}
-                        className="px-4 py-3.5 border border-[#660000] text-xs font-mono uppercase text-red-200 hover:text-white rounded-xl cursor-pointer"
-                      >
-                        CHANGE NUMBER
-                      </button>
-
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex-1 py-4 font-bold text-xs tracking-[0.2em] uppercase transition-all duration-300 rounded-xl shadow-[0_0_25px_rgba(255,0,0,0.4)] cursor-pointer flex items-center justify-center space-x-2 bg-gradient-to-r from-[#FF0000] via-[#CC0000] to-[#800000] text-white"
-                      >
-                        {loading ? (
-                          <span className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin" />
-                        ) : (
-                          <span>VERIFY & ACCESS ATELIER</span>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
             )}
 
             {/* FORGOT PASSWORD FORM */}

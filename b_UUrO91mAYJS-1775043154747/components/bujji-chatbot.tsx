@@ -198,7 +198,7 @@ export function BujjiChatbot() {
           'Our customer concierge team is available 24/7 to resolve any questions or custom order requests.\n\n' +
           '📞 **Direct Phone**: +91 9550447883\n' +
           '✉️ **Official Email**: friendsof4.support@gmail.com\n' +
-          '📍 **Address**: Bengaluru & Varanasi Atelier Headquarters',
+          '📍 **Address**: beside Raising House, opposite of Saint Anns School Road, Prakash Nagar, Narasaraopeta, Andhra Pradesh 522601',
           [
             { label: '💬 Chat on WhatsApp (+91 9550447883)', action: 'whatsapp_chat' },
             { label: '📍 Visit Official Contact Page', action: 'go_contact_page' }

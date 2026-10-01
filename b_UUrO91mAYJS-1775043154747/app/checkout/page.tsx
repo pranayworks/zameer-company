@@ -1099,7 +1099,7 @@ export default function CheckoutPage() {
                       ✦ OFFICIAL ATELIER SEAL ✦
                     </span>
                     <span className="text-[8px] text-white/70 block uppercase">AUTHENTIC HERITAGE GUARANTEE</span>
-                    <span className="text-[7px] text-white/40 block">VARANASI & BENGALURU, INDIA</span>
+                    <span className="text-[7px] text-white/40 block">NARASARAOPETA, ANDHRA PRADESH</span>
                   </div>
                 </div>
               </div>

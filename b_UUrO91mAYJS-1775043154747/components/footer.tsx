@@ -145,7 +145,7 @@ export function Footer() {
             <span className="font-semibold" style={{ color: modeDetails.accentColor }}>GSTIN: 29AAAF48444M1Z5</span>
           </div>
           <p className="text-[10px] opacity-70">
-            Registered Office: Indiranagar, Bengaluru, KA - 560038, India
+            Registered Office: beside Raising House, opposite of Saint Anns School Road, Prakash Nagar, Narasaraopeta, Andhra Pradesh 522601
           </p>
         </div>
 

@@ -591,14 +591,14 @@ export default function ProductDetailPage() {
                         const frameIdx = totalFrames > 1 ? Math.floor((rotationAngle / 360) * totalFrames) % totalFrames : 0
                         const activeImage = productGallery[frameIdx] || product.image
                         const lightSheenOffset = (rotationAngle / 360) * 100
-                        const yAngle = (rotationAngle % 360) > 180 ? 360 - (rotationAngle % 360) : (rotationAngle % 360)
 
                         return (
                           <div className="relative w-full h-full flex items-center justify-center">
                             <div 
                               className="relative w-full h-full flex items-center justify-center transition-transform duration-75"
                               style={{
-                                transform: `perspective(1200px) rotateY(${yAngle * 0.25}deg)`
+                                transform: `perspective(1000px) rotateY(${rotationAngle}deg)`,
+                                transformStyle: 'preserve-3d'
                               }}
                             >
                               <img

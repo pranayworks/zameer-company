@@ -119,10 +119,10 @@ export default function ContactPage() {
                   GLOBAL ATELIER HEADQUARTERS
                 </span>
                 <h3 className={`${modeDetails.fontClass || 'font-serif-editorial'} text-2xl font-bold text-white uppercase`}>
-                  FINANCIAL DISTRICT, HYDERABAD
+                  NARASARAOPETA, ANDHRA PRADESH
                 </h3>
                 <p className="text-xs font-mono text-[#D6CEBE]/80 leading-relaxed">
-                  Friends of 4 Fashion House LLP, Financial District, Nanakramguda, Hyderabad, Telangana - 500032.
+                  Friends of 4 Fashion House LLP, beside Raising House, opposite of Saint Anns School Road, Prakash Nagar, Narasaraopeta, Andhra Pradesh - 522601.
                 </p>
               </div>
 

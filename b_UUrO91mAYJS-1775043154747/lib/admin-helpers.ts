@@ -674,7 +674,7 @@ export const downloadInvoicePDF = async (order: Order | DetailedReceipt) => {
   doc.text('AUTHENTIC HERITAGE GUARANTEE', W - 47.5, sigY - 6, { align: 'center' })
   doc.setFontSize(6)
   doc.setTextColor(...grey)
-  doc.text('VARANASI & BENGALURU, INDIA', W - 47.5, sigY - 1, { align: 'center' })
+  doc.text('NARASARAOPETA, ANDHRA PRADESH', W - 47.5, sigY - 1, { align: 'center' })
 
   // Bottom Footer
   doc.setFillColor(...dark)

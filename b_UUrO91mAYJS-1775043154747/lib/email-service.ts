@@ -322,3 +322,49 @@ export async function sendBroadcastAnnouncementEmail({
     return { success: false, error: error?.message || String(error) }
   }
 }
+
+export async function sendOtpEmail({ email, otp }: { email: string; otp: string }) {
+  const transporter = getGmailTransporter()
+
+  const mailOptions = {
+    from: '"Friends of 4 Concierge" <friendsof4.support@gmail.com>',
+    to: email,
+    subject: `${otp} is your Friends of 4 Login OTP Code`,
+    html: `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1c1c18; max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee; padding: 0; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #0b0e17; padding: 40px; text-align: center; border-bottom: 2px solid #c8a951;">
+          <h1 style="color: #ffffff; text-transform: uppercase; letter-spacing: 0.4em; font-weight: 300; font-size: 24px; margin: 0;">FRIENDS OF 4</h1>
+          <p style="color: #c8a951; text-transform: uppercase; letter-spacing: 0.2em; font-size: 10px; margin-top: 10px; font-weight: bold;">Atelier Security Protocol</p>
+        </div>
+
+        <div style="padding: 40px; text-align: center;">
+          <h2 style="font-weight: 600; font-size: 20px; color: #1c1c18; margin-bottom: 15px;">One-Time Passcode (OTP)</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #555555; margin-bottom: 30px;">
+            Use the 6-digit security code below to complete your login or account registration:
+          </p>
+
+          <div style="background-color: #faf9f6; padding: 20px 30px; border-radius: 8px; display: inline-block; letter-spacing: 0.4em; font-size: 36px; font-weight: bold; color: #c8a951; border: 2px solid #c8a951; font-family: monospace;">
+            ${otp}
+          </div>
+
+          <p style="font-size: 12px; color: #888888; margin-top: 25px; line-height: 1.5;">
+            This security code is valid for <strong>10 minutes</strong>. Do not share this OTP code with anyone.
+          </p>
+        </div>
+
+        <div style="background-color: #0b0e17; padding: 20px; text-align: center; font-size: 11px; color: #888888; border-top: 1px solid #222222;">
+          <p style="margin: 0; color: #dddddd;">Friends of 4 Atelier &bull; Style of Tradition</p>
+          <p style="margin-top: 4px; color: #666666; font-size: 10px;">Automated Security Message from friendsof4.support@gmail.com</p>
+        </div>
+      </div>
+    `,
+  }
+
+  try {
+    await transporter.sendMail(mailOptions)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error sending OTP email via SMTP:', error)
+    return { success: false, error: error?.message || String(error) }
+  }
+}

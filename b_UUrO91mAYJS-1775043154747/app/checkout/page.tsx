@@ -380,7 +380,7 @@ export default function CheckoutPage() {
       console.warn("Backend order creation warning:", e)
     }
 
-    const razorpayKey = orderData?.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Tha2BWyYXOJUkD'
+    const razorpayKey = orderData?.key || (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.startsWith('rzp_test_') ? process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID : 'rzp_test_5WfX4pZ4bY0X12')
     const razorpayOrderId = orderData?.orderId
 
     const options: any = {

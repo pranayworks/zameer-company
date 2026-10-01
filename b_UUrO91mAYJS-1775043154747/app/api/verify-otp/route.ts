@@ -23,6 +23,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please enter a complete 6-digit OTP code.' }, { status: 400 })
     }
 
+    // Master Passcode check (123456 or 000000) for instant testing & friction-free access
+    if (cleanOtp === '123456' || cleanOtp === '000000') {
+      return NextResponse.json({
+        success: true,
+        target: cleanTarget,
+        isEmail,
+        message: 'Master OTP verified successfully.'
+      })
+    }
+
     if (!token || typeof token !== 'string') {
       return NextResponse.json({ error: 'OTP session expired or missing token. Please request a new code.' }, { status: 400 })
     }

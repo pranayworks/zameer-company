@@ -32,10 +32,11 @@ export default function ShopPage() {
     } catch {}
 
     const fetchDbProducts = async () => {
+      let mapped: Product[] = []
       try {
         const { data } = await supabase.from('products').select('*')
         if (data && data.length > 0) {
-          const mapped: Product[] = data.map((d: any) => {
+          mapped = data.map((d: any) => {
             const itemMode: BrandMode = d.mode || (
               ['Men', 'Tees & Tops', 'Hoodies & Outerwear', 'Bottomwear'].includes(d.category) ? 'streetwear' :
               ['Archive', 'Statement Archive'].includes(d.category) ? 'archive' : 'traditional'
@@ -50,7 +51,7 @@ export default function ShopPage() {
               category: d.category || 'Archive',
               image: d.image || '/saree_1.png',
               gallery: [d.image, d.image2, d.image3].filter(Boolean),
-              blueprintImage: d.blueprintImage || '/media__1775056878622.png',
+              blueprintImage: d.image3 || d.blueprintImage || '/media__1775056878622.png',
               description: d.description || '',
               gsm: d.gsm || (itemMode === 'streetwear' ? '350 GSM' : undefined),
               details: {
@@ -66,11 +67,51 @@ export default function ShopPage() {
               inStock: d.stock === undefined || d.stock > 0
             }
           })
-          setDbProducts(mapped)
         }
       } catch (e) {
         console.warn("DB products fetch skipped", e)
       }
+
+      // Merge local edited products
+      try {
+        const localEdited = JSON.parse(localStorage.getItem('fo4_edited_products') || '[]')
+        if (localEdited && localEdited.length > 0) {
+          const mappedLocal: Product[] = localEdited.map((d: any) => {
+            const itemMode: BrandMode = d.mode || 'streetwear'
+            return {
+              id: String(d.id),
+              title: d.title || 'Atelier Masterpiece',
+              subtitle: d.subtitle || `${itemMode.toUpperCase()} COLLECTION`,
+              price: typeof d.price === 'number' ? `₹${d.price.toLocaleString('en-IN')}` : String(d.price),
+              rawPrice: typeof d.price === 'number' ? d.price : parseFloat(String(d.price).replace(/[^0-9.]/g, '')) || 0,
+              mode: itemMode,
+              category: d.category || 'Archive',
+              image: d.image || '/saree_1.png',
+              gallery: [d.image, d.image2, d.image3].filter(Boolean),
+              blueprintImage: d.image3 || d.blueprintImage || '/media__1775056878622.png',
+              description: d.description || '',
+              gsm: d.gsm || (itemMode === 'streetwear' ? '350 GSM' : undefined),
+              details: {
+                fabric: Array.isArray(d.fabric) ? d.fabric : [d.fabric || 'Pure Handloom Fabric'],
+                care: Array.isArray(d.care) ? d.care : ['Dry Clean Recommended'],
+                fit: Array.isArray(d.fit) ? d.fit : ['Archival Tailored Fit']
+              },
+              heritageStory: d.heritageStory || 'Handcrafted precision weaving derived from ancient architectural blueprints.',
+              unboxingPolicy: d.unboxingPolicy || 'Dispatched in signature rigid packaging with 24h unboxing guarantee.',
+              rating: d.rating || 5.0,
+              reviews: d.reviews || 16,
+              sizes: Array.isArray(d.sizes) && d.sizes.length > 0 ? d.sizes : ['S', 'M', 'L', 'XL'],
+              inStock: d.stock === undefined || d.stock > 0
+            }
+          })
+          const map = new Map<string, Product>()
+          mapped.forEach(p => map.set(p.id, p))
+          mappedLocal.forEach(p => map.set(p.id, p))
+          mapped = Array.from(map.values())
+        }
+      } catch (e) {}
+
+      setDbProducts(mapped)
     }
     fetchDbProducts()
 

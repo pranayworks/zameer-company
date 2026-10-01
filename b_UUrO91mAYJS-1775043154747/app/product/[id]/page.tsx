@@ -106,6 +106,44 @@ export default function ProductDetailPage() {
       } catch (e) {
         console.warn("Db single product fetch skipped", e)
       }
+
+      // Local session edited product check
+      try {
+        const localEdited = JSON.parse(localStorage.getItem('fo4_edited_products') || '[]')
+        const found = localEdited.find((p: any) => String(p.id) === String(productId))
+        if (found) {
+          const itemMode: BrandMode = found.mode || 'streetwear'
+          setDbProduct({
+            id: String(found.id),
+            title: found.title || 'Atelier Masterpiece',
+            subtitle: found.subtitle || `${itemMode.toUpperCase()} SPECIFICATION`,
+            price: typeof found.price === 'number' ? `₹${found.price.toLocaleString('en-IN')}` : String(found.price),
+            rawPrice: typeof found.price === 'number' ? found.price : parseFloat(String(found.price).replace(/[^0-9.]/g, '')) || 0,
+            mode: itemMode,
+            category: found.category || 'Archive',
+            image: found.image || '/saree_1.png',
+            image2: found.image2,
+            image3: found.image3,
+            video_url: found.video_url,
+            return_policy: found.return_policy,
+            gallery: [found.image, found.image2, found.image3].filter(Boolean),
+            blueprintImage: found.image3 || found.blueprintImage || '/media__1775056878622.png',
+            description: found.description || '',
+            gsm: found.gsm || (itemMode === 'streetwear' ? '350 GSM' : undefined),
+            details: {
+              fabric: Array.isArray(found.fabric) ? found.fabric : [found.fabric || 'Pure Handloom Material'],
+              care: Array.isArray(found.care) ? found.care : ['Dry Clean Recommended'],
+              fit: Array.isArray(found.fit) ? found.fit : ['Archival Tailored Fit']
+            },
+            heritageStory: found.heritageStory || 'Handcrafted precision weaving derived from ancient architectural blueprints.',
+            unboxingPolicy: found.unboxingPolicy || 'Dispatched in signature rigid packaging with 24h unboxing guarantee.',
+            rating: found.rating || 5.0,
+            reviews: found.reviews || 16,
+            sizes: Array.isArray(found.sizes) && found.sizes.length > 0 ? found.sizes : ['S', 'M', 'L', 'XL'],
+            inStock: found.stock === undefined || found.stock > 0
+          })
+        }
+      } catch (e) {}
     }
     fetchDbProduct()
   }, [productId])

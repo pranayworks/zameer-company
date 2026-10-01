@@ -29,8 +29,8 @@ const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
 
 function SafeAdminImage({ src, alt }: { src?: string; alt: string }) {
   const getCleanSrc = (url?: string) => {
-    if (!url || !url.trim() || url === 'null' || url === 'undefined' || url.length < 3 || url === '/placeholder.jpg') {
-      return '/media__1775044228708.png'
+    if (!url || !url.trim() || url === 'null' || url === 'undefined' || url.length < 3) {
+      return '/placeholder.jpg'
     }
     return url.split(',')[0].trim()
   }
@@ -42,12 +42,16 @@ function SafeAdminImage({ src, alt }: { src?: string; alt: string }) {
   }, [src])
 
   return (
-    <Image
+    <img
       src={imgSrc}
       alt={alt}
-      fill
-      className="object-cover"
-      onError={() => setImgSrc('/media__1775044228708.png')}
+      className="w-full h-full object-cover"
+      onError={(e) => {
+        const target = e.currentTarget
+        if (target.src !== '/placeholder.jpg' && !target.src.endsWith('/placeholder.jpg')) {
+          target.src = '/placeholder.jpg'
+        }
+      }}
     />
   )
 }

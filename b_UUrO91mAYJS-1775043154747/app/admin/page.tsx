@@ -561,7 +561,7 @@ export default function AdminDashboard() {
                     required
                     value={adminUsername}
                     onChange={e => setAdminUsername(e.target.value)}
-                    placeholder="e.g. chocos@2026"
+                    placeholder="Enter Username or Email..."
                     className="w-full border p-3 pl-10 text-white rounded-xl focus:outline-none transition-all font-mono"
                     style={{ backgroundColor: modeDetails.themeBg, borderColor: `${modeDetails.borderColor}80` }}
                   />
@@ -604,7 +604,6 @@ export default function AdminDashboard() {
             </form>
 
             <div className="pt-4 border-t text-center text-[10px] font-mono text-[#D6CEBE]/60 space-y-1" style={{ borderColor: `${modeDetails.borderColor}30` }}>
-              <p>Master Credentials: <strong className="text-white">chocos@2026</strong></p>
               <p>Friends of 4 Atelier • Official Management Security</p>
             </div>
           </motion.div>

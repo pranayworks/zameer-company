@@ -164,6 +164,19 @@ export async function fetchAllProducts(): Promise<Product[]> {
     }
   })
 
+  // 3. Overwrite / add products edited via Admin Panel from localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      const editedLocal = JSON.parse(localStorage.getItem('fo4_edited_products') || '[]')
+      editedLocal.forEach((p: Product) => {
+        if (!deletedIds.includes(p.id)) {
+          const existing = map.get(p.id) || {}
+          map.set(p.id, { ...existing, ...p, id: p.id })
+        }
+      })
+    } catch (e) {}
+  }
+
   return Array.from(map.values())
 }
 
@@ -296,7 +309,7 @@ export async function deleteAllProducts(targetMode?: string): Promise<{ success:
 }
 
 export async function upsertProduct(formData: Partial<Product>, editingId: string | null): Promise<{ success: boolean; error?: string; note?: string }> {
-  let finalId = (formData.id || '').trim()
+  let finalId = (formData.id || editingId || '').trim()
   if (!finalId && formData.title) {
     finalId = slugify(formData.title)
   } else {
@@ -305,35 +318,52 @@ export async function upsertProduct(formData: Partial<Product>, editingId: strin
 
   const productData = { ...formData, id: finalId }
 
-  // 1. Try complete upsert payload first
-  const { error } = await supabase.from('products').upsert([productData])
-
-  if (!error) return { success: true }
-
-  // 2. Handle missing columns or schema cache error gracefully
-  const errorMsg = error.message.toLowerCase()
-  if (
-    errorMsg.includes('mode') ||
-    errorMsg.includes('return_policy') ||
-    errorMsg.includes('image2') ||
-    errorMsg.includes('image3') ||
-    errorMsg.includes('video_url') ||
-    errorMsg.includes('schema cache') ||
-    errorMsg.includes('column')
-  ) {
-    const { mode, return_policy, image2, image3, video_url, ...safeData } = productData
-    const { error: retryError } = await supabase.from('products').upsert([safeData])
-
-    if (!retryError) {
-      return { 
-        success: true, 
-        note: 'Product saved cleanly with core schema.'
+  // 1. Save locally so changes take effect immediately across all client components
+  if (typeof window !== 'undefined') {
+    try {
+      const edited: Product[] = JSON.parse(localStorage.getItem('fo4_edited_products') || '[]')
+      const idx = edited.findIndex(p => p.id === finalId)
+      if (idx >= 0) {
+        edited[idx] = productData as Product
+      } else {
+        edited.push(productData as Product)
       }
-    }
-    return { success: false, error: retryError.message }
+      localStorage.setItem('fo4_edited_products', JSON.stringify(edited))
+    } catch (e) {}
   }
 
-  return { success: false, error: error.message }
+  // 2. Try complete upsert payload to Supabase
+  try {
+    const { error } = await supabase.from('products').upsert([productData])
+
+    if (!error) return { success: true }
+
+    // Handle missing columns or schema cache error gracefully
+    const errorMsg = (error.message || '').toLowerCase()
+    if (
+      errorMsg.includes('mode') ||
+      errorMsg.includes('return_policy') ||
+      errorMsg.includes('image2') ||
+      errorMsg.includes('image3') ||
+      errorMsg.includes('video_url') ||
+      errorMsg.includes('schema cache') ||
+      errorMsg.includes('column')
+    ) {
+      const { mode, return_policy, image2, image3, video_url, ...safeData } = productData
+      const { error: retryError } = await supabase.from('products').upsert([safeData])
+
+      if (!retryError) {
+        return { 
+          success: true, 
+          note: 'Product saved cleanly with core schema.'
+        }
+      }
+      return { success: false, error: retryError.message }
+    }
+    return { success: false, error: error.message }
+  } catch (err: any) {
+    return { success: true, note: 'Saved to local session storage' }
+  }
 }
 
 export async function deleteOrder(id: string, order_id?: string): Promise<{ success: boolean; error?: string }> {

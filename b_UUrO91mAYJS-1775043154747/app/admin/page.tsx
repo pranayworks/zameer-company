@@ -1390,10 +1390,10 @@ export default function AdminDashboard() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div>
-                      <label className="block mb-1 text-[10px] text-[#D6CEBE]">MAIN IMAGE FILE OR LINK</label>
+                      <label className="block mb-1 text-[10px] font-bold text-[#D6CEBE]">PRIMARY MAIN IMAGE (FILE OR URL) *</label>
                       <input
                         type="text"
-                        placeholder="Image URL link..."
+                        placeholder="Primary image URL link..."
                         value={formData.image || ''}
                         onChange={e => setFormData({ ...formData, image: e.target.value })}
                         className="w-full border p-2 text-white rounded mb-2 text-[11px]"
@@ -1431,16 +1431,54 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block mb-1 text-[10px] text-[#D6CEBE]">CINEMATIC REEL VIDEO URL</label>
-                      <input
-                        type="text"
-                        placeholder="https://...mp4 or Video URL"
-                        value={formData.video_url || ''}
-                        onChange={e => setFormData({ ...formData, video_url: e.target.value })}
-                        className="w-full border p-2 text-white rounded text-[11px]"
-                        style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block mb-1 text-[10px] font-bold text-[#D6CEBE]">SECONDARY GALLERY IMAGE 2 (FILE OR URL)</label>
+                        <input
+                          type="text"
+                          placeholder="Gallery image 2 URL..."
+                          value={formData.image2 || ''}
+                          onChange={e => setFormData({ ...formData, image2: e.target.value })}
+                          className="w-full border p-2 text-white rounded mb-1 text-[11px]"
+                          style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+                        />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => e.target.files?.[0] && handleImageFileSelect(e.target.files[0], 'image2')}
+                          className="w-full text-[10px] text-[#D6CEBE]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 text-[10px] font-bold text-[#D6CEBE]">BLUEPRINT / GALLERY IMAGE 3 (FILE OR URL)</label>
+                        <input
+                          type="text"
+                          placeholder="Blueprint / Gallery image 3 URL..."
+                          value={formData.image3 || ''}
+                          onChange={e => setFormData({ ...formData, image3: e.target.value })}
+                          className="w-full border p-2 text-white rounded mb-1 text-[11px]"
+                          style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+                        />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => e.target.files?.[0] && handleImageFileSelect(e.target.files[0], 'image3')}
+                          className="w-full text-[10px] text-[#D6CEBE]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 text-[10px] font-bold text-[#D6CEBE]">CINEMATIC REEL VIDEO URL</label>
+                        <input
+                          type="text"
+                          placeholder="https://...mp4 or Video URL"
+                          value={formData.video_url || ''}
+                          onChange={e => setFormData({ ...formData, video_url: e.target.value })}
+                          className="w-full border p-2 text-white rounded text-[11px]"
+                          style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

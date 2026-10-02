@@ -153,6 +153,145 @@ export default function AdminDashboard() {
     setIsEmailModalOpen(true)
   }
 
+  // SHIPROCKET DIRECT LOGISTICS HANDLERS
+  const [shiprocketLoading, setShiprocketLoading] = useState<string | null>(null)
+
+  const handleCreateShiprocketOrder = async (order: Order) => {
+    setShiprocketLoading(order.id)
+    try {
+      const res = await fetch('/api/shipping/shiprocket/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: `ORD-${order.order_id}`,
+          customerName: order.customer_name,
+          email: order.email,
+          phone: order.phone,
+          address: order.address,
+          paymentMethod: order.payment_method || (order.address?.includes('COD') ? 'COD' : 'Prepaid'),
+          subtotal: order.price,
+          finalTotal: order.price,
+          items: [{ name: order.product_name, units: 1, selling_price: order.price }]
+        })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        alert(`✓ Shiprocket Order Created Successfully!\nShiprocket Order ID: ${data.shiprocketOrderId}\nShipment ID: ${data.shipmentId}`)
+        await loadData()
+      } else {
+        alert(`Shiprocket Order Creation Error: ${data.error || 'Server error'}`)
+      }
+    } catch (err: any) {
+      alert(`Error creating Shiprocket order: ${err.message}`)
+    } finally {
+      setShiprocketLoading(null)
+    }
+  }
+
+  const handleAssignAWB = async (order: Order) => {
+    if (!order.shipment_id) {
+      alert('Please create a Shiprocket Order first before assigning AWB.')
+      return
+    }
+    setShiprocketLoading(order.id)
+    try {
+      const res = await fetch('/api/shipping/shiprocket/assign-awb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipmentId: order.shipment_id })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        alert(`✓ Courier Assigned Successfully!\nCourier: ${data.courierName || 'Assigned Courier'}\nAWB Code: ${data.awbCode}`)
+        await loadData()
+      } else {
+        alert(`AWB Assignment Note: ${data.error || 'Courier assignment pending'}`)
+      }
+    } catch (err: any) {
+      alert(`AWB assignment error: ${err.message}`)
+    } finally {
+      setShiprocketLoading(null)
+    }
+  }
+
+  const handleSchedulePickup = async (order: Order) => {
+    if (!order.shipment_id) {
+      alert('Please create Shiprocket order first.')
+      return
+    }
+    setShiprocketLoading(order.id)
+    try {
+      const res = await fetch('/api/shipping/shiprocket/schedule-pickup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipmentId: order.shipment_id })
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        alert(`✓ Pickup Scheduled Successfully! Courier driver assigned for pickup.`)
+        await loadData()
+      } else {
+        alert(`Pickup Scheduling Note: ${data.error || 'Failed to schedule pickup'}`)
+      }
+    } catch (err: any) {
+      alert(`Pickup scheduling error: ${err.message}`)
+    } finally {
+      setShiprocketLoading(null)
+    }
+  }
+
+  const handleDownloadLabel = async (order: Order) => {
+    if (order.label_url) {
+      window.open(order.label_url, '_blank')
+      return
+    }
+    if (!order.shipment_id) {
+      alert('Please create Shiprocket order first.')
+      return
+    }
+    setShiprocketLoading(order.id)
+    try {
+      const res = await fetch('/api/shipping/shiprocket/label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipmentId: order.shipment_id })
+      })
+      const data = await res.json()
+      if (res.ok && data.labelUrl) {
+        window.open(data.labelUrl, '_blank')
+        await loadData()
+      } else {
+        alert(`Label Generation Note: ${data.error || 'Label not generated yet'}`)
+      }
+    } catch (err: any) {
+      alert(`Label generation error: ${err.message}`)
+    } finally {
+      setShiprocketLoading(null)
+    }
+  }
+
+  const handleSyncTracking = async (order: Order) => {
+    if (!order.awb_code) {
+      alert('No AWB code assigned yet for this shipment.')
+      return
+    }
+    setShiprocketLoading(order.id)
+    try {
+      const res = await fetch(`/api/shipping/shiprocket/track/${order.awb_code}`)
+      const data = await res.json()
+      if (res.ok && data.success) {
+        alert(`🚀 Live Shiprocket Tracking:\nStatus: ${data.currentStatus}\nCourier: ${data.courierName}\nETD: ${data.etd || 'N/A'}\nDestination: ${data.destination}`)
+        await loadData()
+      } else {
+        alert(`Tracking Note: ${data.error || 'Tracking data unavailable'}`)
+      }
+    } catch (err: any) {
+      alert(`Tracking fetch error: ${err.message}`)
+    } finally {
+      setShiprocketLoading(null)
+    }
+  }
+
   const handleOpenBroadcastEmail = () => {
     setEmailTargetMode('broadcast')
     setEmailRecipient({ email: '', name: 'All Registered Customers & Subscribers' })
@@ -1039,6 +1178,108 @@ export default function AdminDashboard() {
                               <p className="text-sm font-bold mt-1" style={{ color: modeDetails.accentColor }}>Total Amount: ₹{(ord.price || 0).toLocaleString('en-IN')}</p>
                             </div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* SHIPROCKET DIRECT LOGISTICS CONTROL PANEL */}
+                      <div className="w-full mt-4 p-4 border rounded-xl font-mono text-xs space-y-3 bg-black/60" style={{ borderColor: `${modeDetails.borderColor}40` }}>
+                        <div className="flex flex-wrap justify-between items-center border-b pb-2 gap-2" style={{ borderColor: `${modeDetails.borderColor}20` }}>
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-amber-400 text-sm">local_shipping</span>
+                            <span className="font-bold text-[11px] text-amber-300 uppercase tracking-widest">
+                              Shiprocket Direct Logistics
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border ${
+                            ord.shipping_status === 'DELIVERED' ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40' :
+                            ord.shipping_status === 'OUT_FOR_DELIVERY' || ord.shipping_status === 'IN_TRANSIT' ? 'bg-blue-950/80 text-blue-300 border-blue-500/40' :
+                            ord.shiprocket_order_id ? 'bg-amber-950/80 text-amber-300 border-amber-500/40' :
+                            'bg-gray-800 text-gray-400 border-gray-700'
+                          }`}>
+                            {ord.shipping_status || (ord.shiprocket_order_id ? 'ORDER_CREATED' : 'UNFULFILLED')}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[10px] text-[#D6CEBE]/80">
+                          <div>
+                            <span className="block text-[8px] uppercase opacity-60 font-bold">SR Order ID</span>
+                            <span className="font-bold text-white">{ord.shiprocket_order_id || 'Not Synced'}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[8px] uppercase opacity-60 font-bold">Shipment ID</span>
+                            <span className="font-bold text-white">{ord.shipment_id || 'N/A'}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[8px] uppercase opacity-60 font-bold">AWB Code</span>
+                            <span className="font-bold text-amber-300 font-mono">{ord.awb_code || 'Pending AWB'}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[8px] uppercase opacity-60 font-bold">Courier Name</span>
+                            <span className="font-bold text-white">{ord.courier_name || 'Unassigned'}</span>
+                          </div>
+                        </div>
+
+                        {/* SHIPROCKET ACTION BUTTONS */}
+                        <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: `${modeDetails.borderColor}20` }}>
+                          {!ord.shiprocket_order_id ? (
+                            <button
+                              type="button"
+                              onClick={() => handleCreateShiprocketOrder(ord)}
+                              disabled={shiprocketLoading === ord.id}
+                              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] uppercase rounded transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-xs">add_task</span>
+                              {shiprocketLoading === ord.id ? 'Creating...' : 'Create Shiprocket Order'}
+                            </button>
+                          ) : (
+                            <>
+                              {!ord.awb_code && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAssignAWB(ord)}
+                                  disabled={shiprocketLoading === ord.id}
+                                  className="px-3 py-1.5 bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-500/40 font-bold text-[10px] uppercase rounded transition-all flex items-center gap-1 cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-xs">confirmation_number</span>
+                                  {shiprocketLoading === ord.id ? 'Assigning...' : 'Assign Courier & AWB'}
+                                </button>
+                              )}
+
+                              {ord.awb_code && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSchedulePickup(ord)}
+                                  disabled={shiprocketLoading === ord.id}
+                                  className="px-3 py-1.5 bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] uppercase rounded transition-all flex items-center gap-1 cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-xs">event_available</span>
+                                  {shiprocketLoading === ord.id ? 'Scheduling...' : 'Schedule Driver Pickup'}
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadLabel(ord)}
+                                disabled={shiprocketLoading === ord.id}
+                                className="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] uppercase rounded transition-all flex items-center gap-1 cursor-pointer"
+                              >
+                                <span className="material-symbols-outlined text-xs">download</span>
+                                Shiprocket Label PDF
+                              </button>
+
+                              {ord.awb_code && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSyncTracking(ord)}
+                                  disabled={shiprocketLoading === ord.id}
+                                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold text-[10px] uppercase rounded transition-all flex items-center gap-1 cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-xs">sync</span>
+                                  Track Live Status
+                                </button>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

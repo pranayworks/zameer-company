@@ -331,25 +331,58 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         payment_method: paymentMethod === 'COD' ? 'COD' : 'Prepaid'
       }
 
-      const { error } = await supabase.from('orders').insert(orderEntry)
+      let insertRes = await supabase.from('orders').insert(orderEntry)
       
-      if (!error) {
-        // Decrement stock in database
-        try {
-          const { data: pData } = await supabase.from('products').select('stock').eq('id', item.id).single()
-          if (pData && pData.stock !== undefined) {
-            const newStock = Math.max(0, (pData.stock || 0) - item.quantity)
-            await supabase.from('products').update({ stock: newStock }).eq('id', item.id)
-          }
-        } catch (sErr) {
-          console.warn('Stock decrement skipped:', sErr)
+      if (insertRes.error) {
+        console.warn('Full Order Insert Error, retrying with core columns:', insertRes.error)
+        // Fallback retry without optional new columns if table schema hasn't been migrated yet
+        const coreOrderEntry = {
+          user_id: userId || null,
+          customer_name: profileName,
+          email: profileEmail || 'client@friendsof4.in',
+          phone: profilePhone || 'N/A',
+          address: fullAddress,
+          product_name: `${item.name || item.title} (Qty: ${item.quantity})`,
+          size: item.selectedSize || 'Standard',
+          color: item.selectedColor || 'Default',
+          price: price * item.quantity,
+          order_id: checkoutOrderId,
+          order_status: 'Preparing',
+          payment_status: paymentMethod === 'COD' ? 'Pending (COD)' : 'Paid'
         }
-
-        // Send instant notification
-        await sendAdminNotification({ ...orderEntry, image_url: item.image })
-      } else {
-        console.error('Order Insert Error:', error)
+        insertRes = await supabase.from('orders').insert(coreOrderEntry)
       }
+
+      // Always persist to localStorage for instant Admin display
+      if (typeof window !== 'undefined') {
+        try {
+          const existingLocal = JSON.parse(localStorage.getItem('friends_of_4_orders') || '[]')
+          existingLocal.unshift({
+            ...orderEntry,
+            created_at: new Date().toISOString()
+          })
+          localStorage.setItem('friends_of_4_orders', JSON.stringify(existingLocal))
+          localStorage.setItem('atelier-last-order', JSON.stringify({
+            orderId: checkoutOrderId,
+            email: profileEmail,
+            phone: profilePhone,
+            customerName: profileName,
+            finalTotal: totalOrderValue
+          }))
+        } catch (lErr) {}
+      }
+
+      // Decrement stock & send admin notification
+      try {
+        const { data: pData } = await supabase.from('products').select('stock').eq('id', item.id).single()
+        if (pData && pData.stock !== undefined) {
+          const newStock = Math.max(0, (pData.stock || 0) - item.quantity)
+          await supabase.from('products').update({ stock: newStock }).eq('id', item.id)
+        }
+      } catch (sErr) {}
+
+      // Send instant Telegram notification
+      await sendAdminNotification({ ...orderEntry, image_url: item.image })
     }
 
     // Automatically create order on Shiprocket API

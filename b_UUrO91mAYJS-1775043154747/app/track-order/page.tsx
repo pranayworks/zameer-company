@@ -356,28 +356,40 @@ function TrackOrderContent() {
               </div>
             </div>
 
-            {/* SHIPROCKET LOGISTICS ESTIMATE NOTIFICATION */}
-            {shipmentDetails && (
-              <div className="p-4 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs" style={{ backgroundColor: `${modeDetails.accentColor}10`, borderColor: modeDetails.accentColor }}>
-                <div className="flex items-center space-x-3">
-                  <span className="material-symbols-outlined text-2xl" style={{ color: modeDetails.accentColor }}>local_shipping</span>
-                  <div>
-                    <span className="font-bold block text-white">INSURED COURIER INTEGRATION ACTIVE</span>
-                    <span className="text-[10px] text-white/70">Estimated Delivery: 2-3 Business Days via Shiprocket Premier Express</span>
+            {/* SHIPROCKET LOGISTICS ESTIMATE & LIVE TRACKING NOTIFICATION */}
+            <div className="p-5 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs shadow-lg" style={{ backgroundColor: `${modeDetails.accentColor}10`, borderColor: modeDetails.accentColor }}>
+              <div className="flex items-center space-x-4">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}>
+                  <span className="material-symbols-outlined text-xl">local_shipping</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm">SHIPROCKET DIRECT LOGISTICS</span>
+                    {selectedOrder.shipping_status && (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40">
+                        {selectedOrder.shipping_status}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-white/80 space-x-3 mt-1">
+                    {selectedOrder.courier_name && <span>Courier: <strong className="text-white">{selectedOrder.courier_name}</strong></span>}
+                    {selectedOrder.awb_code && <span>AWB: <strong className="text-amber-300">{selectedOrder.awb_code}</strong></span>}
+                    {!selectedOrder.awb_code && <span>Status: <strong className="text-white">{selectedOrder.order_status || 'Preparing at Atelier'}</strong></span>}
                   </div>
                 </div>
-
-                <a
-                  href={`https://shiprocket.co/tracking/${selectedOrder.shipment_id || selectedOrder.order_id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2 border text-[10px] font-bold uppercase rounded-lg transition-all hover:bg-white/10 shrink-0"
-                  style={{ borderColor: modeDetails.accentColor, color: modeDetails.accentColor }}
-                >
-                  OPEN SHIPROCKET COURIER TRACKING →
-                </a>
               </div>
-            )}
+
+              <a
+                href={selectedOrder.tracking_url || `https://shiprocket.co/tracking/${selectedOrder.awb_code || selectedOrder.shiprocket_order_id || selectedOrder.order_id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2.5 font-bold text-[10px] uppercase rounded-lg transition-all shadow cursor-pointer flex items-center gap-1.5 shrink-0"
+                style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
+              >
+                <span>TRACK SHIPMENT ON SHIPROCKET</span>
+                <span className="material-symbols-outlined text-xs">open_in_new</span>
+              </a>
+            </div>
 
             {/* ORDER ITEMS & DISPATCH ADDRESS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t" style={{ borderColor: `${modeDetails.borderColor}40` }}>

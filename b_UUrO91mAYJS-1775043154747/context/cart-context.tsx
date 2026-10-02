@@ -27,7 +27,7 @@ interface CartContextType {
   totalItems: number
   subtotal: number
   activeOrders: CartItem[]
-  placeOrder: (shippingMethod?: string, shippingFee?: number, guestProfile?: { name?: string; email?: string; phone?: string; address?: string }) => void
+  placeOrder: (shippingMethod?: string, shippingFee?: number, guestProfile?: { name?: string; email?: string; phone?: string; address?: string }, paymentMethod?: string) => void
   cancelOrder: (id: string | number, selectedSize?: string, selectedColor?: string) => void
   clearCart: () => void
 }
@@ -259,7 +259,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const placeOrder = async (
     shippingMethod: string = 'Standard',
     shippingFee: number = 0,
-    guestProfile?: { name?: string; email?: string; phone?: string; address?: string }
+    guestProfile?: { name?: string; email?: string; phone?: string; address?: string },
+    paymentMethod: string = 'Prepaid'
   ) => {
     if (cart.length === 0) return
 
@@ -310,8 +311,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         name: item.name || item.title || 'Archival Masterpiece',
         price: price,
         quantity: item.quantity,
-        selectedSize: item.selectedSize,
-        selectedColor: item.selectedColor
+        selectedSize: item.selectedSize || 'Standard',
+        selectedColor: item.selectedColor || 'Default'
       })
 
       const orderEntry = {
@@ -326,7 +327,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         price: price * item.quantity,
         order_id: checkoutOrderId,
         order_status: 'Preparing',
-        payment_status: 'Paid'
+        payment_status: paymentMethod === 'COD' ? 'Pending (COD)' : 'Paid',
+        payment_method: paymentMethod === 'COD' ? 'COD' : 'Prepaid'
       }
 
       const { error } = await supabase.from('orders').insert(orderEntry)
@@ -349,6 +351,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         console.error('Order Insert Error:', error)
       }
     }
+
+    // Automatically create order on Shiprocket API
+    try {
+      fetch('/api/shipping/shiprocket/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: checkoutOrderId,
+          customerName: profileName,
+          email: profileEmail || 'client@friendsof4.in',
+          phone: profilePhone || '9876543210',
+          address: fullAddress,
+          paymentMethod: paymentMethod === 'COD' ? 'COD' : 'Prepaid',
+          subtotal: totalOrderValue,
+          shippingFee: shippingFee,
+          finalTotal: totalOrderValue + shippingFee,
+          items: orderedItems
+        })
+      }).then(r => r.json()).then(data => {
+        if (data?.success) {
+          console.log(`✓ Shiprocket Order Created Automatically: ID ${data.shiprocketOrderId}`)
+        } else {
+          console.warn('Shiprocket Order Auto Creation Note:', data?.error || data)
+        }
+      }).catch(srErr => console.warn('Shiprocket auto creation fetch error:', srErr))
+    } catch (srErr) {}
 
     // Loyalty calculation for logged-in user
     if (userId) {

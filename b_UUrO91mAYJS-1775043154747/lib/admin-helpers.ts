@@ -47,6 +47,17 @@ export interface Order {
   user_id?: string
   customer_segment?: string
   loyalty_points?: number
+  shiprocket_order_id?: string
+  awb_code?: string
+  courier_name?: string
+  shipping_status?: string
+  tracking_url?: string
+  label_url?: string
+  pickup_scheduled_at?: string
+  shipped_at?: string
+  delivered_at?: string
+  payment_method?: string
+  payment_status?: string
 }
 
 export const ADMIN_EMAILS = [

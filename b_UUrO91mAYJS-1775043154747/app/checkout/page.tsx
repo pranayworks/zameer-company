@@ -290,7 +290,7 @@ export default function CheckoutPage() {
       finalTotal
     })
 
-    await placeOrder(shippingMethod, shippingFee, customerProfile)
+    await placeOrder(shippingMethod, shippingFee, customerProfile, 'COD')
     setStep('success')
   }
 
@@ -370,18 +370,25 @@ export default function CheckoutPage() {
         }),
       })
 
-      if (res.ok) {
-        orderData = await res.json()
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok && data.orderId) {
+        orderData = data
       } else {
-        const errObj = await res.json().catch(() => ({}))
-        orderData = { error: errObj.error || 'Payment server order creation failed' }
+        const errorMsg = data.error || 'Payment gateway initialization failed. Please try again or choose Cash on Delivery.'
+        setStep('address')
+        setPaymentError(errorMsg)
+        return
       }
     } catch (e: any) {
-      console.warn("Backend order creation warning:", e)
+      console.error("Backend order creation error:", e)
+      setStep('address')
+      setPaymentError(`Network Error connecting to payment gateway: ${e?.message || 'Server offline'}`)
+      return
     }
 
-    const razorpayKey = orderData?.key || (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.startsWith('rzp_test_') ? process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID : 'rzp_test_5WfX4pZ4bY0X12')
-    const razorpayOrderId = orderData?.orderId
+    const razorpayKey = orderData.key
+    const razorpayOrderId = orderData.orderId
 
     const options: any = {
       key: razorpayKey,
@@ -430,7 +437,7 @@ export default function CheckoutPage() {
           finalTotal
         })
 
-        await placeOrder(shippingMethod, shippingFee, customerProfile)
+        await placeOrder(shippingMethod, shippingFee, customerProfile, 'Prepaid')
         setStep('success')
       },
       modal: {

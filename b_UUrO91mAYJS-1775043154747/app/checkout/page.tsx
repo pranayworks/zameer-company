@@ -58,7 +58,7 @@ export interface CompletedOrderSummary {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cart, subtotal, placeOrder, totalItems, clearCart } = useCart()
+  const { cart, subtotal, placeOrder, totalItems, clearCart, updateQuantity, removeFromCart } = useCart()
   const { modeDetails } = useMode()
 
   const [step, setStep] = useState<CheckoutStep>('summary')
@@ -601,8 +601,8 @@ export default function CheckoutPage() {
                       : item.rawPrice || parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0
                     return (
                       <div
-                        key={`${item.id}-${idx}`}
-                        className="flex gap-4 p-4 border rounded-lg shadow-sm items-center"
+                        key={`${item.id}-${item.selectedSize || idx}`}
+                        className="flex gap-4 p-4 border rounded-lg shadow-sm items-center relative"
                         style={{ backgroundColor: modeDetails.cardBg, borderColor: modeDetails.borderColor }}
                       >
                         <div className="relative w-20 h-24 border shrink-0 overflow-hidden rounded" style={{ borderColor: modeDetails.borderColor }}>
@@ -615,16 +615,49 @@ export default function CheckoutPage() {
                         </div>
                         <div className="flex-1 flex flex-col justify-between">
                           <div>
-                            <h3 className="font-serif-editorial text-xl text-white">
-                              {item.name || item.title}
-                            </h3>
-                            <p className="text-[10px] font-mono uppercase font-bold mt-1" style={{ color: modeDetails.accentColor }}>
-                              SIZE: {item.selectedSize || 'Standard'} • QTY: {item.quantity}
+                            <div className="flex justify-between items-start">
+                              <h3 className="font-serif-editorial text-xl text-white">
+                                {item.name || item.title}
+                              </h3>
+                              <button
+                                onClick={() => removeFromCart(item.id, item.selectedSize, item.selectedColor)}
+                                className="text-white/40 hover:text-red-400 transition-colors p-1 cursor-pointer"
+                                title="Remove piece from bag"
+                              >
+                                <span className="material-symbols-outlined text-lg">delete</span>
+                              </button>
+                            </div>
+                            <p className="text-[10px] font-mono uppercase font-bold mt-0.5" style={{ color: modeDetails.accentColor }}>
+                              SIZE: {item.selectedSize || 'Standard'}
                             </p>
                           </div>
-                          <span className="font-mono text-sm font-bold text-white mt-2">
-                            {formatPrice(priceNum * item.quantity)}
-                          </span>
+
+                          {/* INTERACTIVE QUANTITY CONTROLS */}
+                          <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center border rounded overflow-hidden shadow-inner" style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}>
+                              <button
+                                onClick={() => updateQuantity(item.id, -1, item.selectedSize, item.selectedColor)}
+                                className="w-8 h-8 flex items-center justify-center text-sm font-mono font-bold text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                title="Decrease Quantity"
+                              >
+                                −
+                              </button>
+                              <span className="px-3 py-1 text-xs font-mono font-bold text-white border-x min-w-[32px] text-center" style={{ borderColor: modeDetails.borderColor }}>
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, 1, item.selectedSize, item.selectedColor)}
+                                className="w-8 h-8 flex items-center justify-center text-sm font-mono font-bold text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                title="Increase Quantity"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <span className="font-mono text-sm font-bold text-white" style={{ color: modeDetails.accentColor }}>
+                              {formatPrice(priceNum * item.quantity)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )

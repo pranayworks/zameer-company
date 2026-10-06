@@ -30,6 +30,7 @@ interface DetailedAddress {
   pincode: string
   city: string
   state: string
+  gstin?: string
   saveAsDefault: boolean
 }
 
@@ -48,6 +49,7 @@ export interface CompletedOrderSummary {
   email: string
   phone: string
   address: string
+  gstin?: string
   subtotal: number
   discountAmount: number
   shippingFee: number
@@ -79,6 +81,7 @@ export default function CheckoutPage() {
     pincode: '',
     city: '',
     state: '',
+    gstin: '',
     saveAsDefault: true,
   })
 
@@ -261,6 +264,7 @@ export default function CheckoutPage() {
       email: addressForm.email,
       phone: addressForm.phone,
       address: fullFormattedAddress,
+      gstin: addressForm.gstin,
       userId: 'guest'
     }
 
@@ -284,6 +288,7 @@ export default function CheckoutPage() {
       email: addressForm.email || '',
       phone: addressForm.phone || '',
       address: fullFormattedAddress,
+      gstin: addressForm.gstin,
       subtotal,
       discountAmount,
       shippingFee,
@@ -348,6 +353,7 @@ export default function CheckoutPage() {
       email: addressForm.email,
       phone: addressForm.phone,
       address: fullFormattedAddress,
+      gstin: addressForm.gstin,
       userId: 'guest'
     }
 
@@ -431,6 +437,7 @@ export default function CheckoutPage() {
           email: addressForm.email || '',
           phone: addressForm.phone || '',
           address: fullFormattedAddress,
+          gstin: addressForm.gstin,
           subtotal,
           discountAmount,
           shippingFee,
@@ -682,8 +689,12 @@ export default function CheckoutPage() {
                 {/* TOTAL BREAKDOWN */}
                 <div className="space-y-2 pt-4 border-t text-xs font-mono" style={{ borderColor: modeDetails.borderColor }}>
                   <div className="flex justify-between text-white/70">
-                    <span>SUBTOTAL</span>
-                    <span>{formatPrice(subtotal)}</span>
+                    <span>SUBTOTAL (BASE)</span>
+                    <span>{formatPrice(subtotal - Math.round(subtotal - (subtotal / 1.05)))}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-400 font-medium">
+                    <span>INCLUSIVE OF 5% GST (CGST 2.5% + SGST 2.5%)</span>
+                    <span>{formatPrice(Math.round(subtotal - (subtotal / 1.05)))}</span>
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between font-bold" style={{ color: modeDetails.accentColor }}>
@@ -855,6 +866,24 @@ export default function CheckoutPage() {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-white/60 mb-1">
+                    GSTIN / BUSINESS TAX IDENTIFICATION NUMBER (OPTIONAL FOR B2B INVOICE)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={15}
+                    placeholder="e.g. 29AAAF48444M1Z5"
+                    value={addressForm.gstin || ''}
+                    onChange={(e) => setAddressForm({ ...addressForm, gstin: e.target.value.toUpperCase() })}
+                    className="w-full border p-3 text-white placeholder-white/30 focus:outline-none rounded uppercase tracking-wider"
+                    style={{ backgroundColor: modeDetails.themeBg, borderColor: modeDetails.borderColor }}
+                  />
+                  <span className="text-[9px] font-mono text-white/50 mt-1 block">
+                    Friends of 4 GSTIN: <strong style={{ color: modeDetails.accentColor }}>29AAAF48444M1Z5</strong> (Friends of 4 Fashion House LLP)
+                  </span>
+                </div>
+
                 {/* SAVE ADDRESS AS DEFAULT CHECKBOX */}
                 <div className="pt-2 flex items-center space-x-3">
                   <input
@@ -1006,6 +1035,9 @@ export default function CheckoutPage() {
                   <p className="font-bold text-white text-sm">{completedOrder?.customerName || addressForm.name || 'Valued Client'}</p>
                   {completedOrder?.email && <p className="text-white/70">{completedOrder.email}</p>}
                   {completedOrder?.phone && <p className="text-white/70">{completedOrder.phone}</p>}
+                  {(completedOrder?.gstin || addressForm.gstin) && (
+                    <p className="text-amber-300 font-bold">GSTIN: {completedOrder?.gstin || addressForm.gstin}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -1056,8 +1088,12 @@ export default function CheckoutPage() {
               {/* TOTAL VALUATION BREAKDOWN */}
               <div className="border-t pt-4 space-y-2 font-mono text-xs" style={{ borderColor: `${modeDetails.borderColor}40` }}>
                 <div className="flex justify-between text-white/70">
-                  <span>SUBTOTAL</span>
-                  <span>₹{(completedOrder?.subtotal ?? subtotal).toLocaleString('en-IN')}</span>
+                  <span>SUBTOTAL (BASE)</span>
+                  <span>₹{((completedOrder?.subtotal ?? subtotal) - Math.round((completedOrder?.subtotal ?? subtotal) - ((completedOrder?.subtotal ?? subtotal) / 1.05))).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-emerald-400">
+                  <span>INCLUDED GST (5%: CGST 2.5% + SGST 2.5%)</span>
+                  <span>₹{Math.round((completedOrder?.subtotal ?? subtotal) - ((completedOrder?.subtotal ?? subtotal) / 1.05)).toLocaleString('en-IN')}</span>
                 </div>
                 {(completedOrder?.discountAmount ?? discountAmount) > 0 && (
                   <div className="flex justify-between font-bold" style={{ color: modeDetails.accentColor }}>
@@ -1116,6 +1152,7 @@ export default function CheckoutPage() {
                       email: completedOrder.email,
                       phone: completedOrder.phone,
                       address: completedOrder.address,
+                      gstin: completedOrder.gstin || addressForm.gstin,
                       items: completedOrder.items,
                       subtotal: completedOrder.subtotal,
                       discountAmount: completedOrder.discountAmount,
@@ -1128,6 +1165,7 @@ export default function CheckoutPage() {
                       email: addressForm.email || '',
                       phone: addressForm.phone || '',
                       address: `${addressForm.flatNo}, ${addressForm.area}, ${addressForm.city}`,
+                      gstin: addressForm.gstin,
                       items: cart.map(i => ({ 
                         name: i.name || i.title || 'Masterpiece', 
                         size: i.selectedSize, 

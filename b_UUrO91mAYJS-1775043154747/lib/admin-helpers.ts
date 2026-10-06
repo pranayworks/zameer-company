@@ -58,6 +58,8 @@ export interface Order {
   delivered_at?: string
   payment_method?: string
   payment_status?: string
+  gstin?: string
+  gst_amount?: number
 }
 
 export const ADMIN_EMAILS = [
@@ -471,12 +473,12 @@ export const downloadInvoicePDF = async (order: Order | DetailedReceipt) => {
   doc.setFillColor(...gold)
   doc.rect(0, 0, W, 24, 'F')
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
+  doc.setFontSize(14)
   doc.setTextColor(255, 255, 255)
-  doc.text('FRIENDS OF 4', 20, 15)
-  doc.setFontSize(9)
+  doc.text('FRIENDS OF 4 FASHION HOUSE LLP', 20, 13)
+  doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('OFFICIAL ORDER RECEIPT', W - 20, 15, { align: 'right' })
+  doc.text('GSTIN: 29AAAF48444M1Z5 • OFFICIAL TAX INVOICE', W - 20, 15, { align: 'right' })
 
   // Order Reference & Date
   const rawOrderId = (order as any).order_id || (order as any).id || 'SECURED'
@@ -518,6 +520,7 @@ export const downloadInvoicePDF = async (order: Order | DetailedReceipt) => {
   doc.setTextColor(...grey)
   if (order.email) doc.text(order.email, 20, 81)
   if (order.phone) doc.text(order.phone, 20, 87)
+  if ((order as any).gstin) doc.text(`GSTIN: ${(order as any).gstin}`, 20, 93)
 
   const rawAddress = order.address || 'Address on record'
   const shippingMatchHeader = rawAddress.match(/\[(.*) Delivery: ₹(\d+)\]/)
@@ -599,13 +602,24 @@ export const downloadInvoicePDF = async (order: Order | DetailedReceipt) => {
   const sFee = (order as DetailedReceipt).shippingFee ?? (shippingMatchHeader ? parseInt(shippingMatchHeader[2]) : 0)
   const finalTotal = (order as DetailedReceipt).finalTotal ?? (subtotal - discount + sFee)
 
+  // GST Calculation (5% GST included in retail price: Base = Price / 1.05, GST = Price - Base)
+  const gstAmount = Math.round(subtotal - (subtotal / 1.05))
+
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(...grey)
-  doc.text('SUBTOTAL', 100, curY)
+  doc.text('SUBTOTAL (BASE)', 100, curY)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(...dark)
-  doc.text(`₹${subtotal.toLocaleString('en-IN')}`, W - 24, curY, { align: 'right' })
+  doc.text(`₹${(subtotal - gstAmount).toLocaleString('en-IN')}`, W - 24, curY, { align: 'right' })
+  curY += 6
+
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...grey)
+  doc.text('GST (5% INCLUDED: CGST 2.5% + SGST 2.5%)', 100, curY)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...dark)
+  doc.text(`₹${gstAmount.toLocaleString('en-IN')}`, W - 24, curY, { align: 'right' })
   curY += 6
 
   if (discount > 0) {

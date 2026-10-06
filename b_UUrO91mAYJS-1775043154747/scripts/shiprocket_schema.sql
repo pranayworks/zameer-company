@@ -1,4 +1,4 @@
--- SQL Migration script for Shiprocket Integration in Supabase 'orders' table
+-- SQL Migration script for Shiprocket & GST Integration in Supabase 'orders' table
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_order_id TEXT;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipment_id TEXT;
@@ -11,3 +11,5 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_scheduled_at TIMESTAMP WITH T
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipped_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'Prepaid';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gstin TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gst_amount NUMERIC(10, 2);

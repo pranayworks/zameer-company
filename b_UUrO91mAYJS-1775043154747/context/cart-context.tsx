@@ -259,7 +259,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const placeOrder = async (
     shippingMethod: string = 'Standard',
     shippingFee: number = 0,
-    guestProfile?: { name?: string; email?: string; phone?: string; address?: string },
+    guestProfile?: { name?: string; email?: string; phone?: string; address?: string; gstin?: string },
     paymentMethod: string = 'Prepaid'
   ) => {
     if (cart.length === 0) return
@@ -277,6 +277,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     let profileEmail = guestProfile?.email || ''
     let profilePhone = guestProfile?.phone || ''
     let profileAddress = guestProfile?.address || ''
+    let profileGstin = guestProfile?.gstin || ''
     let userSegment = 'Regular'
     let userPoints = 0
 
@@ -315,6 +316,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         selectedColor: item.selectedColor || 'Default'
       })
 
+      const itemTotalPrice = price * item.quantity
+      const itemGst = Math.round(itemTotalPrice - (itemTotalPrice / 1.05))
+
       const orderEntry = {
         user_id: userId || null,
         customer_name: profileName,
@@ -324,11 +328,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         product_name: `${item.name || item.title} (Qty: ${item.quantity})`,
         size: item.selectedSize || 'Standard',
         color: item.selectedColor || 'Default',
-        price: price * item.quantity,
+        price: itemTotalPrice,
         order_id: checkoutOrderId,
         order_status: 'Preparing',
         payment_status: paymentMethod === 'COD' ? 'Pending (COD)' : 'Paid',
-        payment_method: paymentMethod === 'COD' ? 'COD' : 'Prepaid'
+        payment_method: paymentMethod === 'COD' ? 'COD' : 'Prepaid',
+        gstin: profileGstin || undefined,
+        gst_amount: itemGst
       }
 
       let insertRes = await supabase.from('orders').insert(orderEntry)

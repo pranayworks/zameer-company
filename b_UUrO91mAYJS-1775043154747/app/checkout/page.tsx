@@ -242,62 +242,7 @@ export default function CheckoutPage() {
     loadRazorpaySDK()
   }, [])
 
-  const handleDirectCODOrder = async () => {
-    if (!addressForm.name || !addressForm.phone || !addressForm.flatNo || !addressForm.pincode) {
-      setPaymentError('Please fill in all mandatory dispatch address details (Name, Phone, Flat/Building, Pin Code).')
-      return
-    }
-
-    setPaymentError('')
-    setStep('paying')
-
-    const fullFormattedAddress = `${addressForm.flatNo}, ${addressForm.area}${addressForm.landmark ? ', Landmark: ' + addressForm.landmark : ''}, ${addressForm.city}, ${addressForm.state} - ${addressForm.pincode} [COD / Direct Order]`
-    
-    if (addressForm.saveAsDefault && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('fo4_saved_default_address', JSON.stringify(addressForm))
-      } catch {}
-    }
-
-    const customerProfile = {
-      name: addressForm.name,
-      email: addressForm.email,
-      phone: addressForm.phone,
-      address: fullFormattedAddress,
-      gstin: addressForm.gstin,
-      userId: 'guest'
-    }
-
-    const paymentId = `COD-${Date.now().toString().slice(-6)}`
-    setOrderId(paymentId)
-
-    const snapshotItems = cart.map(item => ({
-      name: item.name || item.title || 'Archival Piece',
-      size: item.selectedSize || 'Standard',
-      color: item.selectedColor || 'Default',
-      quantity: item.quantity,
-      price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 4800,
-      image: item.image
-    }))
-
-    setCompletedOrder({
-      orderId: paymentId,
-      date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      items: snapshotItems,
-      customerName: addressForm.name || 'Valued Client',
-      email: addressForm.email || '',
-      phone: addressForm.phone || '',
-      address: fullFormattedAddress,
-      gstin: addressForm.gstin,
-      subtotal,
-      discountAmount,
-      shippingFee,
-      finalTotal
-    })
-
-    await placeOrder(shippingMethod, shippingFee, customerProfile, 'COD')
-    setStep('success')
-  }
+  // Direct Razorpay Prepaid Payment Flow (COD Option Removed)
 
   const handlePay = async () => {
     if (!addressForm.name || !addressForm.phone || !addressForm.flatNo || !addressForm.pincode) {
@@ -360,7 +305,7 @@ export default function CheckoutPage() {
     const sdkLoaded = await loadRazorpaySDK()
     if (!sdkLoaded || !window.Razorpay) {
       setStep('address')
-      setPaymentError('Could not load Razorpay payment SDK. You can complete your order using Cash on Delivery (COD) below.')
+      setPaymentError('Could not load Razorpay payment SDK. Please check your internet connection and try again.')
       return
     }
 
@@ -381,7 +326,7 @@ export default function CheckoutPage() {
       if (res.ok && data.orderId) {
         orderData = data
       } else {
-        const errorMsg = data.error || 'Payment gateway initialization failed. Please try again or choose Cash on Delivery.'
+        const errorMsg = data.error || 'Payment gateway initialization failed. Please try again.'
         setStep('address')
         setPaymentError(errorMsg)
         return
@@ -450,7 +395,7 @@ export default function CheckoutPage() {
       modal: {
         ondismiss: () => {
           setStep('address')
-          setPaymentError('Payment window was closed before completion. You can retry Razorpay or select Cash on Delivery below.')
+          setPaymentError('Payment window was closed before completion. Please retry payment.')
         }
       }
     }
@@ -947,21 +892,13 @@ export default function CheckoutPage() {
                   ← BACK TO REVIEW
                 </button>
 
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                  <button
-                    onClick={handleDirectCODOrder}
-                    className="px-6 py-3 font-mono font-bold text-xs tracking-wider uppercase transition-all rounded border border-amber-500/50 bg-amber-950/80 text-amber-200 hover:bg-amber-900 cursor-pointer flex items-center justify-center gap-2 shadow"
-                  >
-                    <span className="material-symbols-outlined text-sm">payments</span>
-                    <span>CASH ON DELIVERY / DIRECT BOOKING ({formatPrice(finalTotal)})</span>
-                  </button>
-
+                <div className="w-full sm:w-auto">
                   <button
                     onClick={handlePay}
-                    className="px-8 py-3 font-bold text-xs tracking-[0.2em] uppercase transition-all rounded shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-8 py-3.5 font-bold text-xs tracking-[0.2em] uppercase transition-all rounded shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     style={{ backgroundColor: modeDetails.accentColor, color: modeDetails.themeBg }}
                   >
-                    <span>PROCEED TO RAZORPAY ({formatPrice(finalTotal)})</span>
+                    <span>PROCEED TO SECURE PAYMENT ({formatPrice(finalTotal)})</span>
                     <span>→</span>
                   </button>
                 </div>

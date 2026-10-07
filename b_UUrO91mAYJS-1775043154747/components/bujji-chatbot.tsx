@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { useMode, BrandMode } from '@/context/mode-context'
 import { fetchAllProducts, fetchAllOrders, Product, Order } from '@/lib/admin-helpers'
@@ -20,6 +20,7 @@ export interface ChatMessage {
 
 export function BujjiChatbot() {
   const router = useRouter()
+  const pathname = usePathname()
   const { mode, setMode, modeDetails } = useMode()
 
   const [mounted, setMounted] = useState(false)
@@ -80,7 +81,7 @@ export function BujjiChatbot() {
     }
   }, [messages, isOpen, isTyping, mounted])
 
-  if (!mounted) return null
+  if (!mounted || pathname?.startsWith('/admin')) return null
 
   const addBotMessage = (
     text: string,
